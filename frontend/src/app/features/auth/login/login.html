@@ -1,0 +1,114 @@
+<div class="login-page">
+  <aside class="brand">
+    <div class="brand__shape brand__shape--red"></div>
+    <div class="brand__shape brand__shape--gold"></div>
+    <div class="brand__circle"></div>
+
+    <header class="brand__logo">
+      <span class="logo-box">A+</span>
+      <div>
+        <strong>System Plus Piendamó</strong>
+        <small>AthenaDev · Intranet académica</small>
+      </div>
+    </header>
+
+    <div class="brand__content">
+      <span class="badge"><app-icon name="graduation-cap" [size]="16" /> COMUNIDAD ACADÉMICA</span>
+      <p class="brand__title">Tu espacio institucional, claro y seguro.</p>
+      <p class="brand__text">
+        Administra procesos académicos, personas y permisos desde una intranet diseñada para
+        System Plus Piendamó.
+      </p>
+      <ul class="brand__list">
+        <li><span class="check"><app-icon name="check" [size]="14" /></span> Acceso protegido para cada perfil</li>
+        <li><span class="check"><app-icon name="check" [size]="14" /></span> Información académica centralizada</li>
+        <li><span class="check"><app-icon name="check" [size]="14" /></span> Trazabilidad para la institución</li>
+      </ul>
+    </div>
+
+    <footer class="brand__footer">© 2026 System Plus Piendamó · AthenaDev</footer>
+  </aside>
+
+  <section class="panel">
+    <header class="panel__top">
+      <span class="status"><span class="status__dot"></span> Servicios disponibles</span>
+      <a class="help" href="#"><app-icon name="circle-help" [size]="16" /> ¿Necesitas ayuda?</a>
+    </header>
+
+    <main class="panel__main">
+      <form class="card" [formGroup]="form" (ngSubmit)="enviar()" novalidate>
+        <h1>Inicia sesión</h1>
+        <p class="card__subtitle">Ingresa con tu correo institucional para continuar.</p>
+
+        @if (credencialesInvalidas()) {
+          <div class="alert" role="alert">
+            <app-icon name="circle-alert" [size]="18" />
+            <div>
+              <strong>No pudimos iniciar sesión</strong>
+              <p>Las credenciales ingresadas no son válidas. Verifica tus datos e inténtalo de nuevo.</p>
+            </div>
+          </div>
+        }
+
+        <label for="correo">Correo institucional *</label>
+        <div class="input" [class.input--error]="mensajeCorreo()">
+          <app-icon name="mail" [size]="18" />
+          <input
+            id="correo"
+            type="email"
+            formControlName="correo"
+            placeholder="nombre@systemplus.edu.co"
+            autocomplete="username"
+          />
+        </div>
+        @if (mensajeCorreo(); as msg) {
+          <small class="field-error">{{ msg }}</small>
+        }
+
+        <label for="contrasena">Contraseña *</label>
+        <div class="input" [class.input--error]="errorContrasena()">
+          <app-icon name="lock" [size]="18" />
+          <input
+            id="contrasena"
+            [type]="verContrasena() ? 'text' : 'password'"
+            formControlName="contrasena"
+            placeholder="Contraseña"
+            autocomplete="current-password"
+          />
+          <button
+            type="button"
+            class="input__toggle"
+            (click)="verContrasena.set(!verContrasena())"
+            [attr.aria-label]="verContrasena() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+          >
+            <app-icon [name]="verContrasena() ? 'eye' : 'eye-off'" [size]="18" />
+          </button>
+        </div>
+        @if (mensajeContrasena(); as msg) {
+          <small class="field-error">{{ msg }}</small>
+        }
+
+        <div class="options">
+          <label class="remember">
+            <input type="checkbox" formControlName="recordar" /> Mantener sesión iniciada
+          </label>
+          <a href="#">¿Olvidaste tu contraseña?</a>
+        </div>
+
+        <button type="submit" class="submit" [disabled]="cargando()">
+          <app-icon name="log-in" [size]="18" />
+          {{ cargando() ? 'Ingresando...' : 'Ingresar a AthenaDev' }}
+        </button>
+
+        <p class="secure">
+          <app-icon name="shield-check" [size]="16" />
+          Conexión segura · La contraseña nunca se muestra en texto plano
+        </p>
+      </form>
+    </main>
+
+    <footer class="panel__footer">
+      Al ingresar aceptas las políticas institucionales de seguridad y privacidad.
+    </footer>
+  </section>
+</div>

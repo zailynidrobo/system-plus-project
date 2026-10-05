@@ -2,13 +2,14 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { Role, ROLE_LABELS, User } from '../../../shared/models/user';
 import { Icon } from '../../../shared/ui/icon/icon';
 import { ResumenUsuarios, UserApi } from '../user-api';
+import { RouterLink } from '@angular/router';
 
 const POR_PAGINA = 6;
 type EstadoFiltro = 'TODOS' | 'ACTIVO' | 'DESACTIVADO';
 
 @Component({
   selector: 'app-user-list',
-  imports: [Icon],
+  imports: [Icon, RouterLink],
   templateUrl: './user-list.html',
   styleUrl: './user-list.scss',
 })

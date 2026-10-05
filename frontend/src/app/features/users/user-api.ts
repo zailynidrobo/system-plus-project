@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, delay, of } from 'rxjs';
+import { Observable, delay, of, throwError } from 'rxjs';
 import { Role, User } from '../../shared/models/user';
 
 export interface FiltroUsuarios {
@@ -19,6 +19,12 @@ export interface ResumenUsuarios {
   total: number;
   activos: number;
   desactivados: number;
+}
+
+export interface NuevoUsuario {
+  nombre: string;
+  correo: string;
+  rol: Role;
 }
 
 const normalizar = (t: string) =>
@@ -76,5 +82,23 @@ export class UserApi {
       activos,
       desactivados: this.datos.length - activos,
     }).pipe(delay(300));
+  }
+
+  // El backend real debe responder error si el correo ya existe y generar la contraseña temporal.
+  crear(d: NuevoUsuario): Observable<User> {
+    const correo = d.correo.trim().toLowerCase();
+    if (this.datos.some((u) => u.correo.toLowerCase() === correo)) {
+      return throwError(() => new Error('CORREO_EN_USO')).pipe(delay(400));
+    }
+    const nuevo: User = {
+      id: Math.max(...this.datos.map((u) => u.id)) + 1,
+      nombre: d.nombre.trim(),
+      correo,
+      rol: d.rol,
+      activo: true,
+      ultimoAcceso: 'Sin ingresos',
+    };
+    this.datos = [nuevo, ...this.datos];
+    return of(nuevo).pipe(delay(500));
   }
 }

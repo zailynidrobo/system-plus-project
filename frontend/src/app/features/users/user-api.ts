@@ -122,4 +122,14 @@ export class UserApi {
     this.datos = this.datos.map((u, i) => (i === indice ? actualizado : u));
     return of({ ...actualizado }).pipe(delay(500));
   }
+
+    // Desactivar NO borra: solo cambia el estado. El historial y los datos se conservan.
+  desactivar(id: number): Observable<User> {
+    const indice = this.datos.findIndex((u) => u.id === id);
+    if (indice === -1) return throwError(() => new Error('NO_ENCONTRADO'));
+
+    const actualizado: User = { ...this.datos[indice], activo: false };
+    this.datos = this.datos.map((u, i) => (i === indice ? actualizado : u));
+    return of({ ...actualizado }).pipe(delay(500));
+  }
 }

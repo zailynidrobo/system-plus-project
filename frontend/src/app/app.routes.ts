@@ -7,6 +7,7 @@ import { Shell } from './core/layout/shell/shell';
 import { authGuard } from './core/guards/auth-guard';
 import { roleGuard } from './core/guards/role-guard';
 import { UserEdit } from './features/users/user-edit/user-edit';
+import { UserDeactivate } from './features/users/user-deactivate/user-deactivate';
 
 const soloAdmin = { roles: ['ADMINISTRADOR'] };
 
@@ -22,6 +23,7 @@ export const routes: Routes = [
       { path: 'usuarios/:id/editar', component: UserEdit, canActivate: [roleGuard], data: soloAdmin },
       { path: 'usuarios/registro-exitoso', component: UserCreated, canActivate: [roleGuard], data: soloAdmin },
       { path: '', pathMatch: 'full', redirectTo: 'usuarios' },
+      { path: 'usuarios/:id/desactivar', component: UserDeactivate, canActivate: [roleGuard], data: soloAdmin },
     ],
   },
   { path: '**', redirectTo: 'login' },

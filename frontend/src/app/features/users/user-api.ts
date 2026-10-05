@@ -101,4 +101,25 @@ export class UserApi {
     this.datos = [nuevo, ...this.datos];
     return of(nuevo).pipe(delay(500));
   }
+
+    obtener(id: number): Observable<User> {
+    const usuario = this.datos.find((u) => u.id === id);
+    if (!usuario) return throwError(() => new Error('NO_ENCONTRADO'));
+    return of({ ...usuario }).pipe(delay(300));
+  }
+
+  // Solo se editan nombre y correo. El rol y la contraseña no cambian aquí.
+  actualizar(id: number, d: { nombre: string; correo: string }): Observable<User> {
+    const correo = d.correo.trim().toLowerCase();
+    const indice = this.datos.findIndex((u) => u.id === id);
+    if (indice === -1) return throwError(() => new Error('NO_ENCONTRADO'));
+
+    if (this.datos.some((u) => u.id !== id && u.correo.toLowerCase() === correo)) {
+      return throwError(() => new Error('CORREO_EN_USO')).pipe(delay(400));
+    }
+
+    const actualizado: User = { ...this.datos[indice], nombre: d.nombre.trim(), correo };
+    this.datos = this.datos.map((u, i) => (i === indice ? actualizado : u));
+    return of({ ...actualizado }).pipe(delay(500));
+  }
 }

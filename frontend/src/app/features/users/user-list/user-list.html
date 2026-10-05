@@ -104,9 +104,9 @@
             </td>
             <td class="muted">{{ u.ultimoAcceso }}</td>
             <td class="right">
-              <button type="button" class="action" title="Editar usuario" aria-label="Editar usuario">
-                <app-icon name="pencil" [size]="16" />
-              </button>
+              <a class="action" [routerLink]="['/usuarios', u.id, 'editar']" title="Editar usuario" aria-label="Editar usuario">
+               <app-icon name="pencil" [size]="16" />
+              </a>
               <button type="button" class="action action--danger" title="Desactivar usuario" aria-label="Desactivar usuario">
                 <app-icon name="user-x" [size]="16" />
               </button>

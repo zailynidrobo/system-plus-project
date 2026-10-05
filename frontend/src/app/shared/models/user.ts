@@ -4,12 +4,20 @@ export type Role =
   | 'DOCENTE'
   | 'DOCENTE_AUTORIZADO';
 
+export const ROLE_LABELS: Record<Role, string> = {
+  ADMINISTRADOR: 'Administrador',
+  COORDINADOR: 'Coordinador Académico',
+  DOCENTE: 'Docente',
+  DOCENTE_AUTORIZADO: 'Docente Autorizado',
+};
+
 export interface User {
   id: number;
   nombre: string;
   correo: string;
   rol: Role;
   activo: boolean;
+  ultimoAcceso?: string;
 }
 
 export interface LoginRequest {

@@ -1,0 +1,59 @@
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar__logo">
+      <span class="logo-box">A+</span>
+      <div>
+        <strong>System Plus Piendamó</strong>
+        <small>AthenaDev · Intranet académica</small>
+      </div>
+    </div>
+
+    <p class="sidebar__section">ADMINISTRACIÓN</p>
+    <nav class="nav">
+      @for (item of nav; track item.label) {
+        @if (item.route) {
+          <a class="nav__item" [routerLink]="item.route" routerLinkActive="nav__item--active">
+            <app-icon [name]="item.icon" [size]="18" /> {{ item.label }}
+          </a>
+        } @else {
+          <span class="nav__item nav__item--disabled" title="Próximamente">
+            <app-icon [name]="item.icon" [size]="18" /> {{ item.label }}
+          </span>
+        }
+      }
+    </nav>
+
+    <div class="sidebar__secure">
+      <small>ENTORNO SEGURO</small>
+      <p>Sesión cifrada y persistente durante la jornada institucional.</p>
+    </div>
+
+    <span class="sidebar__help"><app-icon name="circle-help" [size]="18" /> Centro de ayuda</span>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="crumbs">AthenaDev <span>/</span> <strong>Gestión de usuarios</strong></div>
+
+      <div class="topbar__right">
+        <button type="button" class="icon-btn" aria-label="Notificaciones">
+          <app-icon name="bell" [size]="18" />
+        </button>
+        <div class="user">
+          <span class="avatar">{{ iniciales() }}</span>
+          <div class="user__info">
+            <strong>{{ user()?.nombre }}</strong>
+            <small>{{ rolVisible() }}</small>
+          </div>
+        </div>
+        <button type="button" class="icon-btn" (click)="salir()" aria-label="Cerrar sesión" title="Cerrar sesión">
+          <app-icon name="log-out" [size]="18" />
+        </button>
+      </div>
+    </header>
+
+    <main class="content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

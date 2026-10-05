@@ -1,1 +1,140 @@
-<p>user-list works!</p>
+<div class="header">
+  <div>
+    <h1>Usuarios</h1>
+    <p>Administra accesos, estados y roles de la comunidad académica.</p>
+  </div>
+  <button type="button" class="btn-primary">
+    <app-icon name="user-plus" [size]="18" /> Registrar usuario
+  </button>
+</div>
+
+<section class="stats">
+  <article class="stat">
+    <span class="stat__icon"><app-icon name="users" [size]="22" /></span>
+    <div>
+      <small>Usuarios registrados</small>
+      <strong>{{ resumen()?.total ?? '–' }}</strong>
+    </div>
+  </article>
+  <article class="stat">
+    <span class="stat__icon"><app-icon name="user-check" [size]="22" /></span>
+    <div>
+      <small>Activos</small>
+      <strong>{{ resumen()?.activos ?? '–' }} <em>{{ porcentajeActivos() }} % del total</em></strong>
+    </div>
+  </article>
+  <article class="stat">
+    <span class="stat__icon"><app-icon name="user-x" [size]="22" /></span>
+    <div>
+      <small>Desactivados</small>
+      <strong>{{ resumen()?.desactivados ?? '–' }} <em>Historial conservado</em></strong>
+    </div>
+  </article>
+</section>
+
+<section class="panel">
+  <div class="toolbar">
+    <div class="search">
+      <app-icon name="search" [size]="18" />
+      <input
+        type="search"
+        placeholder="Buscar por nombre o correo"
+        [value]="busqueda()"
+        (input)="buscar($any($event.target).value)"
+      />
+    </div>
+
+    <div class="filters">
+      <label class="select">
+        <app-icon name="sliders" [size]="16" />
+        <select [value]="rol()" (change)="filtrarRol($any($event.target).value)">
+          <option value="TODOS">Todos los roles</option>
+          @for (r of roles; track r.value) {
+            <option [value]="r.value">{{ r.label }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="select">
+        <select [value]="estado()" (change)="filtrarEstado($any($event.target).value)">
+          <option value="TODOS">Estado: Todos</option>
+          <option value="ACTIVO">Estado: Activos</option>
+          <option value="DESACTIVADO">Estado: Desactivados</option>
+        </select>
+      </label>
+    </div>
+  </div>
+
+  @if (busqueda().trim()) {
+    <p class="result-info">
+      <app-icon name="search" [size]="14" /> {{ total() }} resultados para "{{ busqueda() }}"
+    </p>
+  }
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>USUARIO</th>
+          <th>ROL ACTIVO</th>
+          <th>ESTADO</th>
+          <th>ÚLTIMO ACCESO</th>
+          <th class="right">ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (u of usuarios(); track u.id) {
+          <tr>
+            <td>
+              <div class="person">
+                <span class="avatar" [class.avatar--off]="!u.activo">{{ iniciales(u.nombre) }}</span>
+                <div>
+                  <strong>{{ u.nombre }}</strong>
+                  <small>{{ u.correo }}</small>
+                </div>
+              </div>
+            </td>
+            <td><span class="pill pill--role">{{ labels[u.rol] }}</span></td>
+            <td>
+              @if (u.activo) {
+                <span class="pill pill--ok"><i></i> Activo</span>
+              } @else {
+                <span class="pill pill--off"><i></i> Desactivado</span>
+              }
+            </td>
+            <td class="muted">{{ u.ultimoAcceso }}</td>
+            <td class="right">
+              <button type="button" class="action" title="Editar usuario" aria-label="Editar usuario">
+                <app-icon name="pencil" [size]="16" />
+              </button>
+              <button type="button" class="action action--danger" title="Desactivar usuario" aria-label="Desactivar usuario">
+                <app-icon name="user-x" [size]="16" />
+              </button>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5" class="empty">
+              {{ cargando() ? 'Cargando usuarios...' : 'No se encontraron usuarios.' }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <footer class="pager">
+    <span>Mostrando {{ desde() }}–{{ hasta() }} de {{ total() }} usuarios</span>
+    <div class="pager__buttons">
+      <button type="button" (click)="irA(pagina() - 1)" [disabled]="pagina() === 1" aria-label="Página anterior">
+        <app-icon name="chevron-left" [size]="16" />
+      </button>
+      @for (p of paginas(); track p) {
+        <button type="button" [class.active]="p === pagina()" (click)="irA(p)">{{ p }}</button>
+      }
+      <button type="button" (click)="irA(pagina() + 1)" [disabled]="pagina() === totalPaginas()" aria-label="Página siguiente">
+        <app-icon name="chevron-right" [size]="16" />
+      </button>
+    </div>
+  </footer>
+</section>

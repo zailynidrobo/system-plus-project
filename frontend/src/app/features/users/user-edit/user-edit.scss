@@ -129,6 +129,14 @@
   background: #ecebfa;
   color: var(--color-primary);
   font-size: 13px;
+  
+    &__link {
+    display: inline-block;
+    margin-top: 6px;
+    color: var(--color-primary);
+    font-weight: 500;
+    text-decoration: underline;
+  }
 
   strong { display: block; margin-bottom: 2px; }
   p { margin: 0; color: var(--color-text); line-height: 1.4; }

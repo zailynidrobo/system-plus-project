@@ -132,4 +132,14 @@ export class UserApi {
     this.datos = this.datos.map((u, i) => (i === indice ? actualizado : u));
     return of({ ...actualizado }).pipe(delay(500));
   }
+
+    // Un usuario tiene un solo rol activo: este cambio reemplaza al anterior.
+  cambiarRol(id: number, rol: Role): Observable<User> {
+    const indice = this.datos.findIndex((u) => u.id === id);
+    if (indice === -1) return throwError(() => new Error('NO_ENCONTRADO'));
+
+    const actualizado: User = { ...this.datos[indice], rol };
+    this.datos = this.datos.map((u, i) => (i === indice ? actualizado : u));
+    return of({ ...actualizado }).pipe(delay(500));
+  }
 }

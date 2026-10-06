@@ -1,0 +1,126 @@
+@if (cargando()) {
+  <p class="state">Cargando usuario...</p>
+} @else if (usuario(); as u) {
+  <h1 class="title">Asignar rol</h1>
+  <p class="subtitle">Define el único rol activo y los permisos asociados al usuario.</p>
+
+  <div class="layout">
+    <section class="card">
+      <header class="card__head">
+        <span class="avatar">{{ iniciales() }}</span>
+        <div class="card__who">
+          <strong>{{ u.nombre }}</strong>
+          <small>{{ u.correo }}</small>
+        </div>
+        @if (u.activo) {
+          <span class="pill pill--ok"><i></i> Activo</span>
+        } @else {
+          <span class="pill pill--off"><i></i> Desactivado</span>
+        }
+      </header>
+
+      <h2>Selecciona un rol</h2>
+      <p class="card__hint">
+        Solo una opción puede permanecer activa. El rol actual es {{ labels[u.rol] }}.
+      </p>
+
+      <div class="options" role="radiogroup" aria-label="Rol del usuario">
+        @for (r of roles; track r.value) {
+          <label class="option" [class.option--selected]="seleccionado() === r.value">
+            <input
+              type="radio"
+              name="rol"
+              [value]="r.value"
+              [checked]="seleccionado() === r.value"
+              (change)="seleccionar(r.value)"
+            />
+            <span class="option__radio"></span>
+            <span class="option__icon"><app-icon [name]="r.icono" [size]="18" /></span>
+            <span class="option__text">
+              <strong>
+                {{ labels[r.value] }}
+                @if (u.rol === r.value) {
+                  <em class="tag-current">Rol actual</em>
+                }
+              </strong>
+              <small>{{ r.descripcion }}</small>
+            </span>
+            @if (seleccionado() === r.value) {
+              <app-icon name="check" [size]="18" />
+            }
+          </label>
+        }
+      </div>
+
+      <div class="notice">
+        <app-icon name="triangle-alert" [size]="18" />
+        <div>
+          <strong>Aplicación inmediata</strong>
+          @if (hayCambio()) {
+            <p>
+              Al guardar, los permisos del rol {{ labels[seleccionado()!] }} se aplicarán
+              inmediatamente y reemplazarán los permisos de {{ labels[u.rol] }}.
+            </p>
+          } @else {
+            <p>
+              Selecciona un rol distinto al actual para habilitar el cambio. Se aplicará de
+              inmediato, sin que el usuario tenga que volver a iniciar sesión.
+            </p>
+          }
+        </div>
+      </div>
+
+      @if (guardado()) {
+        <p class="success" role="status">
+          <app-icon name="circle-check" [size]="16" />
+          Rol actualizado: {{ u.nombre }} ahora es {{ labels[u.rol] }}.
+        </p>
+      }
+      @if (error()) {
+        <p class="error" role="alert">
+          No pudimos actualizar el rol. Inténtalo de nuevo en unos minutos.
+        </p>
+      }
+
+      <div class="actions">
+        <a class="link" routerLink="/usuarios">{{ guardado() ? 'Volver a usuarios' : 'Cancelar' }}</a>
+        <button type="button" class="btn-primary" (click)="guardar()" [disabled]="guardando() || !hayCambio()">
+          <app-icon name="refresh-cw" [size]="18" />
+          {{ guardando() ? 'Actualizando...' : 'Actualizar rol' }}
+        </button>
+      </div>
+    </section>
+
+    <aside class="side">
+      <section class="side__card">
+        <h3>Resumen del cambio</h3>
+        <span class="side__label">ROL ACTUAL</span>
+        <span class="pill pill--role">{{ labels[u.rol] }}</span>
+
+        <span class="side__arrow"><app-icon name="arrow-down" [size]="16" /></span>
+
+        <span class="side__label">NUEVO ROL</span>
+        @if (hayCambio()) {
+          <span class="pill pill--role">{{ labels[seleccionado()!] }}</span>
+        } @else {
+          <span class="side__none">Sin cambios</span>
+        }
+      </section>
+
+      <section class="side__card">
+        <h3>Permisos principales</h3>
+        <ul class="perms">
+          @for (p of permisos(); track p) {
+            <li><app-icon name="check" [size]="16" /> {{ p }}</li>
+          }
+        </ul>
+      </section>
+    </aside>
+  </div>
+} @else {
+  <h1 class="title">Usuario no encontrado</h1>
+  <p class="subtitle">El usuario que buscas no existe o fue retirado del directorio.</p>
+  <a class="btn-primary" routerLink="/usuarios">
+    <app-icon name="arrow-left" [size]="16" /> Volver a usuarios
+  </a>
+}

@@ -7,4 +7,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   await app.listen(3000);
 }
-bootstrap();
+void bootstrap().catch((error: unknown) => {
+  console.error('No se pudo iniciar la API', error);
+  process.exitCode = 1;
+});

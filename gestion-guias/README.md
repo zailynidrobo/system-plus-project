@@ -57,6 +57,27 @@ $ pnpm run test:e2e
 $ pnpm run test:cov
 ```
 
+## Authentication and authorization
+
+All API routes except `GET /` require a valid Keycloak access token in
+`Authorization: Bearer <token>`. The routes under `/users` additionally require
+the Keycloak realm role `admin`. The API validates JWT signatures using the
+realm's JWKS endpoint and checks both the issuer and audience.
+
+To configure the API:
+
+1. Create a Keycloak realm and configure your client application to obtain access tokens from it.
+2. Add an Audience protocol mapper so the access token's `aud` claim includes the API audience.
+3. Assign the realm role `admin` to administrators who need `/users` access.
+4. Copy `.env.example` to `.env` and set `KEYCLOAK_ISSUER_URL` to the realm issuer URL and
+   `KEYCLOAK_AUDIENCE` to the audience configured in Keycloak.
+5. Start the API. It fails at startup if either Keycloak setting is missing.
+
+The API does not implement the browser login flow: the client application signs in through
+Keycloak and sends the resulting access token to this API. The existing `/users` operations
+manage in-memory application user records; they do not create or update Keycloak identities.
+Manage Keycloak accounts in Keycloak itself.
+
 ## Academic API (HE-02 and HE-03)
 
 The academic endpoints are available under `/academic`. Example workflow:

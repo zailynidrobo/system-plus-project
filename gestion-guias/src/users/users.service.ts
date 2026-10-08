@@ -15,7 +15,7 @@ export class UsersService {
   private users: User[] = [];
 
   private safe(user: User) {
-    const { password, ...rest } = user;
+    const { password: _password, ...rest } = user;
     return rest;
   }
 
@@ -25,7 +25,7 @@ export class UsersService {
     return user;
   }
 
-  async create(dto: CreateUserDto) {                       // HU-01
+  async create(dto: CreateUserDto) { // HU-01
     if (this.users.some((u) => u.email === dto.email)) {
       throw new ConflictException('El correo ya está registrado');
     }
@@ -74,13 +74,13 @@ export class UsersService {
     return this.safe(user);
   }
 
-  deactivate(id: string) {                                 // HU-03
+  deactivate(id: string) { // HU-03
     const user = this.getOrFail(id);
     user.isActive = false;
     return this.safe(user);
   }
 
-  updateRole(id: string, dto: { role: Role }) {             // HU-04
+  updateRole(id: string, dto: { role: Role }) { // HU-04
     const user = this.getOrFail(id);
     user.role = dto.role;
     return this.safe(user);

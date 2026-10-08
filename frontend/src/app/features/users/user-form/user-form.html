@@ -1,0 +1,110 @@
+<h1 class="title">Registrar nuevo usuario</h1>
+<p class="subtitle">Crea el acceso institucional y asigna un único rol activo.</p>
+
+<ol class="stepper">
+  <li class="step step--active"><span>1</span> Datos del usuario</li>
+  <li class="step__line"></li>
+  <li class="step"><span>2</span> Confirmación</li>
+</ol>
+
+<div class="layout">
+  <form class="card" [formGroup]="form" (ngSubmit)="registrar()" novalidate>
+    <h2>Información del usuario</h2>
+    <p class="card__hint">
+      Los campos marcados con * son obligatorios. Usa los datos institucionales vigentes.
+    </p>
+
+    <label for="nombre">Nombre completo *</label>
+    <div class="control" [class.control--error]="mensajeNombre()">
+      <input id="nombre" type="text" formControlName="nombre" autocomplete="off" />
+    </div>
+    @if (mensajeNombre(); as msg) {
+      <small class="error">{{ msg }}</small>
+    } @else {
+      <small class="hint">Escribe nombres y apellidos como aparecen en el registro institucional.</small>
+    }
+
+    <label for="correo">Correo institucional *</label>
+    <div class="control" [class.control--error]="mensajeCorreo()">
+      <app-icon name="mail" [size]="18" />
+      <input id="correo" type="email" formControlName="correo" placeholder="nombre@systemplus.edu.co" autocomplete="off" />
+    </div>
+    @if (mensajeCorreo(); as msg) {
+      <small class="error">{{ msg }}</small>
+    } @else {
+      <small class="hint">Debe ser único y pertenecer al dominio &#64;systemplus.edu.co.</small>
+    }
+
+    <label for="rol">Rol *</label>
+    <div class="control control--select" [class.control--error]="mensajeRol()">
+      <select id="rol" formControlName="rol">
+        <option value="" disabled>Selecciona un rol</option>
+        @for (r of roles; track r.value) {
+          <option [value]="r.value">{{ r.label }}</option>
+        }
+      </select>
+      <app-icon name="chevron-down" [size]="18" />
+    </div>
+    @if (mensajeRol(); as msg) {
+      <small class="error">{{ msg }}</small>
+    } @else {
+      <small class="hint">Solo puede existir un rol activo por usuario. Podrás cambiarlo posteriormente.</small>
+    }
+
+    <div class="notice">
+      <app-icon name="triangle-alert" [size]="18" />
+      <div>
+        <strong>Contraseña inicial protegida</strong>
+        <p>
+          AthenaDev generará una contraseña temporal de forma automática. Nunca se mostrará en texto
+          plano y se almacenará de manera segura. La usuaria deberá renovarla al ingresar.
+        </p>
+      </div>
+    </div>
+
+    @if (errorGeneral()) {
+      <p class="error error--block" role="alert">
+        No pudimos registrar el usuario. Inténtalo de nuevo en unos minutos.
+      </p>
+    }
+
+    <div class="actions">
+      <a class="link" routerLink="/usuarios">Cancelar</a>
+      <div class="actions__right">
+        <button type="button" class="btn-outline" disabled title="Pendiente de confirmar con el equipo">
+          Guardar borrador
+        </button>
+        <button type="submit" class="btn-primary" [disabled]="cargando()">
+          <app-icon name="user-plus" [size]="18" />
+          {{ cargando() ? 'Registrando...' : 'Registrar usuario' }}
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <aside class="side">
+    <section class="side__card">
+      <h3>Antes de registrar</h3>
+      <ul>
+        @for (item of checklist(); track item.titulo) {
+          <li [class.pending]="!item.ok">
+            <app-icon [name]="item.ok ? 'circle-check' : 'circle-help'" [size]="20" />
+            <div>
+              <strong>{{ item.titulo }}</strong>
+              <small>{{ item.detalle }}</small>
+            </div>
+          </li>
+        }
+      </ul>
+    </section>
+
+    <section class="side__info">
+      <app-icon name="building" [size]="20" />
+      <strong>Directorio académico</strong>
+      <p>
+        El nuevo usuario quedará disponible para coordinaciones, asignaciones y trazabilidad
+        institucional.
+      </p>
+    </section>
+  </aside>
+</div>

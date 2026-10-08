@@ -1,0 +1,98 @@
+@if (cargando()) {
+  <p class="state">Cargando usuario...</p>
+} @else if (usuario(); as u) {
+  <h1 class="title">Editar usuario</h1>
+  <p class="subtitle">Actualiza la información personal sin modificar su acceso ni su rol.</p>
+
+  <a class="back" routerLink="/usuarios">
+    <app-icon name="arrow-left" [size]="16" /> Volver al directorio
+  </a>
+
+  <div class="layout">
+    <form class="card" [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+      <header class="card__head">
+        <span class="avatar">{{ iniciales() }}</span>
+        <div class="card__who">
+          <strong>{{ u.nombre }}</strong>
+          <small>Usuario {{ codigo() }}</small>
+        </div>
+        <div class="card__tags">
+          @if (u.activo) {
+            <span class="pill pill--ok"><i></i> Activo</span>
+          } @else {
+            <span class="pill pill--off"><i></i> Desactivado</span>
+          }
+          <span class="pill pill--role">{{ rolVisible() }}</span>
+        </div>
+      </header>
+
+      <label for="nombre">Nombre completo *</label>
+      <div class="control" [class.control--error]="mensajeNombre()">
+        <input id="nombre" type="text" formControlName="nombre" autocomplete="off" />
+      </div>
+      @if (mensajeNombre(); as msg) {
+        <small class="error">{{ msg }}</small>
+      } @else {
+        <small class="hint">Este nombre se mostrará en listados, cursos y reportes.</small>
+      }
+
+      <label for="correo">Correo institucional *</label>
+      <div class="control" [class.control--error]="mensajeCorreo()">
+        <app-icon name="mail" [size]="18" />
+        <input id="correo" type="email" formControlName="correo" autocomplete="off" />
+      </div>
+      @if (mensajeCorreo(); as msg) {
+        <small class="error">{{ msg }}</small>
+      } @else {
+        <small class="hint">Correo único en el directorio institucional.</small>
+      }
+
+      <div class="notice">
+        <app-icon name="info" [size]="18" />
+        <div>
+          <strong>Alcance de esta edición</strong>
+          <p>
+            El rol activo, los permisos y la contraseña permanecen sin cambios. Para cambiar el rol
+            usa "Roles y permisos".
+          </p>
+          <a class="notice__link" [routerLink]="['/usuarios', u.id, 'rol']">Cambiar rol de este usuario</a>
+        </div>
+      </div>
+
+      @if (guardado()) {
+        <p class="success" role="status">
+          <app-icon name="circle-check" [size]="16" /> Cambios guardados correctamente.
+        </p>
+      }
+      @if (errorGeneral()) {
+        <p class="error error--block" role="alert">
+          No pudimos guardar los cambios. Inténtalo de nuevo en unos minutos.
+        </p>
+      }
+
+      <div class="actions">
+        <button type="button" class="link" (click)="descartar()" [disabled]="!hayCambios()">
+          Descartar cambios
+        </button>
+        <button type="submit" class="btn-primary" [disabled]="guardando() || !hayCambios()">
+          <app-icon name="save" [size]="18" />
+          {{ guardando() ? 'Guardando...' : 'Guardar cambios' }}
+        </button>
+      </div>
+    </form>
+
+    <aside class="side">
+      <section class="side__info">
+        <app-icon name="shield-check" [size]="20" />
+        <strong>Datos protegidos</strong>
+        <p>Cada cambio queda registrado para auditoría institucional.</p>
+      </section>
+    </aside>
+  </div>
+} @else {
+  <h1 class="title">Usuario no encontrado</h1>
+  <p class="subtitle">El usuario que buscas no existe o fue retirado del directorio.</p>
+  <a class="back" routerLink="/usuarios">
+    <app-icon name="arrow-left" [size]="16" /> Volver al directorio
+  </a>
+}

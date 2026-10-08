@@ -1,0 +1,54 @@
+@if (usuario) {
+  <h1 class="title">Registro completado</h1>
+  <p class="subtitle">El acceso institucional fue creado correctamente.</p>
+
+  <ol class="stepper">
+    <li class="step step--active"><span>1</span> Datos del usuario</li>
+    <li class="step__line"></li>
+    <li class="step step--active"><span>2</span> Confirmación</li>
+  </ol>
+
+  <section class="card">
+    <span class="badge-ok"><app-icon name="circle-check" [size]="34" /></span>
+    <h2>Usuario registrado exitosamente</h2>
+    <p class="card__text">
+      {{ usuario.nombre }} ya forma parte del directorio institucional de System Plus Piendamó.
+    </p>
+
+    <div class="summary">
+      <span class="avatar">{{ iniciales }}</span>
+      <div class="summary__info">
+        <strong>{{ usuario.nombre }}</strong>
+        <small>{{ usuario.correo }}</small>
+      </div>
+      <div class="summary__tags">
+        <span class="pill pill--role">{{ rol }}</span>
+        <span class="pill pill--ok"><i></i> Activo</span>
+      </div>
+    </div>
+
+    <div class="notice">
+      <app-icon name="shield-check" [size]="20" />
+      <div>
+        <strong>Credencial inicial generada de forma segura</strong>
+        <p>
+          La contraseña temporal no es visible en texto plano. Se enviaron instrucciones de acceso
+          al correo institucional.
+        </p>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="btn-outline" disabled title="Pendiente: no hay pantalla de perfil diseñada">
+        <app-icon name="user" [size]="16" /> Ver perfil
+      </button>
+      <a class="btn-primary" routerLink="/usuarios">
+        <app-icon name="arrow-left" [size]="16" /> Volver a usuarios
+      </a>
+    </div>
+  </section>
+
+  <p class="footnote">
+    <i></i> Registro {{ codigo }} · Creado por {{ creadoPor }} · Hoy, {{ hora }}
+  </p>
+}

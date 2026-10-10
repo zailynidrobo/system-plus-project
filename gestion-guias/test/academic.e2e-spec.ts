@@ -4,6 +4,24 @@ import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { AcademicModule } from '../src/academic/academic.module.js';
 
+const parseBinaryResponse = (
+  response: NodeJS.ReadableStream & {
+    setEncoding: (encoding: BufferEncoding) => NodeJS.ReadableStream;
+    on: (
+      event: string,
+      listener: (chunk?: string) => void,
+    ) => NodeJS.ReadableStream;
+  },
+  callback: (error: Error | null, body?: Buffer) => void,
+) => {
+  let output = '';
+  response.setEncoding('binary');
+  response.on('data', (chunk) => {
+    output += chunk;
+  });
+  response.on('end', () => callback(null, Buffer.from(output, 'binary')));
+};
+
 describe('Academic API (e2e)', () => {
   let app: INestApplication<App>;
 
@@ -14,6 +32,17 @@ describe('Academic API (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+    app.use((request, _response, next) => {
+      const role = request.header('x-test-role') ?? 'coordinador';
+      const userId = request.header('x-test-user') ?? 'test-coordinator';
+      Object.assign(request, {
+        user: {
+          sub: userId,
+          realm_access: { roles: [role] },
+        },
+      });
+      next();
+    });
     await app.init();
   });
 
@@ -52,10 +81,27 @@ describe('Academic API (e2e)', () => {
       .expect(200);
 
     await request(app.getHttpServer())
-      .put(`/academic/modules/${moduleId}/competencies/${competencyId}/guide-fields`)
+      .put(
+        `/academic/modules/${moduleId}/competencies/${competencyId}/guide-fields`,
+      )
       .send({
         fields: [
           { key: 'objective', label: 'Objetivo', type: 'text', required: true },
+        ],
+      })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .put(`/academic/modules/${moduleId}/teacher-guide-fields`)
+      .send({
+        fields: [
+          {
+            key: 'lessonPlan',
+            label: 'Plan de clases',
+            type: 'textarea',
+            required: false,
+            section: 'Planeación',
+          },
         ],
       })
       .expect(200);
@@ -85,6 +131,67 @@ describe('Academic API (e2e)', () => {
         expect(body.status).toBe('published');
         expect(body.publishedAt).toBeDefined();
       });
+    await request(app.getHttpServer())
+      .get(`/academic/guides/${guideId}/export?format=docx`)
+      .buffer(true)
+      .parse(parseBinaryResponse)
+      .expect(200)
+      .expect(
+        'Content-Type',
+        /application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document/,
+      )
+      .expect(({ body }) => {
+        expect(Buffer.isBuffer(body)).toBe(true);
+        expect(body.subarray(0, 2).toString()).toBe('PK');
+      });
+    await request(app.getHttpServer())
+      .get(`/academic/guides/${guideId}/export?format=pdf`)
+      .buffer(true)
+      .parse(parseBinaryResponse)
+      .expect(200)
+      .expect('Content-Type', /application\/pdf/)
+      .expect(({ body }) => {
+        expect(Buffer.isBuffer(body)).toBe(true);
+        expect(body.subarray(0, 5).toString()).toBe('%PDF-');
+      });
+    await request(app.getHttpServer())
+      .get(`/academic/guides/${guideId}/export?format=csv`)
+      .expect(400);
+    await request(app.getHttpServer())
+      .put(`/academic/modules/${moduleId}/teachers/teacher-one`)
+      .expect(200);
+    const personalizedVersionResponse = await request(app.getHttpServer())
+      .post(`/academic/guides/${guideId}/personalized-versions`)
+      .set('x-test-role', 'docente')
+      .set('x-test-user', 'teacher-one')
+      .expect(201);
+    const personalizedVersionId = personalizedVersionResponse.body.id as string;
+    await request(app.getHttpServer())
+      .patch(`/academic/personalized-versions/${personalizedVersionId}`)
+      .set('x-test-role', 'docente')
+      .set('x-test-user', 'teacher-one')
+      .send({ content: { lessonPlan: 'Clase 1: práctica' } })
+      .expect(200);
+    await request(app.getHttpServer())
+      .get(
+        `/academic/personalized-versions/${personalizedVersionId}/export?format=pdf`,
+      )
+      .set('x-test-role', 'docente')
+      .set('x-test-user', 'teacher-one')
+      .buffer(true)
+      .parse(parseBinaryResponse)
+      .expect(200)
+      .expect('Content-Type', /application\/pdf/)
+      .expect(({ body }) => {
+        expect(Buffer.isBuffer(body)).toBe(true);
+        expect(body.subarray(0, 5).toString()).toBe('%PDF-');
+      });
+    await request(app.getHttpServer())
+      .patch(`/academic/personalized-versions/${personalizedVersionId}`)
+      .set('x-test-role', 'docente')
+      .set('x-test-user', 'teacher-two')
+      .send({ content: { lessonPlan: 'Sin permiso' } })
+      .expect(403);
     await request(app.getHttpServer())
       .patch(`/academic/guides/${guideId}`)
       .send({ title: 'Edición no permitida' })

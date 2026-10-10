@@ -78,18 +78,41 @@ Keycloak and sends the resulting access token to this API. The existing `/users`
 manage in-memory application user records; they do not create or update Keycloak identities.
 Manage Keycloak accounts in Keycloak itself.
 
-## Academic API (HE-02 and HE-03)
+## Academic API (HE-02, HE-03 and HE-04)
 
-The academic endpoints are available under `/academic`. Example workflow:
+The academic endpoints are available under `/academic`. HE-03 guide administration and
+configurable forms require the Keycloak realm role `coordinador`. HE-04 consultation and
+personalized versions require `docente`. A teacher's module assignments are keyed by their
+Keycloak `sub`; coordinators manage assignments using the routes below.
 
-1. `POST /academic/modules` with `{ "name": "Matemáticas" }`.
-2. `POST /academic/competencies` with `{ "name": "Álgebra" }`.
-3. `POST /academic/modules/:moduleId/competencies/:competencyId` to associate them.
-4. Configure guide fields with `PUT /academic/modules/:moduleId/guide-fields`, or use the competency-specific route:
+1. Create module and competency records, then associate them as described above.
+2. Assign a teacher with `PUT /academic/modules/:moduleId/teachers/:teacherId`.
+3. Configure module form fields with `PUT /academic/modules/:moduleId/guide-fields`, or use
    `PUT /academic/modules/:moduleId/competencies/:competencyId/guide-fields`.
-5. Create a draft using `POST /academic/guides`, edit it with `PATCH /academic/guides/:id`, and publish it with `PATCH /academic/guides/:id/publish`.
+4. As coordinator, create a draft using `POST /academic/guides`, edit it with
+   `PATCH /academic/guides/:id`, and publish it with `PATCH /academic/guides/:id/publish`.
+5. As an assigned teacher, list published guides with `GET /academic/guides?moduleId=:moduleId`,
+   then create a personal copy with `POST /academic/guides/:guideId/personalized-versions`.
+6. Read and progressively edit only your copies with
+   `GET /academic/personalized-versions`, `GET /academic/personalized-versions/:id`, and
+   `PATCH /academic/personalized-versions/:id` using `{ "content": { "fieldKey": "value" } }`.
+7. Configure the teacher-form fields independently with
+   `PUT /academic/modules/:moduleId/teacher-guide-fields`. Form fields accept `section` and
+   `description` so exports remain grouped into the configurable document sections.
+8. Download the current guide or teacher version in either format:
+   `GET /academic/guides/:id/export?format=docx|pdf` and
+   `GET /academic/personalized-versions/:id/export?format=docx|pdf`.
 
 Additional module and competency read/update/deactivation/deletion operations are available under `/academic/modules` and `/academic/competencies`. Module deactivation retains its competencies and existing guide snapshots. Competency deletion removes its module associations and field configuration, while existing guides retain their copied names and form definitions. Published guides cannot be edited. Data is stored in memory and is cleared when the server restarts.
+
+Guide definitions keep a snapshot of their configured field definitions and entered values,
+so later form changes do not alter existing guides. Personalized versions similarly snapshot
+the published guide's fields and content; editing a copy never writes to its base guide.
+For database persistence, store these snapshots/values as JSONB alongside foreign keys for
+guide, module, and teacher, with an assignment join table between modules and teachers.
+DOCX and PDF exports render the active dynamic fields and values in their configured sections;
+the DOCX source templates describe the A/B structure, while the live field configuration
+determines each generated document's sections and fields.
 
 ## Deployment
 

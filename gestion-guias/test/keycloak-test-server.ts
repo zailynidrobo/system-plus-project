@@ -37,7 +37,7 @@ export async function startKeycloakTestServer() {
   return {
     issuer,
     audience,
-    createToken(roles: string[] = []) {
+    createToken(roles: string[] = [], claims: Record<string, unknown> = {}) {
       const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url');
       const unsignedToken = [
         encode({ alg: 'RS256', typ: 'JWT', kid: keyId }),
@@ -48,6 +48,7 @@ export async function startKeycloakTestServer() {
           iat: Math.floor(Date.now() / 1000),
           exp: Math.floor(Date.now() / 1000) + 300,
           realm_access: { roles },
+          ...claims,
         }),
       ].join('.');
       const signer = createSign('RSA-SHA256');

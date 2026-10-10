@@ -78,7 +78,59 @@ Keycloak and sends the resulting access token to this API. The existing `/users`
 manage in-memory application user records; they do not create or update Keycloak identities.
 Manage Keycloak accounts in Keycloak itself.
 
-## Academic API (HE-02 and HE-03)
+## HE-02 — Gestión del programa académico (módulos y competencias)
+
+Implementado en [src/academic-program](src/academic-program) (componente "Programa, módulos y competencias" del diagrama de componentes) con PostgreSQL + TypeORM.
+
+### Configuración
+
+1. Copia `.env.example` como `.env` y ajusta Keycloak y las credenciales de tu PostgreSQL local. Crea la base vacía (`gestion_guias`); con `DB_SYNCHRONIZE=true` las tablas se crean solas al arrancar.
+2. Para las pruebas e2e copia `.env.example` como `.env.test` con una base distinta cuyo nombre termine en `_test` (las pruebas la reinician).
+3. Al arrancar se crea el programa **Técnico en Sistemas · Sede Piendamó** (código `TS`).
+
+```powershell
+pnpm.cmd install
+pnpm.cmd run start:dev
+pnpm.cmd run test        # unitarias
+pnpm.cmd run test:e2e    # requiere .env.test
+```
+
+### Autenticación
+
+Usa la autenticación con Keycloak descrita arriba. Lecturas: cualquier usuario con token válido. Escrituras: rol de realm `coordinador`. Para la auditoría ("Creado por …") se toma `name`, `preferred_username` o `email` del token.
+
+### Endpoints
+
+| HU | Método y ruta | Descripción |
+| --- | --- | --- |
+| — | `GET /programs` | Programas activos |
+| — | `GET /programs/:programId` | Resumen: plan vigente, módulos por estado, guías |
+| HU-01 | `POST /programs/:programId/modules` | `{ name, description, draft? }` → código `TS-MOD-NN`. Nombre duplicado (sin distinguir mayúsculas ni espacios) → 409 `MODULE_NAME_DUPLICATED` con `existingModule` |
+| HU-01 | `GET /programs/:programId/modules/name-availability?name=&excludeModuleId=` | Validación en vivo del nombre |
+| — | `GET /programs/:programId/modules?search=&status=&sort=name\|code\|updatedAt&order=&availableForGuides=true` | Listado con conteo de competencias y guías |
+| — | `GET /modules/:moduleId` | Detalle con competencias activas, resumen y auditoría |
+| HU-02 | `PATCH /modules/:moduleId` | `{ name?, description? }`; el código y las competencias no cambian |
+| HU-01 | `PATCH /modules/:moduleId/register` | Pasa un borrador a activo (exige descripción) |
+| HU-03 | `PATCH /modules/:moduleId/deactivate` | `{ reason? }`; sin borrado físico, conserva competencias y guías |
+| HU-03 | `PATCH /modules/:moduleId/reactivate` | Revierte la inhabilitación |
+| HU-04 | `POST /modules/:moduleId/competencies` | `{ text }` → código `COMP-<SIGLA>-NN` (p. ej. `COMP-POO-05`) |
+| HU-04 | `GET /modules/:moduleId/competencies/next-code` | Vista previa del próximo código |
+| — | `GET /modules/:moduleId/competencies`, `GET /competencies/:id` | Consulta |
+| HU-05 | `PATCH /competencies/:id` | `{ text }`; crea una nueva versión y devuelve `previousText` |
+| HU-06 | `DELETE /competencies/:id` | Borrado lógico; el código nunca se reutiliza |
+| — | `GET /competencies/:id/history`, `GET /competencies/:id/versions/:version` | Trazabilidad (incluye competencias eliminadas) |
+
+### Reglas de negocio
+
+- Solo los módulos **activos** admiten competencias; los borradores e inhabilitados responden 409.
+- Un módulo está disponible para nuevas guías (`availableForGuides`) si está activo y tiene al menos una competencia activa. `CurricularModulesService.assertAvailableForGuides()` está exportado para HE-03.
+- Las guías publicadas deben guardar `competencyId` + `version`; `CompetenciesService.findVersion()` devuelve esa redacción aunque la competencia se haya editado o eliminado después.
+- Los conteos de guías vienen de `GuideStatsProvider`. Hasta que HE-03 persista sus guías se usa `EmptyGuideStatsProvider` (todo en 0); basta con registrar la implementación real en `AcademicProgramModule`.
+
+## Academic API (legacy, en memoria)
+
+> Las rutas `/academic/modules` y `/academic/competencies` son la versión preliminar en memoria y quedan reemplazadas por HE-02 (arriba). Se mantienen mientras las guías (`/academic/guides`) dependan de ellas.
+
 
 The academic endpoints are available under `/academic`. Example workflow:
 

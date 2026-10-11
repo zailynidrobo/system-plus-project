@@ -15,6 +15,13 @@ export class TokenStorage {
     store.setItem(USER_KEY, JSON.stringify(user));
   }
 
+  // Actualiza los datos del usuario (p. ej. su rol) en el mismo almacenamiento de la sesión
+  updateUser(user: User): void {
+    for (const store of [localStorage, sessionStorage]) {
+      if (store.getItem(TOKEN_KEY)) store.setItem(USER_KEY, JSON.stringify(user));
+    }
+  }
+
   getToken(): string | null {
     return localStorage.getItem(TOKEN_KEY) ?? sessionStorage.getItem(TOKEN_KEY);
   }

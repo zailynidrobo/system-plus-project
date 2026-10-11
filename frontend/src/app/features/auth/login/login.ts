@@ -3,6 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Auth } from '../../../core/auth/auth';
+import { homeForRole } from '../../../core/auth/role-home';
 import { Icon } from '../../../shared/ui/icon/icon';
 
 @Component({
@@ -63,7 +64,7 @@ export class Login {
     this.cargando.set(true);
 
     this.auth.login({ correo, contrasena }, recordar).subscribe({
-      next: () => this.router.navigate(['/usuarios']),
+      next: (usuario) => this.router.navigateByUrl(homeForRole(usuario.rol)),
       error: () => {
         // Mensaje genérico a propósito: no revelar cuál dato falló (HU-05 CA-02)
         this.credencialesInvalidas.set(true);

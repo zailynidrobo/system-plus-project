@@ -1,6 +1,7 @@
+// Medidas y colores tomados de Figma (Navegación lateral y Barra superior de HE-01 a HE-04)
 .shell {
   display: grid;
-  grid-template-columns: 248px 1fr;
+  grid-template-columns: 248px minmax(0, 1fr);
   min-height: 100vh;
 }
 
@@ -11,95 +12,99 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 20px 20px;
+  gap: 28px;
+  padding: 22px 20px 20px;
   background: var(--color-navy);
   color: #fff;
+  overflow-y: auto;
 
-  &__logo {
+  &__box {
     display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: 10px;
-    margin-bottom: 28px;
-
-    strong { display: block; font-size: 15px; font-weight: 500; }
-    small { font-size: 11px; opacity: 0.7; }
-  }
-
-  &__section {
-    margin: 0 0 8px;
-    padding: 0 12px;
-    font-size: 11px;
-    letter-spacing: 0.04em;
-    opacity: 0.6;
-  }
-
-  &__secure {
-    margin: 24px 0 16px;
     padding: 14px;
     border-radius: 10px;
-    background: rgba(255, 255, 255, 0.07);
+    background: rgba(255, 255, 255, 0.05);
 
-    small { font-size: 10px; letter-spacing: 0.04em; opacity: 0.6; }
-    p { margin: 6px 0 0; font-size: 13px; line-height: 1.4; opacity: 0.85; }
+    small { font-size: 10px; text-transform: uppercase; color: rgba(255, 255, 255, 0.49); }
+    p { margin: 0; font-size: 12px; line-height: 1.45; color: rgba(255, 255, 255, 0.78); }
   }
 
   &__help {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 0 12px;
-    font-size: 13px;
-    opacity: 0.8;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.66);
+
+    &--bottom { margin-top: auto; }
   }
 }
 
-.logo-box {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  background: #fff;
-  color: var(--color-primary);
-  font-weight: 700;
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  &__logo {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: #fff;
+    color: var(--color-primary);
+    font-size: 17px;
+    font-weight: 800;
+  }
+
+  strong { display: block; font-size: 15px; font-weight: 400; white-space: nowrap; }
+  small { display: block; margin-top: 1px; font-size: 11px; font-weight: 500; color: rgba(255, 255, 255, 0.72); white-space: nowrap; }
 }
 
-.nav {
+.menu {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+
+  &__section {
+    margin: 0;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.51);
+  }
 
   &__item {
-    position: relative;
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px 14px;
-    border-radius: 8px;
-    color: #fff;
+    gap: 11px;
+    height: 42px;
+    padding: 0 12px;
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.72);
     font-size: 14px;
     text-decoration: none;
-    opacity: 0.85;
+    white-space: nowrap;
 
-    &:hover { background: rgba(255, 255, 255, 0.06); opacity: 1; }
+    &:hover { background: rgba(255, 255, 255, 0.05); }
 
     &--active {
-      background: rgba(255, 255, 255, 0.1);
-      opacity: 1;
+      background: rgba(255, 255, 255, 0.09);
+      color: #fff;
 
-      &::before {
-        content: '';
-        position: absolute;
-        left: -20px;
-        top: 8px;
-        bottom: 8px;
-        width: 4px;
-        border-radius: 0 4px 4px 0;
-        background: var(--color-gold);
-      }
+      .menu__accent { background: var(--color-gold-accent); }
     }
 
-    &--disabled { cursor: not-allowed; opacity: 0.5; }
+    &--disabled { cursor: not-allowed; &:hover { background: transparent; } }
+  }
+
+  &__accent {
+    flex-shrink: 0;
+    width: 3px;
+    height: 20px;
+    border-radius: 2px;
   }
 }
 
@@ -111,60 +116,103 @@
   justify-content: space-between;
   align-items: center;
   height: 72px;
-  padding: 0 32px;
+  padding: 0 28px;
   background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-figma);
 
-  &__right { display: flex; align-items: center; gap: 14px; }
+  &__right { display: flex; align-items: center; gap: 12px; }
 }
 
 .crumbs {
-  font-size: 13px;
-  color: var(--color-muted);
+  font-size: 12px;
+  color: var(--color-muted-figma);
 
-  span { margin: 0 6px; }
+  span { margin: 0 6px; color: var(--color-border-figma); }
   strong { font-weight: 400; color: var(--color-primary); }
 }
 
 .icon-btn {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border: 0;
   border-radius: 50%;
-  background: #f1f2f8;
-  color: var(--color-muted);
+  background: var(--color-surface-2);
+  color: var(--color-muted-figma);
   cursor: pointer;
 
-  &:hover { background: #e6e8f3; }
+  &:hover { background: #eeeff6; }
+}
+
+.user-menu {
+  position: relative;
+
+  &__backdrop { position: fixed; inset: 0; z-index: 10; }
+
+  &__panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 11;
+    min-width: 180px;
+    padding: 6px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border-figma);
+    border-radius: 10px;
+    box-shadow: 0 8px 28px rgba(37, 36, 81, 0.12);
+
+    button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 10px 12px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--color-text-figma);
+      font-size: 13px;
+      text-align: left;
+      cursor: pointer;
+
+      &:hover { background: var(--color-surface-2); }
+    }
+  }
 }
 
 .user {
   display: flex;
   align-items: center;
   gap: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-muted-figma);
+  cursor: pointer;
 
   &__info {
     display: flex;
     flex-direction: column;
-    line-height: 1.25;
+    gap: 1px;
+    text-align: left;
 
-    strong { font-size: 13px; font-weight: 500; }
-    small { font-size: 11px; color: var(--color-muted); }
+    strong { font-size: 12px; font-weight: 400; color: var(--color-text-figma); }
+    small { font-size: 10px; color: var(--color-muted-figma); }
   }
 }
 
 .avatar {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  background: #f4e4a8;
+  background: var(--color-avatar);
   color: var(--color-primary);
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 12px;
+
+  &--docente { background: var(--color-chip); }
 }
 
-.content { flex: 1; padding: 32px; }
+.content { flex: 1; padding: 28px 32px; }

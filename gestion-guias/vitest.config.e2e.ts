@@ -7,5 +7,8 @@ export default defineConfig({
     globals: true,
     root: './',
     include: ['**/*.e2e-spec.ts'],
+    // Las pruebas e2e comparten la misma base de datos: se ejecutan en serie.
+    fileParallelism: false,
+    hookTimeout: 30000,
   },
 });

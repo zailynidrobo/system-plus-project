@@ -1,6 +1,7 @@
-import { IsEmail, IsOptional, IsString } from 'class-validator';
+import { IsEnum } from 'class-validator';
+import { Role } from '../entities/user.entity.js';
 
-export class UpdateUserDto {
-  @IsOptional() @IsString() name?: string;
-  @IsOptional() @IsEmail() email?: string;
+export class UpdateRoleDto {
+  @IsEnum(Role)
+  role: Role;
 }

@@ -11,7 +11,10 @@ import {
   Query,
   Req,
   Res,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { Roles } from '../auth/roles.decorator.js';
 import { KeycloakJwtPayload } from '../auth/keycloak.strategy.js';
@@ -163,6 +166,59 @@ export class AcademicController {
     );
   }
 
+  @Post('guides/:id/support-materials')
+  @Roles('coordinador')
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }),
+  )
+  addGuideSupportMaterial(
+    @Param('id') id: string,
+    @UploadedFile()
+    file:
+      | {
+          originalname: string;
+          mimetype: string;
+          buffer: Buffer;
+          size: number;
+        }
+      | undefined,
+  ) {
+    if (!file)
+      throw new BadRequestException('Adjunta un archivo en el campo file');
+    return this.academicService.addGuideSupportMaterial(id, file);
+  }
+
+  @Get('guides/:id/support-materials')
+  @Roles('coordinador', 'docente')
+  findGuideSupportMaterials(
+    @Param('id') id: string,
+    @Req() request: { user: KeycloakJwtPayload },
+  ) {
+    return this.academicService.findGuideSupportMaterialsForUser(
+      id,
+      request.user.sub,
+      request.user.realm_access?.roles ?? [],
+    );
+  }
+
+  @Get('guides/:id/support-materials/:materialId/download')
+  @Roles('coordinador', 'docente')
+  async downloadGuideSupportMaterial(
+    @Param('id') id: string,
+    @Param('materialId') materialId: string,
+    @Req() request: { user: KeycloakJwtPayload },
+    @Res() response: Response,
+  ) {
+    const material = await this.academicService.getGuideSupportMaterialForUser(
+      id,
+      materialId,
+      request.user.sub,
+      request.user.realm_access?.roles ?? [],
+    );
+    response.setHeader('Content-Type', material.contentType);
+    response.attachment(material.fileName).send(material.data);
+  }
+
   @Get('guides/:id/export')
   @Roles('coordinador', 'docente')
   async exportGuide(
@@ -171,12 +227,12 @@ export class AcademicController {
     @Req() request: { user: KeycloakJwtPayload },
     @Res() response: Response,
   ) {
-    this.academicService.findGuideForUser(
+    await this.academicService.findGuideForUser(
       id,
       request.user.sub,
       request.user.realm_access?.roles ?? [],
     );
-    const data = this.academicService.getGuideDocumentData(id);
+    const data = await this.academicService.getGuideDocumentData(id);
     const file = await this.exportDocument(data, format);
     const extension = this.documentExtension(format);
     response.setHeader('Content-Type', this.documentContentType(extension));
@@ -257,7 +313,7 @@ export class AcademicController {
     @Req() request: { user: KeycloakJwtPayload },
     @Res() response: Response,
   ) {
-    const data = this.academicService.getPersonalizedVersionDocumentData(
+    const data = await this.academicService.getPersonalizedVersionDocumentData(
       id,
       request.user.sub,
     );
@@ -286,7 +342,7 @@ export class AcademicController {
   }
 
   private exportDocument(
-    data: ReturnType<AcademicService['getGuideDocumentData']>,
+    data: Awaited<ReturnType<AcademicService['getGuideDocumentData']>>,
     format: string,
   ) {
     if (format === 'docx') return this.documentExportService.toDocx(data);

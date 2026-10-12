@@ -16,6 +16,9 @@
             <a class="menu__item" [routerLink]="item.route" routerLinkActive="menu__item--active">
               <i class="menu__accent"></i>
               <app-icon [name]="item.icon" [size]="17" /> {{ item.label }}
+              @if (item.badge && pendientesSugerencias()) {
+                <span class="menu__badge" [attr.aria-label]="pendientesSugerencias() + ' pendientes'">{{ pendientesSugerencias() }}</span>
+              }
             </a>
           } @else {
             <span class="menu__item menu__item--disabled" title="Próximamente" aria-disabled="true">
@@ -40,7 +43,12 @@
   <div class="main">
     <header class="topbar">
       <div class="crumbs">
-        AthenaDev <span>/</span> <strong>{{ titulo() }}</strong>
+        AthenaDev <span>/</span>
+        @if (subtitulo(); as sub) {
+          {{ titulo() }} <span>/</span> <strong>{{ sub }}</strong>
+        } @else {
+          <strong>{{ titulo() }}</strong>
+        }
       </div>
 
       <div class="topbar__right">

@@ -1,0 +1,137 @@
+@if (cargando()) {
+  <p class="ui-state">Cargando módulo...</p>
+} @else if (modulo(); as m) {
+  <header class="ui-page-head">
+    <div>
+      <h1>Inhabilitar módulo</h1>
+      <p>Retira el módulo de nuevas guías sin eliminar su historial académico.</p>
+    </div>
+  </header>
+
+  @if (m.status !== 'active' && !hecho()) {
+    <div class="ui-notice ui-notice--info">
+      <app-icon name="info" [size]="18" />
+      <div>
+        <strong>Este módulo no está activo</strong>
+        <p>Solo los módulos activos se pueden inhabilitar.</p>
+      </div>
+    </div>
+    <p><a class="ui-btn ui-btn--primary" [routerLink]="['/modulos', m.id]">Ver módulo</a></p>
+  } @else {
+    <div class="ui-layout ui-layout--wide-side">
+      <section class="ui-card">
+        @if (!hecho()) {
+          <div class="ui-confirm-head">
+            <span class="ui-circle ui-circle--danger"><app-icon name="book-x" [size]="23" /></span>
+            <div>
+              <h2>¿Inhabilitar “{{ m.name }}”?</h2>
+              <p>El módulo dejará de estar disponible para crear nuevas guías de aprendizaje.</p>
+            </div>
+          </div>
+        } @else {
+          <div class="ui-confirm-head">
+            <span class="ui-circle ui-circle--ok"><app-icon name="circle-check" [size]="23" /></span>
+            <div>
+              <h2>Módulo inhabilitado</h2>
+              <p>“{{ m.name }}” ya no está disponible para nuevas guías.</p>
+            </div>
+          </div>
+        }
+
+        <div class="ui-entity">
+          <span class="ui-circle ui-circle--gold ui-circle--sm"><app-icon [name]="icono(m.competencyPrefix)" [size]="19" /></span>
+          <div class="ui-entity__info">
+            <strong>{{ m.name }}</strong>
+            <span>{{ m.code }} · {{ m.competenciesCount }} competencias asociadas</span>
+          </div>
+          <span class="ui-pill">{{ m.guidesCount }} guías existentes</span>
+          @if (m.status === 'active') {
+            <span class="ui-pill ui-pill--ok"><i></i> Activo</span>
+          } @else {
+            <span class="ui-pill ui-pill--off"><i></i> Inhabilitado</span>
+          }
+        </div>
+
+        @if (!hecho()) {
+          <div class="ui-effects">
+            <strong>Al confirmar:</strong>
+            <div class="ui-effect">
+              <span class="ui-tile ui-tile--xs ui-tile--danger"><app-icon name="file-x" [size]="14" /></span>
+              No podrá seleccionarse en la creación de nuevas guías.
+            </div>
+            <div class="ui-effect">
+              <span class="ui-tile ui-tile--xs ui-tile--ok"><app-icon name="archive" [size]="14" /></span>
+              Las {{ m.guidesCount }} guías existentes seguirán visibles y consultables.
+            </div>
+            <div class="ui-effect">
+              <span class="ui-tile ui-tile--xs ui-tile--ok"><app-icon name="history" [size]="14" /></span>
+              Competencias, publicaciones y auditoría se conservarán.
+            </div>
+          </div>
+
+          <div class="ui-field">
+            <label for="motivo">Motivo (opcional)</label>
+            <div class="ui-control">
+              <textarea id="motivo" rows="2" [(ngModel)]="motivo" placeholder="Ej.: el módulo se reemplaza en el nuevo plan curricular"></textarea>
+            </div>
+          </div>
+
+          <div class="ui-notice ui-notice--danger">
+            <app-icon name="circle-alert" [size]="18" />
+            <div>
+              <strong>No se realizará borrado físico</strong>
+              <p>La inhabilitación es reversible. Ninguna guía publicada ni evidencia académica será eliminada.</p>
+            </div>
+          </div>
+
+          @if (error()) {
+            <p class="ui-help ui-help--error" role="alert">No pudimos inhabilitar el módulo. Inténtalo de nuevo en unos minutos.</p>
+          }
+
+          <div class="ui-actions">
+            <a class="ui-btn" [routerLink]="['/modulos', m.id]">Cancelar</a>
+            <button type="button" class="ui-btn ui-btn--danger" (click)="confirmar()" [disabled]="procesando()">
+              <app-icon name="book-x" [size]="16" /> {{ procesando() ? 'Inhabilitando…' : 'Sí, inhabilitar módulo' }}
+            </button>
+          </div>
+        } @else {
+          <div class="ui-actions">
+            <a class="ui-btn ui-btn--outline" [routerLink]="['/modulos', m.id]"><app-icon name="eye" [size]="16" /> Ver módulo</a>
+            <a class="ui-btn ui-btn--primary" routerLink="/modulos"><app-icon name="arrow-left" [size]="16" /> Volver al programa</a>
+          </div>
+        }
+      </section>
+
+      <aside class="ui-side">
+        <section class="ui-result">
+          <span class="ui-pill ui-pill--ok ui-self-start">{{ hecho() ? 'Completado' : 'Después de confirmar' }}</span>
+          <span class="ui-circle ui-circle--ok"><app-icon name="circle-check" [size]="23" /></span>
+          <div>
+            <h4>Módulo inhabilitado</h4>
+            <p>“{{ m.name }}” ya no está disponible para nuevas guías.</p>
+          </div>
+          <div class="ui-separator"></div>
+          <div class="ui-kv">
+            <span>Estado del módulo</span>
+            <span class="ui-pill ui-pill--off"><i></i> Inhabilitado</span>
+          </div>
+          <div class="ui-effect">
+            <app-icon name="archive-restore" [size]="17" />
+            {{ m.guidesCount }} guías existentes y {{ m.competenciesCount }} competencias conservadas.
+          </div>
+        </section>
+
+        <div class="ui-notice">
+          <app-icon name="scroll" [size]="18" />
+          <div>
+            <strong>Conservación histórica</strong>
+            <p>Las guías publicadas mantienen su módulo, contenido, autores y fechas originales.</p>
+          </div>
+        </div>
+      </aside>
+    </div>
+  }
+} @else {
+  <p class="ui-state">El módulo que buscas no existe.</p>
+  <a class="ui-btn ui-btn--primary" routerLink="/modulos"><app-icon name="arrow-left" [size]="16" /> Volver al programa</a>
+}

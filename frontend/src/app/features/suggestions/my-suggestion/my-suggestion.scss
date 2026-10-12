@@ -1,0 +1,36 @@
+// Tarjeta centrada de 600 px (Figma 5003:412)
+.tarjeta {
+  align-items: center;
+  gap: 4px;
+  width: min(600px, 100%);
+  padding: 30px 34px;
+  text-align: center;
+
+  h2 { margin: 10px 0 0; font-size: 21px !important; font-weight: 500 !important; color: var(--color-primary) !important; }
+}
+
+.texto { max-width: 440px; margin: 0 0 14px; font-size: 13px; line-height: 1.45; color: var(--color-muted-figma); }
+
+.ancho { width: 100%; text-align: left; }
+.izquierda { margin-top: 10px; }
+.flex { flex: 1; min-width: 0; }
+
+.ui-flow { margin-top: 12px; }
+.ui-flow .ok { color: var(--color-success-figma); }
+.ui-flow .off { color: var(--color-danger-figma); }
+.ui-actions { margin-top: 12px; }
+
+.registro {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin: 18px 0 0;
+  font-size: 11px;
+  color: #8a8fa3;
+}
+
+.ui-options a { text-decoration: none; }
+.estado-Pendiente { color: #9a7b33 !important; }
+.estado-Aprobada { color: var(--color-success-figma) !important; }
+.estado-Rechazada { color: var(--color-danger-figma) !important; }

@@ -56,6 +56,36 @@ describe('UserApi (mock compartido con el login)', () => {
     expect(auth.user()?.rol).toBe('COORDINADOR');
   });
 
+  it('verifica en vivo si un correo está disponible', async () => {
+    expect(await firstValueFrom(api.correoDisponible(' DOCENTE@systemplus.edu.co '))).toBe(false);
+    expect(await firstValueFrom(api.correoDisponible('nueva.persona@systemplus.edu.co'))).toBe(true);
+  });
+
+  it('cuenta los usuarios por rol para "Roles y permisos"', async () => {
+    const conteo = await firstValueFrom(api.conteoPorRol());
+    const total = Object.values(conteo).reduce((a, b) => a + b, 0);
+
+    expect(total).toBe(24);
+    expect(conteo.DOCENTE).toBeGreaterThan(0);
+    expect(conteo.DOCENTE_AUTORIZADO).toBeGreaterThan(0);
+  });
+
+  it('el historial muestra el último acceso y los eventos más recientes', async () => {
+    const historial = await firstValueFrom(api.historial(2)); // Julián Andrés Ospina
+
+    expect(historial.map((e) => e.titulo)).toEqual(['Inicio de sesión', 'Rol asignado: Docente', 'Usuario registrado']);
+    expect(historial[1].detalle).toBe('14 feb 2026 · Diana Marcela Ruiz');
+  });
+
+  it('cambiar el rol queda en el historial con el nombre de quien lo hizo', async () => {
+    await entrarComo(CORREOS.admin);
+    await firstValueFrom(api.cambiarRol(2, 'DOCENTE_AUTORIZADO'));
+
+    const historial = await firstValueFrom(api.historial(2));
+    expect(historial[1].titulo).toBe('Rol asignado: Docente Autorizado');
+    expect(historial[1].detalle).toContain('Diana Marcela Ruiz');
+  });
+
   it('devuelve copias: modificar el resultado no altera los datos', async () => {
     const usuario = await firstValueFrom(api.obtener(1));
     usuario.nombre = 'Cambiado a mano';

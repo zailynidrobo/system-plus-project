@@ -1,0 +1,101 @@
+@if (guia(); as g) {
+  <header class="ui-page-head">
+    <div>
+      <h1>Consultar guía base</h1>
+      <p>Lineamientos obligatorios definidos por coordinación académica.</p>
+      <a class="ui-back ui-back--inline" routerLink="/mis-modulos"><app-icon name="arrow-left" [size]="13" /> Volver a mis guías</a>
+    </div>
+  </header>
+
+  <div class="ui-layout ui-layout--docente">
+    <section class="ui-card ui-card--compact">
+      <div class="ui-hero ui-hero--divided">
+        <span class="ui-tile ui-tile--md ui-tile--ok"><app-icon name="file-text" [size]="19" /></span>
+        <div class="ui-hero__info">
+          <strong>{{ g.title }}</strong>
+          <small>
+            {{ g.code }} · {{ g.competencyCode }} · Versión {{ g.version.replace('v', '') }} · Publicada por
+            {{ g.publishedBy?.name }} el {{ fecha(g.publishedAt) }}
+          </small>
+        </div>
+        <span class="ui-pill ui-pill--ok"><i></i> Publicada</span>
+      </div>
+
+      <div class="ui-notice ui-notice--gold">
+        <app-icon name="lock" [size]="16" />
+        <div>
+          <strong>Documento institucional · solo lectura</strong>
+          <p>No puedes editar la guía base. Para adaptarla crea tu propia versión, o envía una sugerencia a coordinación.</p>
+        </div>
+      </div>
+
+      <app-guide-content [fields]="g.fields" [content]="g.content" [soloLectura]="true" [pendientes]="pendientes()" />
+    </section>
+
+    <aside class="ui-side">
+      <section class="ui-side-card">
+        <h3 class="ui-side-title">¿Qué puedes hacer?</h3>
+        <ul class="ui-options">
+          <li>
+            <app-icon name="copy" [size]="16" />
+            <div><strong>Crear mi versión</strong><small>Copia editable en tu espacio personal</small></div>
+          </li>
+          <li>
+            <app-icon name="message-square" [size]="16" />
+            <div><strong>Sugerir un cambio</strong><small>Propuesta para mejorar la guía base</small></div>
+          </li>
+        </ul>
+        @if (g.misVersiones.length) {
+          <a class="ui-btn ui-btn--primary ui-btn--md ui-btn--block" [routerLink]="['/mis-versiones', g.misVersiones[g.misVersiones.length - 1].id]">
+            <app-icon name="folder" [size]="15" /> Continuar mi versión
+          </a>
+          <button type="button" class="ui-btn ui-btn--outline ui-btn--md ui-btn--block" (click)="abrirCrear()">
+            <app-icon name="copy" [size]="15" /> Crear otra versión
+          </button>
+        } @else {
+          <button type="button" class="ui-btn ui-btn--primary ui-btn--md ui-btn--block" (click)="abrirCrear()">
+            <app-icon name="copy" [size]="15" /> Crear mi versión
+          </button>
+        }
+        <a class="ui-btn ui-btn--outline ui-btn--md ui-btn--block" [routerLink]="['/mis-modulos/guias', g.id, 'sugerir']">
+          <app-icon name="message-square" [size]="15" /> Sugerir cambio
+        </a>
+      </section>
+
+      <section class="ui-side-card">
+        <small class="ui-label">Información</small>
+        <div class="ui-kv-list">
+          <div class="ui-kv"><span>Coordinadora</span><strong>{{ g.publishedBy?.name }}</strong></div>
+          <div class="ui-kv"><span>Publicada</span><strong>{{ fecha(g.publishedAt) }}</strong></div>
+          <div class="ui-kv"><span>Versión</span><strong>{{ g.version.replace('v', '') }}</strong></div>
+        </div>
+      </section>
+
+      @if (g.misVersiones.length) {
+        <section class="ui-side-card">
+          <small class="ui-label">Mis versiones de esta guía</small>
+          @for (v of g.misVersiones; track v.id) {
+            <a class="ui-link-row" [routerLink]="['/mis-versiones', v.id]"><app-icon name="folder" [size]="14" /> {{ v.name }}</a>
+          }
+        </section>
+      }
+    </aside>
+  </div>
+
+  @if (creando()) {
+    <app-create-version-modal [guia]="g" (creada)="versionCreada($event)" (cancelar)="cerrarCrear()" />
+  }
+} @else if (error()) {
+  <section class="ui-card">
+    <p class="ui-empty">
+      @if (error() === 'GUIDE_NOT_ASSIGNED') {
+        Esta guía pertenece a un módulo que no tienes asignado.
+      } @else {
+        La guía que buscas no existe o todavía no está publicada.
+      }
+    </p>
+  </section>
+  <a class="ui-btn ui-btn--primary ui-self-start" routerLink="/mis-modulos"><app-icon name="arrow-left" [size]="15" /> Volver a mis guías</a>
+} @else {
+  <p class="ui-state">Cargando guía…</p>
+}

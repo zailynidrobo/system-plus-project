@@ -1,0 +1,105 @@
+<header class="ui-page-head">
+  <div>
+    <h1>Roles y permisos</h1>
+    <p>Consulta el rol activo de cada usuario y asígnale uno nuevo.</p>
+  </div>
+</header>
+
+<section class="ui-stats">
+  @for (r of roles; track r.value) {
+    <article class="ui-stat">
+      <span class="ui-tile"><app-icon [name]="r.icono" [size]="18" /></span>
+      <div>
+        <small>{{ r.label }}</small>
+        <strong>{{ conteo()?.[r.value] ?? '–' }}</strong><em>usuarios</em>
+      </div>
+    </article>
+  }
+</section>
+
+<section class="ui-panel">
+  <div class="ui-toolbar">
+    <label class="ui-search">
+      <app-icon name="search" [size]="16" />
+      <input
+        type="search"
+        placeholder="Buscar por nombre o correo"
+        aria-label="Buscar por nombre o correo"
+        [value]="busqueda()"
+        (input)="buscar($any($event.target).value)"
+      />
+    </label>
+    <label class="ui-select">
+      <app-icon name="sliders" [size]="15" />
+      <select aria-label="Filtrar por rol" [value]="rol()" (change)="filtrarRol($any($event.target).value)">
+        <option value="TODOS">Todos los roles</option>
+        @for (r of roles; track r.value) {
+          <option [value]="r.value">{{ r.label }}</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  <p class="ui-hint-row">
+    <app-icon name="info" [size]="14" /> Cada usuario tiene un único rol activo. El cambio se aplica de inmediato.
+  </p>
+
+  <div class="ui-table-wrap">
+    <table class="ui-table">
+      <thead>
+        <tr>
+          <th>Usuario</th>
+          <th>Rol activo</th>
+          <th>Estado</th>
+          <th class="ui-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (u of usuarios(); track u.id) {
+          <tr>
+            <td>
+              <div class="ui-cell">
+                <span class="ui-avatar" [class.ui-avatar--alt]="!u.activo">{{ iniciales(u.nombre) }}</span>
+                <div>
+                  <strong>{{ u.nombre }}</strong>
+                  <small>{{ u.correo }}</small>
+                </div>
+              </div>
+            </td>
+            <td><span class="ui-pill">{{ labels[u.rol] }}</span></td>
+            <td>
+              @if (u.activo) {
+                <span class="ui-pill ui-pill--ok"><i></i> Activo</span>
+              } @else {
+                <span class="ui-pill ui-pill--off"><i></i> Desactivado</span>
+              }
+            </td>
+            <td class="ui-actions-cell">
+              <a class="ui-btn ui-btn--outline ui-btn--sm" [routerLink]="['/roles', u.id]">
+                <app-icon name="refresh-cw" [size]="14" /> Asignar rol
+              </a>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="4" class="ui-empty">
+              {{ cargando() ? 'Cargando usuarios...' : 'No se encontraron usuarios.' }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <footer class="ui-pager">
+    <span>Mostrando {{ desde() }}–{{ hasta() }} de {{ total() }} usuarios</span>
+    <div class="ui-pager__buttons">
+      <button type="button" class="ui-icon-btn" (click)="irA(pagina() - 1)" [disabled]="pagina() === 1" aria-label="Página anterior">
+        <app-icon name="chevron-left" [size]="14" />
+      </button>
+      <button type="button" class="ui-icon-btn" (click)="irA(pagina() + 1)" [disabled]="pagina() === totalPaginas()" aria-label="Página siguiente">
+        <app-icon name="chevron-right" [size]="14" />
+      </button>
+    </div>
+  </footer>
+</section>

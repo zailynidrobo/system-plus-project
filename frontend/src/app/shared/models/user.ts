@@ -21,6 +21,15 @@ export interface User {
   rol: Role;
   activo: boolean;
   ultimoAcceso?: string;
+  /** Fecha de registro (ISO). */
+  creadoEn?: string;
+}
+
+/** Evento del "Historial reciente" de un usuario (Editar usuario), listo para mostrar. */
+export interface EventoUsuario {
+  titulo: string;
+  /** p. ej. "14 feb 2026 · Laura Muñoz" */
+  detalle: string;
 }
 
 export interface LoginRequest {

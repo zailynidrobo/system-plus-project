@@ -1,10 +1,12 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import { Auth } from '../../core/auth/auth';
 import { MOCK_LATENCY, simular } from '../../core/mock/latency';
 import { MockDb } from '../../core/mock/mock-db';
-import { UsuarioMock, sinContrasena } from '../../core/mock/seed-users';
+import { UsuarioMock, sinContrasena, tituloRolAsignado } from '../../core/mock/seed-users';
 import { ApiError } from '../../shared/models/api-error';
-import { Role, User } from '../../shared/models/user';
+import { EventoUsuario, ROLE_LABELS, Role, User } from '../../shared/models/user';
+import { ahoraIso, fechaCorta } from '../../shared/utils/fechas';
 
 export interface FiltroUsuarios {
   busqueda: string;
@@ -39,6 +41,7 @@ const normalizar = (t: string) =>
 @Injectable({ providedIn: 'root' })
 export class UserApi {
   private db = inject(MockDb);
+  private auth = inject(Auth);
   private ms = inject(MOCK_LATENCY);
 
   listar(f: FiltroUsuarios): Observable<PaginaUsuarios> {
@@ -70,6 +73,39 @@ export class UserApi {
     });
   }
 
+  /** Tarjetas de "Roles y permisos": cuántos usuarios tienen cada rol. */
+  conteoPorRol(): Observable<Record<Role, number>> {
+    return simular(this.ms, () => {
+      const conteo = Object.fromEntries(Object.keys(ROLE_LABELS).map((r) => [r, 0])) as Record<Role, number>;
+      for (const u of this.db.usuarios) conteo[u.rol]++;
+      return conteo;
+    });
+  }
+
+  /** Validación en vivo del registro: "Correo disponible". */
+  correoDisponible(correo: string): Observable<boolean> {
+    return simular(this.ms, () => {
+      const buscado = correo.trim().toLowerCase();
+      return !this.db.usuarios.some((u) => u.correo.toLowerCase() === buscado);
+    });
+  }
+
+  /** "Historial reciente" de Editar usuario: el último acceso y los 2 eventos más recientes. */
+  historial(id: number): Observable<EventoUsuario[]> {
+    return simular(this.ms, () => {
+      const usuario = this.buscar(id);
+      const eventos: EventoUsuario[] = this.db.eventosUsuarios
+        .filter((e) => e.userId === id)
+        .sort((a, b) => b.fecha.localeCompare(a.fecha))
+        .slice(0, 2)
+        .map((e) => ({ titulo: e.titulo, detalle: `${fechaCorta(e.fecha)} · ${e.responsable}` }));
+      if (usuario.ultimoAcceso && usuario.ultimoAcceso !== 'Sin ingresos') {
+        eventos.unshift({ titulo: 'Inicio de sesión', detalle: `${usuario.ultimoAcceso} · Acceso seguro` });
+      }
+      return eventos;
+    });
+  }
+
   // El backend real debe responder error si el correo ya existe y generar la contraseña temporal.
   crear(d: NuevoUsuario): Observable<User> {
     return simular(this.ms, () => {
@@ -86,8 +122,11 @@ export class UserApi {
         rol: d.rol,
         activo: true,
         ultimoAcceso: 'Sin ingresos',
+        creadoEn: ahoraIso(),
       };
       this.db.usuarios = [nuevo, ...this.db.usuarios];
+      this.registrarEvento(nuevo.id, 'Usuario registrado');
+      this.registrarEvento(nuevo.id, tituloRolAsignado(nuevo.rol));
       return sinContrasena(nuevo);
     });
   }
@@ -104,24 +143,39 @@ export class UserApi {
       if (this.db.usuarios.some((u) => u.id !== id && u.correo.toLowerCase() === correo)) {
         throw new ApiError('CORREO_EN_USO');
       }
-      return this.reemplazar(id, { nombre: d.nombre.trim(), correo });
+      const actualizado = this.reemplazar(id, { nombre: d.nombre.trim(), correo });
+      this.registrarEvento(id, 'Datos actualizados');
+      return actualizado;
     });
   }
 
   // Desactivar NO borra: solo cambia el estado. El historial y los datos se conservan.
   desactivar(id: number): Observable<User> {
-    return simular(this.ms, () => this.reemplazar(id, { activo: false }));
+    return simular(this.ms, () => {
+      const actualizado = this.reemplazar(id, { activo: false });
+      this.registrarEvento(id, 'Usuario desactivado');
+      return actualizado;
+    });
   }
 
   // Un usuario tiene un solo rol activo: este cambio reemplaza al anterior.
   cambiarRol(id: number, rol: Role): Observable<User> {
-    return simular(this.ms, () => this.reemplazar(id, { rol }));
+    return simular(this.ms, () => {
+      const actualizado = this.reemplazar(id, { rol });
+      this.registrarEvento(id, tituloRolAsignado(rol));
+      return actualizado;
+    });
   }
 
   private buscar(id: number): UsuarioMock {
     const usuario = this.db.usuarios.find((u) => u.id === id);
     if (!usuario) throw new ApiError('NO_ENCONTRADO');
     return usuario;
+  }
+
+  private registrarEvento(userId: number, titulo: string): void {
+    const responsable = this.auth.user()?.nombre ?? 'Sistema';
+    this.db.eventosUsuarios = [...this.db.eventosUsuarios, { userId, titulo, responsable, fecha: ahoraIso() }];
   }
 
   private reemplazar(id: number, cambios: Partial<UsuarioMock>): User {

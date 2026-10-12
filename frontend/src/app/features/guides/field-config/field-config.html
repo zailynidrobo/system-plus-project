@@ -1,0 +1,273 @@
+<header class="ui-page-head">
+  <div>
+    <h1>Estructura del formulario de guías</h1>
+    <p>Define los campos que componen la guía base sin depender de un desarrollador.</p>
+    <a class="ui-back ui-back--inline" routerLink="/guias"><app-icon name="arrow-left" [size]="13" /> Volver a guías base</a>
+  </div>
+  <div class="ui-page-head__actions">
+    <button type="button" class="ui-btn ui-btn--outline" (click)="vistaPrevia.set(true)" [disabled]="campos().length === 0">
+      <app-icon name="eye" [size]="15" /> Vista previa
+    </button>
+    <button type="button" class="ui-btn ui-btn--primary" (click)="guardar()" [disabled]="!hayCambios() || guardando()">
+      <app-icon name="save" [size]="15" /> Guardar estructura
+    </button>
+  </div>
+</header>
+
+@if (guardada(); as g) {
+  <div class="ui-notice ui-notice--ok ui-mb" role="status">
+    <app-icon name="circle-check" [size]="16" />
+    <div>
+      <strong>Estructura v{{ g.version }} guardada</strong>
+      <p>
+        Las guías nuevas de {{ modulo()?.name }} usarán esta estructura y los borradores ya la adoptaron. Las guías publicadas conservan la suya.
+        <button type="button" class="ui-btn ui-btn--sm" (click)="crearGuia()">Crear una guía con esta estructura →</button>
+      </p>
+    </div>
+  </div>
+}
+@if (error(); as e) {
+  <div class="ui-notice ui-notice--danger ui-mb" role="alert">
+    <app-icon name="circle-alert" [size]="16" />
+    <div><strong>Revisa la estructura</strong><p>{{ e }}</p></div>
+  </div>
+}
+
+<div class="ui-layout ui-layout--editor">
+  <section class="ui-card ui-card--editor">
+    <div class="ui-actions">
+      <div class="ui-card__head">
+        <strong class="ui-section-title ui-section-title--sm">Campos del formulario</strong>
+        <p>Arrastra para reordenar · Se reflejan en “Registrar guía base”</p>
+      </div>
+      <div class="ui-filters ui-filters--center">
+        <span class="ui-help">Aplica a</span>
+        <label class="ui-select">
+          <select aria-label="Módulo" (change)="elegirModulo(+$any($event.target).value)">
+            @for (m of modulos(); track m.id) {
+              <option [value]="m.id" [selected]="m.id === moduloId()">{{ m.name }}</option>
+            }
+          </select>
+        </label>
+        <label class="ui-select">
+          <select aria-label="Competencia" (change)="elegirCompetencia($any($event.target).value)">
+            <option value="" [selected]="!competenciaId()">Todo el módulo</option>
+            @for (c of competencias(); track c.id) {
+              <option [value]="c.id" [selected]="c.id === competenciaId()">{{ c.code }}</option>
+            }
+          </select>
+        </label>
+      </div>
+    </div>
+
+    @if (competenciaId() && origen() !== 'competencia') {
+      <p class="ui-help">Esta competencia usa la estructura del módulo. Si la guardas aquí, tendrá una estructura propia.</p>
+    }
+
+    <div class="ui-field-row is-system">
+      <app-icon name="lock" [size]="15" class="ui-muted" />
+      <span class="ui-tile ui-tile--xs ui-tile--neutral"><app-icon name="monitor" [size]="15" /></span>
+      <div class="ui-field-row__info">
+        <strong>Módulo · Competencia · Código</strong>
+        <small>Campos de identificación del sistema (no editables)</small>
+      </div>
+      <span class="ui-pill ui-pill--neutral">Sistema</span>
+    </div>
+
+    @for (f of campos(); track f.key; let i = $index) {
+      <div
+        class="ui-field-row"
+        [class.is-selected]="seleccion() === f.key"
+        [class.is-new]="nuevos().has(f.key) && seleccion() !== f.key"
+        [class.is-dragging]="arrastrando() === i"
+        draggable="true"
+        (dragstart)="arrastrando.set(i)"
+        (dragend)="arrastrando.set(null)"
+        (dragover)="$event.preventDefault()"
+        (drop)="soltar(i)"
+      >
+        <button
+          type="button"
+          class="ui-field-row__grip"
+          [attr.aria-label]="'Mover ' + f.label + ' (flechas arriba y abajo)'"
+          (keydown.arrowup)="$event.preventDefault(); mover(i, i - 1)"
+          (keydown.arrowdown)="$event.preventDefault(); mover(i, i + 1)"
+        >
+          <app-icon name="grip-vertical" [size]="16" />
+        </button>
+        <span class="ui-tile ui-tile--xs" [class.ui-tile--white]="nuevos().has(f.key)"><app-icon [name]="tipoIcono[f.type]" [size]="15" /></span>
+        <div class="ui-field-row__info">
+          <strong>{{ f.label }}</strong>
+          <small>{{ describir(f) }}{{ nuevos().has(f.key) ? ' · nuevo campo sin guardar' : '' }}</small>
+        </div>
+        @if (nuevos().has(f.key)) {
+          <span class="ui-pill ui-pill--warn">Nuevo</span>
+        } @else if (f.required) {
+          <span class="ui-pill ui-pill--off">Obligatorio</span>
+        } @else {
+          <span class="ui-pill ui-pill--neutral">Opcional</span>
+        }
+        <button type="button" class="ui-icon-btn" (click)="seleccionar(f)" [attr.aria-label]="'Editar ' + f.label">
+          <app-icon name="pencil" [size]="13" />
+        </button>
+      </div>
+    }
+
+    <button type="button" class="ui-add-row" (click)="agregar()"><app-icon name="plus" [size]="15" /> Agregar campo</button>
+  </section>
+
+  <aside class="ui-card ui-card--props">
+    @if (editado(); as e) {
+      <div>
+        <small class="ui-label">Propiedades del campo</small>
+        <h2 class="ui-props-title">{{ e.label || 'Campo sin nombre' }}</h2>
+      </div>
+
+      <div class="ui-field">
+        <label for="etiqueta">Nombre de la etiqueta <span class="ui-required">*</span></label>
+        <div class="ui-control">
+          <input id="etiqueta" type="text" [value]="e.label" (input)="cambiarEditado({ label: $any($event.target).value })" />
+        </div>
+      </div>
+
+      <div class="ui-field">
+        <label>Tipo de dato <span class="ui-required">*</span></label>
+        <div class="ui-chips" role="radiogroup" aria-label="Tipo de dato">
+          @for (t of tipos; track t) {
+            <button type="button" class="ui-chip" role="radio" [class.is-selected]="e.type === t" [attr.aria-checked]="e.type === t" (click)="cambiarEditado({ type: t })">
+              <app-icon [name]="tipoIcono[t]" [size]="12" /> {{ tipoLabel[t] }}
+            </button>
+          }
+        </div>
+      </div>
+
+      @if (e.type === 'select') {
+        <div class="ui-field">
+          <label for="opciones">Opciones de la lista (una por línea) <span class="ui-required">*</span></label>
+          <div class="ui-control">
+            <textarea id="opciones" rows="4" [value]="opcionesTexto()" (input)="opcionesTexto.set($any($event.target).value)"></textarea>
+          </div>
+        </div>
+      }
+
+      <div class="ui-field">
+        <label for="ayuda">Texto de ayuda para el docente</label>
+        <div class="ui-control">
+          <textarea id="ayuda" rows="2" [value]="e.help ?? ''" (input)="cambiarEditado({ help: $any($event.target).value })"></textarea>
+        </div>
+      </div>
+
+      @if (e.type === 'text' || e.type === 'textarea') {
+        <div class="ui-field">
+          <label for="limite">Límite de caracteres</label>
+          <div class="ui-control">
+            <input id="limite" type="number" min="1" [value]="e.maxLength ?? ''" (input)="cambiarEditado({ maxLength: +$any($event.target).value || undefined })" />
+          </div>
+        </div>
+      }
+
+      <div class="ui-separator"></div>
+
+      <div class="ui-switch-row">
+        <div><strong>Campo obligatorio</strong><small>Requerido para guardar y publicar</small></div>
+        <button type="button" class="ui-switch" role="switch" [attr.aria-checked]="e.required" aria-label="Campo obligatorio" (click)="cambiarEditado({ required: !e.required })"></button>
+      </div>
+      <div class="ui-switch-row">
+        <div><strong>Editable por docentes</strong><small>En su versión adaptada (HE-04)</small></div>
+        <button type="button" class="ui-switch" role="switch" [attr.aria-checked]="e.teacherEditable !== false" aria-label="Editable por docentes" (click)="cambiarEditado({ teacherEditable: e.teacherEditable === false })"></button>
+      </div>
+
+      <div class="ui-actions">
+        <button type="button" class="ui-btn ui-btn--danger-text" (click)="eliminar()"><app-icon name="trash-2" [size]="14" /> Eliminar</button>
+        <button type="button" class="ui-btn ui-btn--outline ui-btn--sm" (click)="aplicar()">Aplicar al campo</button>
+      </div>
+    } @else {
+      <small class="ui-label">Propiedades del campo</small>
+      <p class="ui-help">Selecciona un campo de la lista para editar su nombre, tipo de dato y obligatoriedad, o agrega uno nuevo.</p>
+      @if (estructura(); as est) {
+        <div class="ui-box">
+          <div class="ui-kv"><span>Versión vigente</span><strong>v{{ est.version }}</strong></div>
+          <div class="ui-kv"><span>Campos</span><strong>{{ campos().length }}</strong></div>
+          <div class="ui-kv"><span>Actualizada por</span><strong>{{ est.updatedBy }}</strong></div>
+        </div>
+      }
+    }
+  </aside>
+</div>
+
+@if (impacto(); as imp) {
+  <div class="ui-modal-backdrop" (click)="impacto.set(null)">
+    <section class="ui-modal" role="dialog" aria-modal="true" aria-labelledby="titulo-impacto" (click)="$event.stopPropagation()">
+      <header class="ui-modal__head">
+        <span class="ui-modal__icon ui-modal__icon--warn"><app-icon name="triangle-alert" [size]="21" /></span>
+        <div>
+          <h2 id="titulo-impacto" class="ui-modal__title-accent">Aviso de impacto en guías existentes</h2>
+          <p>Revisa cómo afecta este cambio antes de guardar la nueva estructura.</p>
+        </div>
+      </header>
+
+      <p class="ui-section-label">Cambios en la estructura · {{ modulo()?.competencyPrefix }}</p>
+      <ul class="ui-changes">
+        @for (c of imp.cambios; track $index) {
+          <li>
+            @switch (c.tipo) {
+              @case ('agregado') { <span class="ui-pill ui-pill--ok">+ Agregado</span> }
+              @case ('eliminado') { <span class="ui-pill ui-pill--off">− Eliminado</span> }
+              @default { <span class="ui-pill">~ Modificado</span> }
+            }
+            {{ c.descripcion }}
+          </li>
+        }
+      </ul>
+
+      <div class="ui-box">
+        <div class="ui-kv"><span>Guías publicadas con estructura anterior</span><strong>{{ imp.publicadas }} {{ imp.publicadas === 1 ? 'guía' : 'guías' }}</strong></div>
+        <div class="ui-kv"><span>Guías en borrador</span><strong>{{ imp.borradores }} {{ imp.borradores === 1 ? 'guía' : 'guías' }}</strong></div>
+        <div class="ui-kv"><span>Versiones adaptadas por docentes</span><strong>{{ imp.versionesDocentes }} versiones</strong></div>
+      </div>
+
+      <div class="ui-notice">
+        <app-icon name="triangle-alert" [size]="16" />
+        <div>
+          <strong>¿Qué pasará?</strong>
+          <p>
+            La nueva estructura (v{{ imp.versionNueva }}) aplicará a las guías que se creen desde ahora
+            @if (imp.borradores) { y {{ imp.borradores === 1 ? 'al borrador existente' : 'a los borradores existentes' }} }.
+            @if (imp.publicadas) { Las {{ imp.publicadas }} guías publicadas conservarán su estructura v{{ imp.versionActual }} y su contenido sin cambios. }
+          </p>
+        </div>
+      </div>
+
+      <div class="ui-notice ui-notice--info">
+        <app-icon name="history" [size]="16" />
+        <div>
+          <strong>Versionamiento</strong>
+          <p>La estructura v{{ imp.versionActual }} queda registrada en cada guía publicada que la usa.</p>
+        </div>
+      </div>
+
+      <div class="ui-actions">
+        <button type="button" class="ui-btn ui-btn--outline" (click)="impacto.set(null)">Revisar cambios</button>
+        <button type="button" class="ui-btn ui-btn--primary" (click)="confirmarGuardar()" [disabled]="guardando()">
+          <app-icon name="check" [size]="15" /> {{ guardando() ? 'Guardando…' : 'Entiendo, guardar estructura v' + imp.versionNueva }}
+        </button>
+      </div>
+    </section>
+  </div>
+}
+
+@if (vistaPrevia()) {
+  <div class="ui-modal-backdrop" (click)="vistaPrevia.set(false)">
+    <section class="ui-modal ui-modal--wide" role="dialog" aria-modal="true" aria-label="Vista previa del formulario" (click)="$event.stopPropagation()">
+      <header class="ui-modal__head">
+        <span class="ui-modal__icon"><app-icon name="eye" [size]="20" /></span>
+        <div>
+          <h2 class="ui-modal__title-accent">Vista previa · Registrar guía base</h2>
+          <p>Así verá la coordinación el formulario con la estructura actual (aún sin guardar).</p>
+        </div>
+      </header>
+      <app-dynamic-form [fields]="campos()" seccionContenido="Contenido pedagógico" />
+      <div class="ui-actions"><span></span><button type="button" class="ui-btn ui-btn--primary" (click)="vistaPrevia.set(false)">Cerrar</button></div>
+    </section>
+  </div>
+}

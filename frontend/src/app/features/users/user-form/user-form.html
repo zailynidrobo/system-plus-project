@@ -26,11 +26,13 @@
 
     <label for="correo">Correo institucional *</label>
     <div class="control" [class.control--error]="mensajeCorreo()">
-      <app-icon name="mail" [size]="18" />
+      <app-icon [name]="correoDisponible() ? 'mail-check' : 'mail'" [size]="18" />
       <input id="correo" type="email" formControlName="correo" placeholder="nombre@systemplus.edu.co" autocomplete="off" />
     </div>
     @if (mensajeCorreo(); as msg) {
       <small class="error">{{ msg }}</small>
+    } @else if (correoDisponible()) {
+      <small class="hint">Correo disponible. Debe ser único y pertenecer al dominio &#64;systemplus.edu.co.</small>
     } @else {
       <small class="hint">Debe ser único y pertenecer al dominio &#64;systemplus.edu.co.</small>
     }
@@ -88,7 +90,7 @@
       <ul>
         @for (item of checklist(); track item.titulo) {
           <li [class.pending]="!item.ok">
-            <app-icon [name]="item.ok ? 'circle-check' : 'circle-help'" [size]="20" />
+            <app-icon [name]="item.ok ? item.icono : 'circle-help'" [size]="20" />
             <div>
               <strong>{{ item.titulo }}</strong>
               <small>{{ item.detalle }}</small>

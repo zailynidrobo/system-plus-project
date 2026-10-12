@@ -9,7 +9,8 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { startWith } from 'rxjs';
-import { ROLE_LABELS, User } from '../../../shared/models/user';
+import { EventoUsuario, ROLE_LABELS, User } from '../../../shared/models/user';
+import { fechaCorta } from '../../../shared/utils/fechas';
 import { Icon } from '../../../shared/ui/icon/icon';
 import { UserApi } from '../user-api';
 
@@ -77,7 +78,12 @@ export class UserEdit {
       .join(''),
   );
 
+  historial = signal<EventoUsuario[]>([]);
+
+  creadoEl = computed(() => fechaCorta(this.usuario()?.creadoEn));
+
   constructor() {
+    this.cargarHistorial();
     this.api.obtener(this.id).subscribe({
       next: (u) => {
         this.usuario.set(u);
@@ -109,6 +115,10 @@ export class UserEdit {
     return `Debe pertenecer al dominio ${DOMINIO}.`;
   }
 
+  private cargarHistorial(): void {
+    this.api.historial(this.id).subscribe({ next: (h) => this.historial.set(h), error: () => {} });
+  }
+
   descartar(): void {
     const u = this.usuario();
     if (!u) return;
@@ -133,6 +143,7 @@ export class UserEdit {
         this.form.reset({ nombre: u.nombre, correo: u.correo });
         this.guardando.set(false);
         this.guardado.set(true); // después del reset, para que no se borre el aviso
+        this.cargarHistorial();
       },
       error: (err: Error) => {
         this.guardando.set(false);

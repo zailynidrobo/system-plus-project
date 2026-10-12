@@ -14,7 +14,7 @@
         <span class="avatar">{{ iniciales() }}</span>
         <div class="card__who">
           <strong>{{ u.nombre }}</strong>
-          <small>Usuario {{ codigo() }}</small>
+          <small>Usuario {{ codigo() }} · Creado el {{ creadoEl() }}</small>
         </div>
         <div class="card__tags">
           @if (u.activo) {
@@ -38,13 +38,13 @@
 
       <label for="correo">Correo institucional *</label>
       <div class="control" [class.control--error]="mensajeCorreo()">
-        <app-icon name="mail" [size]="18" />
+        <app-icon name="badge-check" [size]="18" />
         <input id="correo" type="email" formControlName="correo" autocomplete="off" />
       </div>
       @if (mensajeCorreo(); as msg) {
         <small class="error">{{ msg }}</small>
       } @else {
-        <small class="hint">Correo único en el directorio institucional.</small>
+        <small class="hint">Correo verificado y único en el directorio institucional.</small>
       }
 
       <div class="notice">
@@ -53,9 +53,9 @@
           <strong>Alcance de esta edición</strong>
           <p>
             El rol activo, los permisos y la contraseña permanecen sin cambios. Para cambiar el rol
-            usa "Roles y permisos".
+            usa “Roles y permisos”.
           </p>
-          <a class="notice__link" [routerLink]="['/usuarios', u.id, 'rol']">Cambiar rol de este usuario</a>
+          <a class="notice__link" [routerLink]="['/roles', u.id]">Cambiar rol de este usuario</a>
         </div>
       </div>
 
@@ -81,9 +81,24 @@
       </div>
     </form>
 
-    <aside class="side">
-      <section class="side__info">
-        <app-icon name="shield-check" [size]="20" />
+    <aside class="ui-side">
+      <section class="ui-side-card">
+        <h3><app-icon name="history" [size]="17" /> Historial reciente</h3>
+        <ul class="ui-timeline">
+          @for (e of historial(); track $index) {
+            <li>
+              <span class="ui-timeline__mark"><app-icon name="check" [size]="11" /></span>
+              <div>
+                <strong>{{ e.titulo }}</strong>
+                <small>{{ e.detalle }}</small>
+              </div>
+            </li>
+          }
+        </ul>
+      </section>
+
+      <section class="ui-side-note ui-side-note--ok">
+        <app-icon name="database-backup" [size]="19" />
         <strong>Datos protegidos</strong>
         <p>Cada cambio queda registrado para auditoría institucional.</p>
       </section>

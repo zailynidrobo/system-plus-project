@@ -1,0 +1,64 @@
+.guia { flex: 1; min-width: 0; }
+.guia strong { font-size: 13px !important; }
+
+.columnas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  align-items: start;
+
+  @media (max-width: 1280px) { grid-template-columns: 1fr; }
+}
+
+// Lista de campos con radio, como en Figma
+.opciones {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+
+  legend { margin-bottom: 6px; padding: 0; font-size: 12.5px; font-weight: 500; color: var(--color-text-figma); }
+}
+
+.opcion {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border: 1px solid var(--color-border-figma);
+  border-radius: 9px;
+  background: #fff;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--color-text-figma);
+  cursor: pointer;
+
+  input { width: 16px; height: 16px; margin: 0; accent-color: var(--color-primary); }
+  span:first-of-type { flex: 1; }
+
+  &.is-selected { border-color: var(--color-primary); background: #f7f7fd; box-shadow: 0 0 0 3px rgba(58, 57, 151, 0.08); }
+  &.is-disabled { cursor: not-allowed; opacity: 0.7; }
+}
+
+.detalle { gap: 12px; }
+.detalle .ui-field > label { font-size: 12.5px; font-weight: 500; }
+
+.actual {
+  margin: 0;
+  padding: 11px 14px 12px;
+  border: 1px solid var(--color-gold-accent);
+  border-radius: 10px;
+  background: #fbf6e2;
+  font-size: 12.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  color: #3c4058;
+}
+
+.ui-control { min-height: 0; }
+.ui-control textarea { min-height: 70px; padding: 10px 0; font-size: 13px; }
+.ui-control textarea.corta { min-height: 60px; }
+.ui-control select,
+.ui-control input { height: 38px; font-size: 13px; }

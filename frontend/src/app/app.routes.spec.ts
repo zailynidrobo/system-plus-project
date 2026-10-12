@@ -39,10 +39,38 @@ describe('Rutas: redirección por rol', () => {
     expect(urlActual()).toBe('/sin-acceso');
   });
 
+  it.each([
+    [CORREOS.docente, '/sugerencias'],
+    [CORREOS.docente, '/guias'],
+    [CORREOS.coordinador, '/mis-versiones'],
+    [CORREOS.coordinador, '/mis-sugerencias'],
+    [CORREOS.admin, '/sugerencias'],
+  ])('%s no puede abrir %s', async (correo, ruta) => {
+    await entrarComo(correo);
+    await harness.navigateByUrl(ruta);
+    expect(urlActual()).toBe('/sin-acceso');
+  });
+
+  it.each([
+    [CORREOS.autorizado, '/mis-versiones'],
+    [CORREOS.autorizado, '/mis-sugerencias'],
+    [CORREOS.coordinador, '/sugerencias'],
+  ])('%s sí puede abrir %s', async (correo, ruta) => {
+    await entrarComo(correo);
+    await harness.navigateByUrl(ruta);
+    expect(urlActual()).toBe(ruta);
+  });
+
   it('con sesión, /login redirige al inicio del rol', async () => {
     await entrarComo(CORREOS.coordinador);
     await harness.navigateByUrl('/login');
     expect(urlActual()).toBe('/modulos');
+  });
+
+  it('"Asignar rol" vive bajo Roles y permisos; la ruta anterior redirige', async () => {
+    await entrarComo(CORREOS.admin);
+    await harness.navigateByUrl('/usuarios/2/rol');
+    expect(urlActual()).toBe('/roles/2');
   });
 
   it('una ruta desconocida lleva al inicio del rol', async () => {

@@ -1,4 +1,4 @@
-import { Role, User } from '../../shared/models/user';
+import { ROLE_LABELS, Role, User } from '../../shared/models/user';
 
 export interface UsuarioMock extends User {
   /** null = no puede iniciar sesión en el mock (su contraseña la generó el sistema y nadie la conoce). */
@@ -32,6 +32,22 @@ const CUENTAS_DE_PRUEBA: Record<number, string> = {
 
 export const CONTRASENA_DE_PRUEBA = '123456';
 
+/** Evento guardado del historial de un usuario. `responsable` va en el detalle: "14 feb 2026 · Diana Marcela Ruiz". */
+export interface EventoUsuarioMock {
+  userId: number;
+  titulo: string;
+  responsable: string;
+  fecha: string;
+}
+
+// La administradora de los datos semilla (admin@)
+export const RESPONSABLE_SEMILLA = 'Diana Marcela Ruiz';
+
+// Julián Andrés Ospina (posición 1) queda registrado el 14 feb 2026, como en Figma.
+function fechaRegistro(i: number): string {
+  return new Date(Date.UTC(2026, 1, 2 + ((12 * i) % 200), 14)).toISOString();
+}
+
 export function crearUsuarios(): UsuarioMock[] {
   return NOMBRES.map((nombre, i) => {
     const partes = normalizar(nombre).split(' ');
@@ -44,7 +60,21 @@ export function crearUsuarios(): UsuarioMock[] {
       rol: ROLES[i % ROLES.length],
       activo: i % 8 !== 3,
       ultimoAcceso: ACCESOS[i % ACCESOS.length],
+      creadoEn: fechaRegistro(i),
     };
+  });
+}
+
+export const tituloRolAsignado = (rol: Role) => `Rol asignado: ${ROLE_LABELS[rol]}`;
+
+export function crearEventosUsuarios(usuarios: UsuarioMock[]): EventoUsuarioMock[] {
+  return usuarios.flatMap((u) => {
+    const registro = Date.parse(u.creadoEn ?? '');
+    // El rol se asigna un minuto después del registro, así aparece primero en el historial
+    return [
+      { userId: u.id, titulo: 'Usuario registrado', responsable: 'Directorio', fecha: new Date(registro).toISOString() },
+      { userId: u.id, titulo: tituloRolAsignado(u.rol), responsable: RESPONSABLE_SEMILLA, fecha: new Date(registro + 60_000).toISOString() },
+    ];
   });
 }
 

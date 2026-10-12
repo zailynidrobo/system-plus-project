@@ -1,0 +1,118 @@
+<header class="ui-page-head">
+  <div>
+    <h1>Asociar nueva competencia</h1>
+    <p>Añade un resultado de aprendizaje al módulo seleccionado.</p>
+  </div>
+</header>
+
+@if (modulo(); as m) {
+  <div class="ui-layout">
+    <div>
+      <a class="ui-back" [routerLink]="['/modulos', moduleId]"><app-icon name="arrow-left" [size]="15" /> Volver al detalle del módulo</a>
+
+      <form class="ui-card" [formGroup]="form" (ngSubmit)="asociar()" novalidate>
+        <div class="ui-card__head">
+          <h2>Nueva competencia</h2>
+          <p>La competencia quedará asociada únicamente a este módulo.</p>
+        </div>
+
+        <div class="ui-entity">
+          <span class="ui-tile"><app-icon [name]="icono(m.competencyPrefix)" [size]="18" /></span>
+          <div class="ui-entity__info">
+            <small class="ui-label">Módulo</small>
+            <strong>{{ m.name }}</strong>
+          </div>
+          @if (m.status === 'active') {
+            <span class="ui-pill ui-pill--ok"><i></i> Activo</span>
+          } @else {
+            <span class="ui-pill ui-pill--off"><i></i> No activo</span>
+          }
+        </div>
+
+        @if (m.status !== 'active') {
+          <div class="ui-notice ui-notice--danger" role="alert">
+            <app-icon name="circle-alert" [size]="18" />
+            <div>
+              <strong>El módulo no admite competencias</strong>
+              <p>Solo los módulos activos admiten competencias. Registra o rehabilita el módulo primero.</p>
+            </div>
+          </div>
+        }
+
+        <div class="ui-fields">
+          <div class="ui-field">
+            <label for="codigo">Código de competencia *</label>
+            <div class="ui-control ui-control--readonly">
+              <input id="codigo" type="text" [value]="creada()?.code ?? codigo()" readonly />
+            </div>
+            <p class="ui-help">Identificador único generado según el módulo.</p>
+          </div>
+
+          <div class="ui-field">
+            <label for="texto">Texto de la competencia *</label>
+            <div class="ui-control" [class.ui-control--dup]="duplicada() !== null">
+              <textarea id="texto" formControlName="text" rows="3" [readonly]="creada() !== null"></textarea>
+            </div>
+            @if (duplicada() !== null) {
+              <p class="ui-help ui-help--error">Ya existe una competencia con este texto en el módulo ({{ duplicada() }}).</p>
+            } @else if (form.controls.text.touched && form.controls.text.invalid) {
+              <p class="ui-help ui-help--error">Escribe el texto de la competencia.</p>
+            } @else {
+              <p class="ui-help">Redacta el resultado en infinitivo y describe una capacidad observable.</p>
+            }
+          </div>
+        </div>
+
+        <div class="ui-notice ui-notice--info">
+          <app-icon name="layers" [size]="18" />
+          <div>
+            <strong>Asociación sin límite exclusivo</strong>
+            <p>El módulo puede mantener varias competencias activas simultáneamente. Esta nueva competencia no reemplaza las existentes.</p>
+          </div>
+        </div>
+
+        @if (error()) {
+          <p class="ui-help ui-help--error" role="alert">No pudimos asociar la competencia. Inténtalo de nuevo en unos minutos.</p>
+        }
+
+        <div class="ui-actions">
+          @if (creada()) {
+            <button type="button" class="ui-btn" (click)="otra()"><app-icon name="plus" [size]="16" /> Asociar otra</button>
+            <a class="ui-btn ui-btn--primary" [routerLink]="['/modulos', moduleId]"><app-icon name="arrow-left" [size]="16" /> Volver al detalle</a>
+          } @else {
+            <a class="ui-btn" [routerLink]="['/modulos', moduleId]">Cancelar</a>
+            <button type="submit" class="ui-btn ui-btn--primary" [disabled]="guardando() || m.status !== 'active'">
+              <app-icon name="link" [size]="16" /> {{ guardando() ? 'Asociando…' : 'Asociar competencia' }}
+            </button>
+          }
+        </div>
+      </form>
+    </div>
+
+    <aside class="ui-side">
+      <section class="ui-result">
+        <span class="ui-pill ui-pill--ok ui-self-start">{{ creada() ? 'Completado' : 'Después de confirmar' }}</span>
+        <span class="ui-circle ui-circle--ok"><app-icon name="circle-check" [size]="23" /></span>
+        <div>
+          <h4>Competencia asociada</h4>
+          <p>{{ creada()?.code ?? codigo() }} {{ creada() ? 'fue añadida' : 'se añadirá' }} correctamente al módulo.</p>
+        </div>
+        <div class="ui-box">
+          <span class="ui-code">{{ creada()?.code ?? codigo() }}</span>
+          <p>{{ form.controls.text.value || 'El texto de la competencia aparecerá aquí.' }}</p>
+          <span class="ui-pill ui-pill--ok ui-self-start"><i></i> Activa</span>
+        </div>
+      </section>
+
+      <div class="ui-notice ui-notice--ok">
+        <app-icon name="sparkles" [size]="18" />
+        <div>
+          <strong>Resultado inmediato</strong>
+          <p>Ya puede seleccionarse al crear una nueva guía del módulo.</p>
+        </div>
+      </div>
+    </aside>
+  </div>
+} @else {
+  <p class="ui-state">Cargando módulo...</p>
+}

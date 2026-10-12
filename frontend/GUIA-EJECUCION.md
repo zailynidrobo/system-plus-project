@@ -2,6 +2,13 @@
 
 Frontend de la intranet AthenaDev · System Plus Piendamó. Usa Angular 21 con npm.
 
+Incluye HE-01 a HE-05 con **datos simulados en memoria** (sin backend):
+- usuarios y roles;
+- programa académico;
+- guías base;
+- espacio docente;
+- sugerencias.
+
 ## 1. Requisitos
 
 | Herramienta | Versión | Cómo comprobarla |
@@ -37,7 +44,9 @@ npm ci
 npx ng serve
 ```
 
-Abre <http://localhost:4200>. La app se recarga sola al guardar cambios. Para detenerla, pulsa `Ctrl + C`.
+Abre <http://localhost:4200> y entra con uno de los usuarios de la sección 6. Para detener el servidor, pulsa `Ctrl + C`.
+
+> **Importante: los datos viven en memoria.** Todo lo que crees o cambies se pierde al recargar la página (`F5`) o al escribir una dirección en la barra del navegador. Para cambiar de usuario sin perder datos, usa **Cerrar sesión** (menú del nombre, arriba a la derecha) y vuelve a entrar.
 
 ## 4. Compilar
 
@@ -46,7 +55,8 @@ npx ng build --configuration development   # compilación rápida para depurar
 npx ng build                               # producción (sale en dist\frontend)
 ```
 
-La compilación de producción muestra advertencias de *budget* en algunos `.scss`. Son solo avisos: el límite de error es 8 kB y ninguno lo alcanza.
+- La compilación de producción muestra 4 advertencias de *budget* en estilos de HE-01: `login`, `user-list`, `user-role` y `user-deactivate`. Pasan el aviso de 4 kB por pocos bytes, pero ninguno llega al límite de error de 8 kB.
+- El *bundle* inicial pesa unos 423 kB. Las pantallas de cada épica se cargan solo cuando se abren.
 
 ## 5. Pruebas
 
@@ -55,35 +65,149 @@ npx ng test --watch=false   # una sola pasada
 npx ng test                 # modo observación
 ```
 
-Estado actual: 9 de 9 pruebas pasan. El archivo `src/app/core/interceptors/auth-interceptor.spec.ts` falla con "No test suite found" porque contiene código del interceptor en lugar de pruebas. Está documentado en `docs/verificacion-front-HE01-HE05.md`.
+Estado actual: **150 pruebas en 22 archivos, todas pasan.** Cubren:
+- Servicios mock de todas las épicas:
+  - módulos y competencias duplicados;
+  - transiciones de estado;
+  - aislamiento de las copias de guía;
+  - aprobar y rechazar sugerencias.
+- Guards y redirección por rol.
+- Mapeo de roles de Keycloak.
+- Interceptor HTTP.
+- Formulario dinámico.
+- Autoguardado del editor de versiones.
 
-## 6. Usuarios de prueba (mock)
+Para correr un solo archivo:
 
-Están definidos en `src/app/core/auth/auth.ts`.
+```powershell
+npx ng test --watch=false --include src/app/features/suggestions/suggestion-api.spec.ts
+```
 
-| Correo | Contraseña | Rol | Notas |
-|---|---|---|---|
-| `admin@systemplus.edu.co` | `123456` | Administrador | Entra a la gestión de usuarios. |
-| `coordinador@systemplus.edu.co` | `123456` | Coordinador Académico | ⚠️ Hoy vuelve al login: aún no hay pantallas para este rol. |
-| `docente@systemplus.edu.co` | `123456` | Docente | ⚠️ Igual que el coordinador. |
-| `inactivo@systemplus.edu.co` | `123456` | Docente (desactivado) | Sirve para probar que un usuario desactivado no puede entrar. |
+## 6. Usuarios de prueba
 
-Los usuarios que aparecen en el listado `/usuarios` son **otro mock** (`src/app/features/users/user-api.ts`). Esos usuarios no pueden iniciar sesión y los cambios se pierden al recargar la página.
+Todos usan la contraseña **`123456`**.
 
-## 7. Pasar de los mocks al backend real
+| Correo | Nombre | Rol | Qué puede hacer | Entra a |
+|---|---|---|---|---|
+| `admin@systemplus.edu.co` | Diana Marcela Ruiz | Administrador | Registrar, editar y desactivar usuarios; asignar roles (HE-01). | `/usuarios` |
+| `coordinador@systemplus.edu.co` | Laura Muñoz | Coordinador Académico | Módulos y competencias (HE-02); guías base y su estructura (HE-03); revisar, aprobar y rechazar sugerencias (HE-05). | `/modulos` |
+| `docente@systemplus.edu.co` | Julián Andrés Ospina | Docente | Ver las guías de sus módulos (POO y Bases de Datos), crear y editar versiones propias (HE-04) y enviar sugerencias (HE-05). | `/mis-modulos` |
+| `autorizado@systemplus.edu.co` | Paola Valencia | Docente Autorizado | Lo mismo que el docente, en POO y Redes y conectividad. | `/mis-modulos` |
+| `inactivo@systemplus.edu.co` | Carlos Ramírez | Docente (desactivado) | No puede entrar: recibe el mensaje genérico de credenciales inválidas. | — |
 
-Hoy **no basta con cambiar un interruptor**. Estos son los pasos:
+**Los usuarios y los datos académicos salen de la misma base en memoria** (`src/app/core/mock/mock-db.ts`). Por eso:
+- Si el administrador desactiva o cambia el rol de un usuario, el cambio aplica en su siguiente navegación, sin cerrar sesión.
+- Los demás usuarios del listado (19 más) existen solo para mostrar datos. No tienen contraseña conocida y no pueden entrar.
 
-1. **Login.** En `src/app/core/auth/auth.ts` cambia `USE_MOCK` a `false` y ajusta `API_URL`. El front espera `POST {API_URL}/auth/login` con `{ correo, contrasena }` y una respuesta `{ token, usuario }`.
-   - El backend NestJS (`gestion-guias`, rama `develop`) **no tiene ese endpoint**: autentica con Keycloak. Hay que acordar el flujo con el equipo de backend.
-2. **Token.** `src/app/core/interceptors/auth-interceptor.ts` todavía no agrega el encabezado `Authorization`. Hay que completarlo.
-3. **Usuarios.** `src/app/features/users/user-api.ts` es solo mock. Hay que reescribir sus métodos con `HttpClient` contra `/users` del backend.
-4. **Formato de datos.** El backend usa `name`, `email`, `role` (`admin`, `coordinador`…) e `isActive`. El front usa `nombre`, `correo`, `rol` (`ADMINISTRADOR`…) y `activo`. Hace falta un adaptador.
-5. **Ruta y CORS.** El backend escucha en `http://localhost:3000`, sin el prefijo `/api` y sin CORS habilitado. Hay dos opciones:
-   - Pedir al backend `app.setGlobalPrefix('api')` y `app.enableCors({ origin: 'http://localhost:4200' })`.
-   - Crear un `proxy.conf.json` en Angular.
+**Datos de partida:**
+- 6 módulos, de TS-MOD-01 a TS-MOD-06, con sus competencias.
+- 8 guías base: 7 publicadas y GB-SIS-01 en borrador.
+- 4 versiones docentes. Julián ya tiene «POO · Grupo 2026-1».
+- 6 sugerencias:
+  - SUG-011 a SUG-014 pendientes; SUG-014 es de Julián;
+  - SUG-009 aprobada;
+  - SUG-006 rechazada.
 
-## 8. Problemas comunes
+## 7. Rutas
+
+| Rol | Ruta | Pantalla |
+|---|---|---|
+| Todos | `/login` | Iniciar sesión (si ya hay sesión, redirige al inicio del rol) |
+| Todos | `/sin-acceso` | Aviso cuando se abre una ruta de otro rol |
+| Administrador | `/usuarios`, `/usuarios/nuevo`, `/usuarios/:id/editar`, `/usuarios/:id/desactivar` | Gestión de usuarios (HE-01) |
+| Administrador | `/roles`, `/roles/:id` | Roles y permisos → Asignar rol (HE-01-HU-04) |
+| Coordinador | `/modulos`, `/modulos/nuevo`, `/modulos/:id`, `/modulos/:id/editar`, `/modulos/:id/inhabilitar` | Programa académico (HE-02) |
+| Coordinador | `/modulos/:id/competencias/nueva`, `/modulos/:id/competencias/:competenciaId/editar`, `…/eliminar` | Competencias (HE-02) |
+| Coordinador | `/guias`, `/guias/nueva`, `/guias/:id`, `/guias/:id/editar`, `/guias/estructura` | Guías base y estructura del formulario (HE-03) |
+| Coordinador | `/sugerencias`, `/sugerencias/:id` | Bandeja y revisión de sugerencias (HE-05) |
+| Docente y Docente Autorizado | `/mis-modulos`, `/mis-modulos/guias/:id` | Guías base de mis módulos, en solo lectura (HE-04) |
+| Docente y Docente Autorizado | `/mis-versiones`, `/mis-versiones/:id` | Mis versiones y editor con autoguardado (HE-04) |
+| Docente y Docente Autorizado | `/mis-modulos/guias/:id/sugerir`, `/mis-sugerencias`, `/mis-sugerencias/:id` | Sugerir cambio y seguimiento (HE-05) |
+
+En el menú, «Inicio», «Reportes», «Auditoría» y «Centro de ayuda» aparecen deshabilitados porque no tienen historia de usuario.
+
+## 8. Recorrido de prueba manual
+
+Hazlo en una sola pestaña y sin recargar (ver la nota de la sección 3).
+
+### 8.1 Flujo completo entre roles
+
+1. **Coordinador** (`coordinador@`):
+   1. Ve a **Programa académico → Registrar módulo** y crea «Desarrollo web» (HE-02-HU-01). Si escribes un nombre que ya existe, verás el aviso de duplicado.
+   2. En el detalle del módulo, usa **Asociar competencia** y registra una (HE-02-HU-04). El código se genera solo, con el formato `COMP-<SIGLA>-NN`.
+   3. Ve a **Guías de aprendizaje → Configurar estructura**, elige POO, agrega o reordena un campo y guarda. La ventana de impacto avisa que las guías publicadas conservan su estructura (HE-03-HU-04).
+   4. Usa **Nueva guía base**:
+      - módulo *Programación Orientada a Objetos*, cualquier competencia;
+      - llena los campos obligatorios;
+      - pulsa **Guardar borrador**.
+
+      Debe quedar como `GB-POO-04` en Borrador (HE-03-HU-01).
+   5. Usa **Seguir editando → Publicar… → Sí, publicar guía** (HE-03-HU-02 y HU-03).
+   6. Cierra sesión.
+2. **Docente** (`docente@`):
+   1. En **Guías base** aparece `GB-POO-04` junto a las demás guías de POO y Bases de Datos. Las guías de otros módulos no aparecen; solo se cuentan al pie (HE-04-HU-01).
+   2. Abre la guía (**Consultar guía**). Es de solo lectura.
+   3. Pulsa **Crear mi versión**, deja el nombre sugerido y confirma (HE-04-HU-02).
+   4. En el editor:
+      - pulsa el lápiz de un campo y cambia el texto;
+      - después de 1 segundo el indicador pasa a «Todos los cambios guardados»;
+      - pulsa **Guardar campo**: el campo queda marcado como «Adaptado» (HE-04-HU-03).
+
+      «Intensidad horaria» no se puede editar porque coordinación la definió como no editable.
+   5. Vuelve a **Mis versiones**. Las tarjetas confirman que la guía base y las versiones de otros docentes no cambiaron.
+   6. Desde la guía, pulsa **Sugerir cambio**:
+      - elige «Objetivos de aprendizaje»;
+      - edita el texto;
+      - escribe una justificación de al menos 20 caracteres;
+      - pulsa **Enviar sugerencia**.
+
+      Queda **Pendiente** (HE-05-HU-01).
+   7. Cierra sesión.
+3. **Coordinador**:
+   1. El menú **Sugerencias** muestra el contador de pendientes.
+   2. Abre la sugerencia nueva con **Revisar** (HE-05-HU-02). Compara el contenido actual con el propuesto; el texto agregado aparece resaltado.
+   3. Pulsa **Aprobar y actualizar guía** y confirma. La guía pasa a `v1.1` y queda en su historial (HE-05-HU-03).
+   4. Abre otra pendiente (por ejemplo SUG-013) y usa **Rechazar**:
+      - elige un motivo;
+      - escribe al menos 30 caracteres de retroalimentación;
+      - pulsa **Rechazar y enviar retroalimentación** (HE-05-HU-04).
+4. **Docente**: en **Mis sugerencias** ve su sugerencia aprobada, con la nueva versión. En la versión que creó en el paso 2.3, el editor avisa que la guía base cambió, pero su copia sigue igual.
+
+### 8.2 Pruebas por épica
+
+- **HE-01 (Administrador):**
+  - Registrar usuario: correo repetido y aviso «Correo disponible».
+  - Editar usuario: subtítulo con código, historial reciente.
+  - Desactivar a un docente y comprobar que ya no puede entrar.
+  - En **Roles y permisos**, buscar a Julián y cambiarle el rol. Él verá el menú nuevo en su siguiente navegación.
+- **HE-02:**
+  - Editar módulo con nombre duplicado.
+  - Inhabilitar un módulo (motivo opcional) y rehabilitarlo.
+  - Editar una competencia: se guarda la versión anterior en el historial.
+  - Eliminar una competencia: ya no se podrá usar en guías nuevas.
+- **HE-03:**
+  - Editar GB-SIS-01 (borrador).
+  - Intentar publicarla con «Criterios de evaluación» vacío: la publicación se bloquea hasta completarlo.
+- **HE-04:** con `autorizado@` (Paola) no se ve ninguna versión de Julián, y abrir `/mis-versiones/1` dice que la versión no existe.
+- **HE-05:**
+  - No se puede enviar otra sugerencia sobre un campo que ya tiene una pendiente propia.
+  - El rechazo exige motivo y 30 caracteres de retroalimentación.
+
+## 9. Conectar el backend real
+
+No basta con cambiar un interruptor. La lista completa de pendientes está en `docs/verificacion-front-HE01-HE05.md`, sección 8. Lo principal:
+
+1. **Autenticación:** decidir entre Keycloak y un login propio. El front ya está preparado:
+   - `core/auth/provide-auth.ts` es el único punto donde se elige la implementación (`AuthProvider`);
+   - `core/auth/role-mapping.ts` traduce los roles de Keycloak.
+2. **Adaptador de datos:** el backend usa `name`, `email`, `role` en minúscula (`admin`…) e `isActive`.
+3. **Prefijo `/api` y CORS** en el backend, o un `proxy.conf.json` en Angular.
+4. **Servicios `*-api.ts`:** hoy todos leen `MockDb`. Hay que reescribirlos con `HttpClient`, conservando los nombres de métodos y los códigos de error.
+5. **Endpoints que faltan:** en el backend no existen las sugerencias (HE-05) ni varios datos que usan HE-03 y HE-04. Algunos ejemplos:
+   - las propiedades de campo `help`, `maxLength` y `teacherEditable`;
+   - el nombre de la versión docente.
+
+## 10. Problemas comunes
 
 **"node" no se reconoce, o Angular dice que la versión de Node no es compatible**
 Instala Node 22 LTS (sección 1) y abre una terminal nueva.
@@ -115,5 +239,8 @@ taskkill /PID <número_que_aparece_al_final> /F
 **`npm ci` falla diciendo que `package.json` y `package-lock.json` no coinciden**
 Avisa al equipo antes de usar `npm install`, porque ese comando reescribe el lock.
 
-**Después de iniciar sesión vuelvo a la pantalla de login**
-Si entraste con el coordinador o el docente, es el comportamiento actual (ver la sección 6). Prueba con `admin@systemplus.edu.co`.
+**Desaparecieron los módulos, guías o versiones que creé**
+Recargaste la página o escribiste una URL en la barra del navegador. Los datos simulados vuelven al estado inicial. Navega con el menú y usa «Cerrar sesión» para cambiar de usuario.
+
+**Entro con un rol y veo «Sin acceso»**
+Abriste una ruta de otro rol, por ejemplo `/sugerencias` con el docente. Usa el menú lateral o vuelve a `/`, que lleva al inicio de tu rol.

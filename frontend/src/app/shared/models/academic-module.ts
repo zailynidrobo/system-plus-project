@@ -35,6 +35,15 @@ export interface AcademicModule {
   inactivationReason: string | null;
 }
 
+/** Fila del listado y del detalle (toModuleView en el backend). */
+export interface ModuleView extends AcademicModule {
+  competenciesCount: number;
+  guidesCount: number;
+  publishedGuidesCount: number;
+  /** Las nuevas guías solo pueden crearse sobre módulos activos con al menos una competencia. */
+  availableForGuides: boolean;
+}
+
 export interface Program {
   id: number;
   code: string;

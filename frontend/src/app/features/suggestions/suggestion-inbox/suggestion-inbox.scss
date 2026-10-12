@@ -1,0 +1,21 @@
+// Pestañas Pendientes / Aprobadas / Rechazadas / Todas (Figma 5003:514)
+.pestanas { display: flex; gap: 4px; }
+
+.pestana {
+  height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--color-muted-figma);
+  font-size: 12.5px;
+  cursor: pointer;
+
+  &.is-active { background: #eeeef8; color: var(--color-primary); font-weight: 500; }
+  &:hover:not(.is-active) { background: #f6f7fa; }
+}
+
+.codigo { font-size: 12.5px !important; font-weight: 600 !important; }
+.avatar { width: 26px; height: 26px; font-size: 9.5px; font-weight: 600; }
+.propuesta { max-width: 280px; line-height: 1.45; }
+.vencida { color: var(--color-danger-figma) !important; }

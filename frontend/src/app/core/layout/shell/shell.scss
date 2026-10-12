@@ -216,3 +216,15 @@
 }
 
 .content { flex: 1; padding: 28px 32px; }
+
+// Contador de sugerencias pendientes (Figma 5003:1114)
+.menu__badge {
+  margin-left: auto;
+  padding: 0 7px;
+  border-radius: 9px;
+  background: var(--color-gold-accent);
+  color: #24234f;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 17px;
+}

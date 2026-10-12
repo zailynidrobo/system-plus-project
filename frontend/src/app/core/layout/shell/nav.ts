@@ -5,6 +5,8 @@ export interface NavItem {
   icon: string;
   /** null = sin HU todavía: se muestra deshabilitado ("Próximamente"). */
   route: string | null;
+  /** Contador al lado del texto (sugerencias pendientes del coordinador). */
+  badge?: 'sugerencias';
 }
 
 export type RecuadroLateral = 'entorno' | 'programa' | 'modulos';
@@ -16,14 +18,14 @@ export interface NavConfig {
 }
 
 // Textos, íconos y orden según Figma: PanelDeAdministrador (HE-01),
-// PanelCoordinador (HE-02, 204:4077) y Guías asignadas (HE-04, 4002:26).
+// PanelCoordinador (HE-02, 204:4077), Guías asignadas (HE-04, 4002:26) y Sugerencias (HE-05, 5003:514).
 const ADMINISTRADOR: NavConfig = {
   seccion: 'Administración',
   recuadro: 'entorno',
   items: [
     { label: 'Inicio', icon: 'dashboard', route: null },
     { label: 'Usuarios', icon: 'users', route: '/usuarios' },
-    { label: 'Roles y permisos', icon: 'shield-check', route: null },
+    { label: 'Roles y permisos', icon: 'shield-check', route: '/roles' },
     { label: 'Auditoría', icon: 'scroll', route: null },
   ],
 };
@@ -34,7 +36,8 @@ const COORDINADOR: NavConfig = {
   items: [
     { label: 'Inicio', icon: 'dashboard', route: null },
     { label: 'Programa académico', icon: 'book-open', route: '/modulos' },
-    { label: 'Guías de aprendizaje', icon: 'notebook-tabs', route: null },
+    { label: 'Guías de aprendizaje', icon: 'notebook-tabs', route: '/guias' },
+    { label: 'Sugerencias', icon: 'message-square', route: '/sugerencias', badge: 'sugerencias' },
     { label: 'Reportes', icon: 'chart-no-axes-column', route: null },
   ],
 };
@@ -45,8 +48,8 @@ const DOCENTE: NavConfig = {
   items: [
     { label: 'Inicio', icon: 'dashboard', route: null },
     { label: 'Guías base', icon: 'book-open', route: '/mis-modulos' },
-    { label: 'Mis versiones', icon: 'folder', route: null },
-    { label: 'Mis sugerencias', icon: 'message-square', route: null },
+    { label: 'Mis versiones', icon: 'folder', route: '/mis-versiones' },
+    { label: 'Mis sugerencias', icon: 'message-square', route: '/mis-sugerencias' },
   ],
 };
 

@@ -1,7 +1,22 @@
 import { Injectable } from '@angular/core';
 import { AcademicModule, Program } from '../../shared/models/academic-module';
-import { AsignacionDocente, PROGRAMA, crearAsignaciones, crearModulos } from './seed-academic';
-import { UsuarioMock, crearUsuarios } from './seed-users';
+import { Competency, CompetencyRevision } from '../../shared/models/competency';
+import { Guide, GuideEvent } from '../../shared/models/guide';
+import { FieldConfig } from '../../shared/models/guide-field';
+import { TeacherVersion } from '../../shared/models/teacher-version';
+import {
+  AsignacionDocente,
+  PROGRAMA,
+  crearAsignaciones,
+  crearCompetencias,
+  crearModulos,
+  crearRevisiones,
+} from './seed-academic';
+import { crearEstructuras, crearEventosGuias, crearGuias } from './seed-guides';
+import { crearVersiones } from './seed-versions';
+import { crearSugerencias, eventosDeSugerencias } from './seed-suggestions';
+import { Suggestion } from '../../shared/models/suggestion';
+import { EventoUsuarioMock, UsuarioMock, crearEventosUsuarios, crearUsuarios } from './seed-users';
 
 /**
  * "Base de datos" en memoria compartida por todos los servicios mock, para que los datos
@@ -11,7 +26,24 @@ import { UsuarioMock, crearUsuarios } from './seed-users';
 @Injectable({ providedIn: 'root' })
 export class MockDb {
   readonly programa: Program = PROGRAMA;
+
+  // HE-01
   usuarios: UsuarioMock[] = crearUsuarios();
+  eventosUsuarios: EventoUsuarioMock[] = crearEventosUsuarios(this.usuarios);
+
+  // HE-02
   modulos: AcademicModule[] = crearModulos();
+  competencias: Competency[] = crearCompetencias();
+  revisiones: CompetencyRevision[] = crearRevisiones(this.competencias);
+
+  // HE-03
+  estructuras: FieldConfig[] = crearEstructuras();
+  guias: Guide[] = crearGuias();
+  // HE-05 (antes del historial de guías: las aprobadas dejan eventos)
+  sugerencias: Suggestion[] = crearSugerencias(this.guias, this.usuarios);
+  eventosGuias: GuideEvent[] = [...crearEventosGuias(this.guias), ...eventosDeSugerencias(this.sugerencias)];
+
+  // HE-04
   asignaciones: AsignacionDocente[] = crearAsignaciones();
+  versiones: TeacherVersion[] = crearVersiones(this.guias);
 }

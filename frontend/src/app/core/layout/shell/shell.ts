@@ -1,8 +1,9 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import {
   ActivatedRouteSnapshot,
   NavigationEnd,
+  NavigationStart,
   Router,
   RouterLink,
   RouterLinkActive,
@@ -11,9 +12,11 @@ import {
 import { filter, map, of, startWith, switchMap } from 'rxjs';
 import { Auth } from '../../auth/auth';
 import { MockDb } from '../../mock/mock-db';
+import { Miga } from '../miga';
 import { ROLES_DOCENTES, ROLE_LABELS } from '../../../shared/models/user';
 import { Icon } from '../../../shared/ui/icon/icon';
 import { TeacherApi } from '../../../features/teacher-space/teacher-api';
+import { SuggestionApi } from '../../../features/suggestions/suggestion-api';
 import { navPara } from './nav';
 
 @Component({
@@ -28,6 +31,8 @@ export class Shell {
   private router = inject(Router);
   private teacherApi = inject(TeacherApi);
   private programa = inject(MockDb).programa;
+  private miga = inject(Miga);
+  private suggestionApi = inject(SuggestionApi);
 
   user = this.auth.user;
   menuAbierto = signal(false);
@@ -63,15 +68,33 @@ export class Shell {
     }
   });
 
-  // Miga de pan: el título de la ruta más profunda (data.titulo)
-  titulo = toSignal(
+  // Miga de pan: data.titulo y data.subtitulo de la ruta más profunda.
+  // Una pantalla puede cambiar el último nivel con el servicio Miga.
+  private datosRuta = toSignal(
     this.router.events.pipe(
       filter((e) => e instanceof NavigationEnd),
       startWith(null),
-      map(() => this.leerTitulo()),
+      map(() => this.leerMiga()),
     ),
-    { initialValue: '' },
+    { initialValue: { titulo: '', subtitulo: null } },
   );
+
+  // Contador "Sugerencias" del coordinador: se actualiza al navegar y al decidir una sugerencia
+  pendientesSugerencias = toSignal(
+    toObservable(computed(() => ({ ruta: this.datosRuta(), decisiones: this.suggestionApi.decisiones(), rol: this.user()?.rol }))).pipe(
+      switchMap(({ rol }) => (rol === 'COORDINADOR' ? this.suggestionApi.resumen().pipe(map((r) => r.pendientes)) : of(0))),
+    ),
+    { initialValue: 0 },
+  );
+
+  titulo = computed(() => this.datosRuta().titulo);
+  subtitulo = computed(() => this.miga.detalle() ?? this.datosRuta().subtitulo);
+
+  constructor() {
+    this.router.events
+      .pipe(filter((e) => e instanceof NavigationStart), takeUntilDestroyed())
+      .subscribe(() => this.miga.detalle.set(null));
+  }
 
   // Primera y última palabra del nombre, como en Figma: Julián Andrés Ospina → JO
   iniciales = computed(() => {
@@ -92,13 +115,15 @@ export class Shell {
     this.router.navigate(['/login']);
   }
 
-  private leerTitulo(): string {
+  private leerMiga(): { titulo: string; subtitulo: string | null } {
     let ruta: ActivatedRouteSnapshot | null = this.router.routerState.snapshot.root;
     let titulo = '';
+    let subtitulo: string | null = null;
     while (ruta) {
       titulo = (ruta.data['titulo'] as string | undefined) ?? titulo;
+      subtitulo = (ruta.data['subtitulo'] as string | undefined) ?? subtitulo;
       ruta = ruta.firstChild;
     }
-    return titulo;
+    return { titulo, subtitulo };
   }
 }

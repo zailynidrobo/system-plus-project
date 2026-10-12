@@ -1,33 +1,41 @@
 # Verificación del frontend · HE-01 a HE-05
 
 **Proyecto:** Intranet de guías académicas docentes · System Plus Piendamó / AthenaDev
-**Fecha:** 2026-10-11
-**Rama verificada:** `ramaJulia` (commit `b4f45d4`, igual a `origin/main` salvo el merge del PR #2)
-**Alcance:** solo verificación. No se cambiaron pantallas, estilos ni lógica de la app.
+**Fecha:** 2026-10-12 (actualiza la verificación del 2026-10-11)
+**Rama:** `feature/front-he02-he05`, creada desde `ramaJulia` (commit `b4f45d4`)
+**Alcance:** implementación de HE-02 a HE-05 y ajustes de HE-01 en el front, con datos simulados. No se modificó el backend.
 
 ---
 
 ## 1. Resumen
 
-| Estado | Cantidad | HU |
-|---|---|---|
-| ✅ Completa | 1 | HE-01 HU-01 |
-| 🟡 Parcial | 4 | HE-01 HU-02, HU-03, HU-04, HU-05 |
-| ❌ Falta | 17 | Todas las de HE-02 (6), HE-03 (4), HE-04 (3) y HE-05 (4) |
-| ⚠️ Difiere de Figma | 0 verificadas | Ver la nota sobre Figma |
-| **Total** | **22** | |
+| Estado | Antes (11 oct) | Ahora | HU |
+|---|---|---|---|
+| ✅ Completa | 1 | **21** | HE-01 HU-01, HU-03, HU-04, HU-05 · HE-02 (6) · HE-03 (4) · HE-04 (3) · HE-05 (4) |
+| 🟡 Parcial | 4 | **1** | HE-01 HU-02 (no hay pantalla de perfil; tampoco está en Figma) |
+| ❌ Falta | 17 | **0** | — |
+| **Total** | 22 | 22 | |
 
-**Hallazgos principales**
+"Completa" significa que los criterios de aceptación se cumplen **en el front, contra el mock en memoria**. La integración con el backend real está pendiente (sección 8).
 
-1. **El front solo implementa HE-01 (login y usuarios).** No hay rutas, componentes ni servicios de módulos, competencias, guías, espacio docente ni sugerencias en ninguna rama del repositorio:
-   - `main` / `ramaJulia`: solo `features/auth` y `features/users`.
-   - `develop` y `feature/formularios-dinamicos`: solo contienen el backend NestJS (`gestion-guias/`), sin carpeta `frontend/`.
-   - `copilot/invite-collaborator-sofiamoreno`: el mismo front que `main`.
-   - El `.zip` que hay junto al repositorio tiene el mismo contenido que `ramaJulia`.
-2. **Coordinador y Docente no pueden usar la app.** Inician sesión, pero el login siempre redirige a `/usuarios` (solo Administrador) y el `roleGuard` los devuelve a `/login` sin ningún mensaje.
-3. **Todo HE-01 funciona con datos simulados.** Hay dos conjuntos de mocks que no están conectados entre sí: los usuarios del login (`auth.ts`) y los del listado (`user-api.ts`). Por eso desactivar o cambiar el rol en el listado no afecta a quién puede iniciar sesión.
-4. **El interceptor HTTP no envía el token.** Su implementación real quedó pegada dentro del archivo de pruebas `auth-interceptor.spec.ts`.
-5. **La comparación con Figma está pendiente.** El enlace del archivo no se proporcionó (el texto decía `<PEGA AQUÍ EL ENLACE DEL ARCHIVO DE FIGMA>`). El MCP de Figma está conectado (`whoami` OK, usuario *SofiaMoreno*), pero no se hizo ninguna llamada que cuente para el límite. El código cita el Figma en `user-role.ts:14`.
+**Qué cambió**
+
+1. **Las 22 HU tienen pantalla, servicio y pruebas.** Las épicas comparten una sola base en memoria (`core/mock/mock-db.ts`), así que los datos son coherentes entre ellas. Por ejemplo:
+   - la guía que publica la coordinadora aparece en el espacio del docente;
+   - la sugerencia que aprueba sube la versión de esa guía.
+2. **Cada rol entra a su inicio:**
+   - Administrador → `/usuarios`;
+   - Coordinador → `/modulos`;
+   - Docente y Docente Autorizado → `/mis-modulos`.
+
+   El menú y la miga de pan dependen del rol. Una ruta de otro rol lleva a «Sin acceso» y no al login.
+3. **El login y el listado de usuarios usan los mismos datos.** Desactivar a un usuario le impide entrar. Un cambio de rol se aplica en la siguiente navegación, porque `authGuard` vuelve a consultar al usuario.
+4. **El interceptor envía `Authorization: Bearer <token>`** y su `.spec` tiene pruebas reales.
+5. **La autenticación es intercambiable:**
+   - el contrato es `AuthProvider` y el único punto de cambio es `provideAuth()`;
+   - hoy se usa `MockAuthProvider`;
+   - `role-mapping.ts` traduce los roles de Keycloak y tiene pruebas.
+6. **Figma:** se usaron unas 40 llamadas (`get_design_context`, `get_screenshot` y `get_metadata`) sobre los frames de cada HU. Las diferencias aceptadas están en la sección 6.
 
 ---
 
@@ -35,219 +43,285 @@
 
 | Paso | Resultado |
 |---|---|
-| Node / npm | `v24.21.0` / `11.19.0`. Cumple Angular 21 (`^20.19 \|\| ^22.12 \|\| >=24`). |
-| `npm ci` | ✅ OK (469 paquetes). npm 11.19 avisa de que no ejecutó los *install scripts* de `esbuild`, `lmdb`, `msgpackr-extract` y `@parcel/watcher` (falta `allowScripts`). No afecta a compilar, probar ni servir. |
-| `npm audit` | 5 vulnerabilidades (2 críticas, 3 altas), todas en dependencias transitivas de la herramienta de compilación: `piscina`, `http-cache-semantics` y `@modelcontextprotocol/sdk`. Se arreglan con `npm audit fix`, pero **no se aplicó** porque modifica `package-lock.json`. |
-| `ng build --configuration development` | ✅ OK, sin advertencias. |
-| `ng build` (producción) | ✅ OK. Inicial: 396 kB (97 kB transferidos), dentro del presupuesto de 500 kB. ⚠️ 4 advertencias de presupuesto `anyComponentStyle` (máx. 4 kB): `login.scss` 4.31 kB, `user-role.scss` 4.25 kB, `user-list.scss` 4.14 kB y `user-deactivate.scss` 4.14 kB. Ninguno llega al límite de error de 8 kB. |
-| `ng test --watch=false` | Antes: ❌ 3 tests y 1 archivo fallaban. Después de los cambios de la sección 7: **9/9 tests pasan**, pero sigue fallando 1 archivo (`auth-interceptor.spec.ts`, sin suite de pruebas). Está pendiente de decisión. |
-| `ng serve` | ✅ Responde en `http://localhost:4200` (HTTP 200). |
+| Node / npm | `v24.21.0` / `11.19.0` |
+| `npm ci` | ✅ Sin cambios en `package.json` ni en `package-lock.json`. No se agregaron dependencias. |
+| `ng build --configuration development` | ✅ OK |
+| `ng build` (producción) | ✅ OK. *Bundle* inicial de **423 kB** (111 kB transferidos), por debajo de los 500 kB del presupuesto. Todas las pantallas se cargan solo al abrirlas (`loadComponent`). Quedan las mismas 4 advertencias `anyComponentStyle` de HE-01, entre 4.14 y 4.31 kB, por debajo del límite de error de 8 kB. Ningún `.scss` nuevo supera 4 kB. |
+| `ng test --watch=false` | ✅ **150 pruebas en 22 archivos, todas pasan.** |
+| `ng serve` | ✅ `http://localhost:4200` |
 
-No había una herramienta de navegador disponible en la sesión. Las pantallas se verificaron leyendo las plantillas y la lógica.
+**Pruebas nuevas:**
+- `user-api`, `module-api`, `competency-api`, `guide-api`, `field-config-api`, `teacher-api` y `suggestion-api`;
+- `auth`, `token-storage`, `role-mapping` y `auth-interceptor`;
+- `dynamic-form` y `version-edit` (autoguardado);
+- `nav` y `app.routes` (redirección y acceso por rol).
+
+No hubo una herramienta de navegador en la sesión. La comparación visual con Figma se hizo leyendo el código frente a las capturas de cada frame (ver sección 6.3).
 
 ---
 
-## 3. Inventario del front
+## 3. Inventario
 
 ### 3.1 Rutas
 
-| Ruta | Componente | Guard / rol | HU |
-|---|---|---|---|
-| `/login` | `Login` | Pública | HE-01 HU-05 |
-| `/` | `Shell` → redirige a `usuarios` | `authGuard` | — |
-| `/usuarios` | `UserList` | `roleGuard` ADMINISTRADOR | HE-01 (listado base) |
-| `/usuarios/nuevo` | `UserForm` | ADMINISTRADOR | HE-01 HU-01 |
-| `/usuarios/registro-exitoso` | `UserCreated` | ADMINISTRADOR | HE-01 HU-01 (confirmación) |
-| `/usuarios/:id/editar` | `UserEdit` | ADMINISTRADOR | HE-01 HU-02 |
-| `/usuarios/:id/desactivar` | `UserDeactivate` | ADMINISTRADOR | HE-01 HU-03 |
-| `/usuarios/:id/rol` | `UserRole` | ADMINISTRADOR | HE-01 HU-04 |
-| `**` | redirige a `login` | — | — |
+La tabla completa está en `frontend/GUIA-EJECUCION.md`, sección 7. Fuente: `frontend/src/app/app.routes.ts`.
 
-Fuente: `frontend/src/app/app.routes.ts:13-32`.
-
-### 3.2 Servicios y origen de los datos
-
-| Servicio | Mock o API | Evidencia |
+| Épica | Rutas | Rol |
 |---|---|---|
-| `Auth` (login/logout/rol) | **Mock** (`USE_MOCK = true`). Con `false` llamaría a `POST http://localhost:3000/api/auth/login`. | `core/auth/auth.ts:8-9`, `:27-30`, `:50-59` |
-| `UserApi` (listar, resumen, crear, obtener, actualizar, desactivar, cambiarRol) | **Solo mock**, en memoria. No inyecta `HttpClient` ni tiene una opción para usar la API real. Los datos se pierden al recargar. | `features/users/user-api.ts:58-145` |
-| `TokenStorage` | `localStorage` si se marca "Mantener sesión"; si no, `sessionStorage`. | `core/auth/token-storage.ts:9-16` |
-| `authInterceptor` | No hace nada (solo `next(req)`). | `core/interceptors/auth-interceptor.ts:3-5` |
+| HE-01 | `/usuarios…`, `/roles`, `/roles/:id` | Administrador |
+| HE-02 | `/modulos…`, `/modulos/:id/competencias/…` | Coordinador |
+| HE-03 | `/guias`, `/guias/nueva`, `/guias/:id`, `/guias/:id/editar`, `/guias/estructura` | Coordinador |
+| HE-04 | `/mis-modulos`, `/mis-modulos/guias/:id`, `/mis-versiones`, `/mis-versiones/:id` | Docente, Docente Autorizado |
+| HE-05 | `/mis-modulos/guias/:id/sugerir`, `/mis-sugerencias`, `/mis-sugerencias/:id` | Docente, Docente Autorizado |
+| HE-05 | `/sugerencias`, `/sugerencias/:id` | Coordinador |
+| Común | `/login` (`guestGuard`), `/sin-acceso`, `''` → inicio del rol, `**` → `''` | — |
 
-No existen los archivos `environments/`: la URL de la API está escrita directamente en `auth.ts:9`.
+### 3.2 Servicios
 
-### 3.3 Usuarios de prueba (mock del login)
+Todos los servicios devuelven `Observable`, simulan latencia (`MOCK_LATENCY`, 350 ms; 0 en pruebas), entregan copias (`structuredClone`) y fallan con `ApiError(code)`.
 
-| Correo | Contraseña | Rol | Activo | ¿Qué pasa al entrar? |
-|---|---|---|---|---|
-| `admin@systemplus.edu.co` | `123456` | ADMINISTRADOR | Sí | Entra a `/usuarios`. |
-| `coordinador@systemplus.edu.co` | `123456` | COORDINADOR | Sí | Vuelve a `/login` sin mensaje (ver B-02). |
-| `docente@systemplus.edu.co` | `123456` | DOCENTE | Sí | Vuelve a `/login` sin mensaje (ver B-02). |
-| `inactivo@systemplus.edu.co` | `123456` | DOCENTE | No | Mensaje genérico de credenciales inválidas. |
+| Servicio | Métodos | Endpoint del backend que imita |
+|---|---|---|
+| `Auth` + `MockAuthProvider` | `login`, `refrescar`, `token`, `logout`, `hasRole` | (Keycloak, ver 8.1) |
+| `UserApi` | `listar`, `resumen`, `conteoPorRol`, `correoDisponible`, `crear`, `obtener`, `historial`, `actualizar`, `desactivar`, `cambiarRol` | `/users` |
+| `ModuleApi` | `listar`, `resumen`, `obtener`, `disponibilidadNombre`, `disponiblesParaGuias`, `crear`, `actualizar`, `registrar`, `inhabilitar`, `rehabilitar` | `/programs/:id/modules`, `/modules/:id/*` |
+| `CompetencyApi` | `listar`, `siguienteCodigo`, `obtener`, `historial`, `guiasPublicadas`, `crear`, `actualizar`, `eliminar` | `/modules/:id/competencies`, `/competencies/:id` |
+| `FieldConfigApi` | `obtener`, `impacto`, `guardar` | `PUT /academic/modules/:id/guide-fields` |
+| `GuideApi` | `listar`, `resumen`, `obtener`, `historial`, `siguienteCodigo`, `docentesDelModulo`, `crear`, `actualizar`, `publicar` | `/academic/guides` |
+| `TeacherApi` | `misModulos`, `guiasAsignadas`, `obtenerGuia`, `crearVersion`, `misVersiones`, `obtenerVersion`, `aislamiento`, `guardarCampo` | `/academic/guides/:id/personalized-versions`, `/academic/personalized-versions` |
+| `SuggestionApi` | `enviar`, `misSugerencias`, `obtenerMia`, `listar`, `resumen`, `guiasConSugerencias`, `obtener`, `aprobar`, `rechazar` | **No existe** (contrato propuesto en 8.5) |
 
-No hay un usuario de prueba con el rol DOCENTE_AUTORIZADO.
+### 3.3 Usuarios de prueba
+
+La contraseña de todos es `123456`.
+
+| Correo | Nombre | Rol | Inicio |
+|---|---|---|---|
+| `admin@systemplus.edu.co` | Diana Marcela Ruiz | Administrador | `/usuarios` |
+| `coordinador@systemplus.edu.co` | Laura Muñoz | Coordinador Académico | `/modulos` |
+| `docente@systemplus.edu.co` | Julián Andrés Ospina | Docente (POO y Bases de Datos) | `/mis-modulos` |
+| `autorizado@systemplus.edu.co` | Paola Valencia | Docente Autorizado (POO y Redes) | `/mis-modulos` |
+| `inactivo@systemplus.edu.co` | Carlos Ramírez | Docente desactivado | No entra |
 
 ---
 
 ## 4. Verificación por historia de usuario
 
-Leyenda de la columna Figma: "—" = sin verificar, porque falta el enlace del archivo.
-
 ### HE-01 · Usuarios, roles y permisos (Administrador)
 
-| HU | Estado | Ruta / componente | Frame Figma | Evidencia |
+| HU | Estado | Pantallas | Evidencia |
+|---|---|---|---|
+| HU-01 Registrar usuario | ✅ | `/usuarios/nuevo`, `/usuarios/registro-exitoso` | El correo debe ser único y se verifica mientras se escribe, con el aviso «Correo disponible. Debe ser único…». La contraseña la genera el sistema. |
+| HU-02 Editar usuario | 🟡 | `/usuarios/:id/editar` | Subtítulo con código y fecha de creación, «Historial reciente», correo único. El cambio se ve en el listado y, si el administrador se edita a sí mismo, en el encabezado. **Falta la pantalla de perfil:** «Ver perfil» sigue deshabilitado y no hay frame en Figma. |
+| HU-03 Desactivar usuario | ✅ | `/usuarios/:id/desactivar` | Desactivación lógica y confirmada. El usuario desactivado no puede iniciar sesión, y si tenía sesión abierta la pierde en su siguiente navegación (`authGuard` → `refrescar`). |
+| HU-04 Asignar rol | ✅ | `/roles` → `/roles/:id` | Se llega desde «Roles y permisos», como en Figma (`/usuarios/:id/rol` redirige). Un solo rol, que reemplaza al anterior. Se aplica sin volver a iniciar sesión (prueba en `app.routes.spec.ts`). |
+| HU-05 Iniciar sesión | ✅ | `/login` | El error es genérico. «Mantener sesión» usa `localStorage`; sin marcarla se usa `sessionStorage`. Cada rol entra a su inicio y `/login` con sesión redirige al inicio del rol. |
+
+### HE-02 · Programa académico (Coordinador)
+
+| HU | Estado | Pantallas | Frame | Evidencia |
 |---|---|---|---|---|
-| HU-01 Registrar usuario | ✅ | `/usuarios/nuevo` → `UserForm`; `/usuarios/registro-exitoso` → `UserCreated` | — | Nombre, correo y rol obligatorios (`user-form.ts:41-45`). Correo único con aviso "Este correo ya está registrado en el directorio." (`user-form.ts:95`, `user-api.ts:90-92`). No hay campo de contraseña y se informa que se genera de forma automática y no se muestra (`user-form.html:54-63`, `user-created.html:30-39`). |
-| HU-02 Editar usuario | 🟡 | `/usuarios/:id/editar` → `UserEdit` | — | Edita nombre y correo, valida que el correo sea único y muestra "Cambios guardados correctamente." (`user-edit.ts:119-143`, `user-edit.html:62-66`). El listado se actualiza porque `UserApi` es un singleton. **No existe pantalla de perfil** ("Ver perfil" está deshabilitado en `user-created.html:42`). Si el administrador se edita a sí mismo, la barra superior no cambia. |
-| HU-03 Desactivar usuario | 🟡 | `/usuarios/:id/desactivar` → `UserDeactivate` | — | Pide confirmación con una pantalla dedicada (`user-deactivate.html:82-88`). No borra, solo cambia `activo` (`user-api.ts:127-134`). El listado muestra "Desactivado" (`user-list.html:101-103`). **"No puede iniciar sesión"** solo se cumple con el usuario fijo `inactivo@`: desactivar desde la pantalla no afecta al login, porque son mocks distintos (`auth.ts:11-16` frente a `user-api.ts:44-56`). |
-| HU-04 Asignar rol | 🟡 | `/usuarios/:id/rol` → `UserRole` | — | Ofrece los 4 roles como opción única (radio) (`user-role.ts:16-49`, `user-role.html:27-53`). Reemplaza el rol anterior (`user-api.ts:137-144`). **"Aplica sin volver a iniciar sesión"** no se cumple en el front: el rol del usuario conectado se guarda al iniciar sesión (`token-storage.ts:11-16`) y nunca se vuelve a consultar. Para llegar a la pantalla solo hay un enlace dentro de "Editar usuario" (`user-edit.html:58`). El listado no tiene acción de rol (`user-list.html:106-118`) y "Roles y permisos" del menú está deshabilitado (`shell.ts:23`). |
-| HU-05 Iniciar sesión | 🟡 | `/login` → `Login` | — | Entra con correo y contraseña. El mensaje de error es genérico y no dice qué dato falló (`login.ts:67-71`, `login.html:43-50`). La sesión persiste con "Mantener sesión iniciada", marcado por defecto (`login.ts:22`, `token-storage.ts:11-16`). **Solo funciona para Administrador** (ver B-02). Si ya hay sesión, `/login` no redirige a la app. |
+| HU-01 Registrar módulo | ✅ | `/modulos/nuevo` | 204:3942, 204:3823, 204:3716 | Código `TS-MOD-NN` y sigla de competencias generados (`buildCompetencyPrefix`). El nombre duplicado se detecta sin distinguir mayúsculas. Tiene borrador y registro. |
+| HU-02 Editar módulo | ✅ | `/modulos/:id/editar` | 204:3587 | Nombre único, cambios con trazabilidad y sigla que no se repite (`ensureUniquePrefix`). |
+| HU-03 Inhabilitar módulo | ✅ | `/modulos/:id/inhabilitar` | 204:3450 | Inhabilitación lógica con efectos visibles. Un módulo inhabilitado no admite guías nuevas. Se puede rehabilitar. |
+| HU-04 Asociar competencia | ✅ | `/modulos/:id/competencias/nueva` | 204:3143 | Código `COMP-<SIGLA>-NN` consecutivo, sin duplicados y solo en módulos activos. |
+| HU-05 Editar competencia | ✅ | `…/competencias/:id/editar` | 204:3021 | Guarda la versión anterior en el historial. Las guías publicadas conservan el texto con el que se publicaron. |
+| HU-06 Eliminar competencia | ✅ | `…/competencias/:id/eliminar` | 204:2892 | Eliminación lógica. Avisa cuántas guías publicadas la usan y deja de ofrecerse para guías nuevas. |
 
-### HE-02 · Programa académico: módulos y competencias (Coordinador)
-
-| HU | Estado | Evidencia |
-|---|---|---|
-| HU-01 Registrar módulo | ❌ | No hay ruta, componente ni servicio. `app.routes.ts` solo define rutas de usuarios. |
-| HU-02 Editar módulo | ❌ | Ídem. |
-| HU-03 Inhabilitar módulo | ❌ | Ídem. |
-| HU-04 Asociar competencia | ❌ | Ídem. |
-| HU-05 Editar competencia | ❌ | Ídem. |
-| HU-06 Eliminar competencia | ❌ | Ídem. |
+Listado y detalle: PanelCoordinador (204:4077) y Competencias (204:3269).
 
 ### HE-03 · Guías base institucionales (Coordinador)
 
-| HU | Estado | Evidencia |
-|---|---|---|
-| HU-01 Crear guía base | ❌ | Sin implementar en el front. |
-| HU-02 Editar guía en Borrador | ❌ | Sin implementar. |
-| HU-03 Publicar guía | ❌ | Sin implementar. |
-| HU-04 Configurar campos del formulario | ❌ | Sin implementar. La rama `feature/formularios-dinamicos` tiene esto solo en el backend (`PUT /academic/modules/:moduleId/guide-fields`). |
+| HU | Estado | Pantallas | Frame | Evidencia |
+|---|---|---|---|---|
+| HU-01 Crear guía base | ✅ | `/guias/nueva` | 2027:507, 2027:792 | El formulario se genera desde la estructura vigente del módulo. Código `GB-<SIGLA>-NN`. Queda en Borrador. Solo se ofrecen módulos activos con competencias. |
+| HU-02 Editar guía en Borrador | ✅ | `/guias/:id/editar` | 2027:959 | Solo en Borrador (`GUIDE_NOT_EDITABLE`). Marca los campos modificados y registra eventos en el historial. |
+| HU-03 Publicar guía | ✅ | Modal desde la edición | 2027:1373, 2027:1176 | Exige los campos obligatorios (`REQUIRED_FIELDS_MISSING`). Queda en `v1.0` con fecha y responsable. Una guía publicada no se edita directamente. |
+| HU-04 Configurar campos | ✅ | `/guias/estructura` | 2027:1559, 2027:1915 | Agregar, editar, reordenar (arrastre o teclado) y eliminar campos, con vista previa. Cada cambio crea una versión de estructura. Los borradores adoptan la nueva; las guías publicadas conservan la suya. |
 
-### HE-04 · Espacio del docente (Docente)
+Listado: 2025:26.
 
-| HU | Estado | Evidencia |
-|---|---|---|
-| HU-01 Consultar guías base | ❌ | Sin implementar. Además, el Docente no puede pasar del login (B-02). |
-| HU-02 Crear versión personalizada | ❌ | Sin implementar. |
-| HU-03 Editar versión personalizada | ❌ | Sin implementar. |
+### HE-04 · Espacio del docente
+
+| HU | Estado | Pantallas | Frame | Evidencia |
+|---|---|---|---|---|
+| HU-01 Consultar guías base | ✅ | `/mis-modulos`, `/mis-modulos/guias/:id` | 4002:26, 4002:328 | Solo guías **publicadas** de módulos **asignados**. Las demás se cuentan, pero no se muestran. Abrir una guía de otro módulo responde `GUIDE_NOT_ASSIGNED`. Solo lectura con «Documento institucional · solo lectura». |
+| HU-02 Crear versión personalizada | ✅ | Modal «Crear mi versión» | 4002:738, 4002:842 | Copia física (`structuredClone`) del contenido y la estructura. El nombre es único por docente. Las pruebas comprueban que no comparte referencias con la guía ni con otras versiones y que cada docente ve y abre solo las suyas. |
+| HU-03 Editar versión personalizada | ✅ | `/mis-versiones/:id` | 4002:1110 | Edición campo por campo. Autoguardado 1 s después de la última tecla, más «Guardar campo» y «Descartar». Marca «Adaptado» y muestra el progreso. Los campos con `teacherEditable: false` quedan bloqueados. La guía base nunca cambia. |
 
 ### HE-05 · Sugerencias y aprobación
 
-| HU | Estado | Evidencia |
-|---|---|---|
-| HU-01 Enviar sugerencia (Docente) | ❌ | Sin implementar en el front ni en el backend (no hay ningún archivo `suggest*` en ninguna rama). |
-| HU-02 Revisar pendientes (Coordinador) | ❌ | Ídem. |
-| HU-03 Aprobar sugerencia | ❌ | Ídem. |
-| HU-04 Rechazar sugerencia | ❌ | Ídem. |
+| HU | Estado | Pantallas | Frame | Evidencia |
+|---|---|---|---|---|
+| HU-01 Enviar sugerencia (Docente) | ✅ | `/mis-modulos/guias/:id/sugerir`, `/mis-sugerencias/:id` | 5003:26, 5003:322 | Un campo por sugerencia, con contenido actual, cambio propuesto y justificación. Queda **Pendiente** con código `SUG-NNN` y plazo de 5 días hábiles. No admite un cambio vacío ni igual al actual, ni dos pendientes propias sobre el mismo campo. |
+| HU-02 Revisar pendientes (Coordinador) | ✅ | `/sugerencias` | 5003:514 | Pestañas por estado con contadores, filtro por guía (de cualquier módulo), orden y plazo restante. El menú muestra el número de pendientes. |
+| HU-03 Aprobar sugerencia | ✅ | `/sugerencias/:id` | 5003:831 | Previa confirmación, reemplaza el campo en la guía, sube la versión menor (v1.0 → v1.1), actualiza la fecha y registra el evento en el historial. No toca las versiones docentes. Se bloquea si el campo cambió desde que se envió (`GUIDE_CHANGED`). |
+| HU-04 Rechazar con retroalimentación | ✅ | Modal de rechazo | 5003:1054 | Pide motivo (lista) y retroalimentación de 30 a 500 caracteres. La guía no cambia y el docente ve el motivo en «Mis sugerencias». |
 
 ---
 
-## 5. Detalle de brechas y sugerencias
+## 5. Brechas de la verificación anterior
 
-Ordenadas por prioridad: primero lo que bloquea criterios de aceptación.
+| Id | Situación |
+|---|---|
+| B-01 No existía el front de HE-02 a HE-05 | ✅ Resuelta (sección 4). |
+| B-02 Coordinador y Docente volvían al login | ✅ Resuelta: inicio por rol (`role-home.ts`), página «Sin acceso» y `guestGuard` en `/login`. |
+| B-03 Menú fijo de Administración | ✅ Resuelta: `shell/nav.ts` por rol, recuadro de programa o de módulos asignados, y miga de pan desde `route.data`. |
+| B-04 Mocks separados del login y del listado | ✅ Resuelta en el mock (`MockDb` compartida + `refrescar`). Con el backend hará falta `GET /users/me` (8.5). |
+| B-05 El interceptor no enviaba el token | ✅ Resuelta, con pruebas. |
+| I-01 `UserApi` sin modo API | ⏳ Sigue pendiente, igual que el resto de servicios (8.6). |
+| I-02 No hay pantalla de perfil | ⏳ Pendiente. No hay frame en Figma; «Ver perfil» queda deshabilitado. |
+| I-03 Acceso a «Asignar rol» | ✅ Desde «Roles y permisos», como en Figma. |
+| I-04 Permisos provisionales | ✅ Los textos de permisos salen de Figma. |
+| I-05 Sin usuario Docente Autorizado | ✅ `autorizado@` (Paola Valencia). |
 
-### Bloqueantes
-
-**B-01 · No existe el front de HE-02 a HE-05 (17 HU).**
-Sugerencia: crear `features/academic-program/` (módulos y competencias), `features/guides/` (guías base y configuración de campos), `features/teacher-space/` (consulta y versiones personalizadas) y `features/suggestions/`. Seguir el patrón de `features/users`: un servicio `*-api.ts`, una pantalla por acción y `roleGuard` con `data: { roles: [...] }`.
-
-**B-02 · Coordinador y Docente no pueden entrar a la app.**
-- `login.ts:66` siempre navega a `/usuarios`.
-- `app.routes.ts:28` redirige `''` a `usuarios`.
-- `role-guard.ts:13` manda a `/login` a quien no tiene el rol, y la sesión queda guardada.
-
-Resultado: el usuario vuelve a la pantalla de login sin ninguna explicación.
-Sugerencia: redirigir según el rol después del login (p. ej. Coordinador → `/modulos`, Docente → `/mis-guias`), crear una página "Sin acceso" (el propio código lo deja pendiente en `role-guard.ts:12`) y, en `/login`, redirigir a quien ya tiene sesión.
-
-**B-03 · El menú lateral no depende del rol.**
-`shell.ts:20-25` define siempre el bloque "ADMINISTRACIÓN" (Inicio, Usuarios, Roles y permisos, Auditoría), y la miga de pan dice siempre "Gestión de usuarios" (`shell.html:36`).
-Sugerencia: armar `nav` con un `computed` que dependa de `auth.user().rol` y tomar la miga de pan de `route.data`.
-
-**B-04 · HE-01 HU-03 y HU-04 no se cumplen de punta a punta.**
-Los mocks del login y del listado están separados: desactivar no impide iniciar sesión y cambiar el rol no afecta a la sesión.
-Sugerencia: con el backend real, hacer que el login rechace a los inactivos y que el front vuelva a consultar el usuario actual (`GET /me` o similar) al navegar o con un intervalo, para aplicar el rol sin cerrar sesión. Mientras se use el mock, que `Auth` y `UserApi` compartan la misma fuente de datos.
-
-**B-05 · El token no se envía al backend.**
-`core/interceptors/auth-interceptor.ts:3-5` está vacío. La implementación correcta (agregar `Authorization: Bearer <token>`) está en `core/interceptors/auth-interceptor.spec.ts:1-9`, que por eso falla como "No test suite found".
-Sugerencia: mover ese código a `auth-interceptor.ts` y escribir una prueba real en el `.spec`.
-
-### Importantes
-
-**I-01 · `UserApi` no tiene modo API.**
-Para conectar el backend hay que reescribir los métodos con `HttpClient`. No basta con cambiar `USE_MOCK`.
-
-**I-02 · No hay pantalla de perfil.**
-HU-02 pide que el cambio se refleje en el perfil. Hay que crear `/perfil` o `/usuarios/:id` y habilitar "Ver perfil" (`user-created.html:42`).
-
-**I-03 · Acceso a "Asignar rol".**
-Agregar la acción en la tabla del listado (`user-list.html:106-118`) o habilitar "Roles y permisos" en el menú, según lo que muestre Figma.
-
-**I-04 · Permisos provisionales.**
-Los permisos de Administrador, Docente y Docente Autorizado en `user-role.ts:14-15` están marcados como provisionales. Confirmarlos con el equipo y con Figma.
-
-**I-05 · No hay usuario de prueba DOCENTE_AUTORIZADO.**
-Agregar uno en `auth.ts:11-16` para poder probar ese rol.
-
-### Menores
-
-- "Guardar borrador" aparece deshabilitado en el registro (`user-form.html:74-76`). No está en los criterios de aceptación; confirmar con Figma si debe existir.
-- La pantalla de desactivar dice "La cuenta podrá reactivarse posteriormente" (`user-deactivate.html:70`), pero el front no tiene opción para reactivar.
-- El texto del registro dice "La usuaria deberá renovarla al ingresar" (`user-form.html:60`), en femenino fijo. Mejor algo neutro, como "La persona usuaria…".
-- Presupuestos de estilos excedidos por pocos bytes en 4 componentes (sección 2).
+**Menores que siguen abiertos (HE-01):**
+- «Guardar borrador» deshabilitado en el registro de usuario.
+- El texto de desactivar dice que la cuenta «podrá reactivarse», pero no hay opción para hacerlo.
+- El texto del registro sigue con «La usuaria deberá renovarla…».
+- Las 4 advertencias de presupuesto de estilos.
 
 ---
 
-## 6. Figma: pantallas sin implementar o fuera de Figma
+## 6. Figma
 
-**No se pudo hacer el inventario** porque falta el enlace del archivo de Figma. Llamadas usadas: 1 (`whoami`, que no cuenta para el límite).
+### 6.1 Archivos usados
 
-Cuando se tenga el enlace, el plan es: 1 `get_metadata` para listar páginas y frames, unos 22–30 `get_screenshot` (un frame por HU y los estados de error, éxito o modal) y `get_design_context` solo si hay dudas puntuales. En total, menos de 40 llamadas.
+- HE-01: PanelDeAdministrador.
+- HE-02: PanelCoordinador.
+- HE-03: Guías base.
+- HE-04: fileKey `xXoKUjpJJATuJIjjNKZFyo`.
+- HE-05: fileKey `Znjy3CEcKLrbgXeQfiEguh`.
 
-**Pantallas implementadas que habrá que comprobar contra Figma:**
-- Login.
-- Listado de usuarios, con tarjetas de resumen, filtros y paginación.
-- Registrar usuario (paso 1) y Registro completado (paso 2).
-- Editar usuario.
-- Desactivar usuario: confirmación en una página completa, no en un modal. Revisar cuál de las dos opciones muestra Figma.
-- Asignar rol.
+Los frames de cada HU están en la sección 4 y en un comentario al inicio de cada componente.
 
-**Elementos del menú sin pantalla:** "Inicio", "Roles y permisos", "Auditoría" y "Centro de ayuda". También "¿Olvidaste tu contraseña?" y "¿Necesitas ayuda?" en el login.
+### 6.2 Diferencias aceptadas con Figma
+
+**General**
+- Los contadores muestran datos reales del mock. Por ejemplo, «Aprobadas 1» en lugar del 9 de Figma, y «3 guías publicadas de otros módulos» en lugar de 5.
+- Se mantiene el menú de HE-02 en todas las pantallas del coordinador, aunque algunos frames de HE-03 muestran otros íconos.
+- No se afirma que se envían notificaciones, porque no existen:
+  - «Notificaciones enviadas» se cambió por «Quién verá el cambio»;
+  - «Laura Muñoz recibirá una notificación…» se cambió por «Coordinación la verá en su bandeja».
+
+**HE-02**
+- Inhabilitar módulo y eliminar competencia son pantallas completas (como en Figma), con un motivo opcional agregado.
+- Siglas según la regla del backend: `RC` y `ME`, en lugar de `RED` y `MTO`.
+- «Seguridad informática y soporte» es `TS-MOD-06`.
+
+**HE-03**
+- La competencia es obligatoria al crear una guía.
+- Los tipos «Opción múltiple» y «Archivo» no se ofrecen porque el backend no los tiene.
+- El mensaje de publicación dice que los docentes «ya pueden consultarla».
+
+**HE-04**
+- «Intensidad horaria» no es editable por el docente (`teacherEditable: false` en la estructura); Figma muestra un lápiz.
+- «Metodología» es una lista desplegable en la estructura de HE-03; Figma de HE-04 la muestra como texto libre.
+- Un docente puede tener varias versiones de una guía, como en la tabla de Figma. La guía ofrece «Continuar mi versión» y «Crear otra versión».
+- El ojo de la tabla «Mis versiones» abre la guía base de origen.
+- Además de «Guardar campo», hay autoguardado 1 s después de escribir.
+
+**HE-05**
+- «3. Cambio propuesto» es el contenido completo que tendrá el campo. Viene precargado con el texto actual para editar sobre él, y lo agregado se resalta en la revisión.
+- La columna «Propuesta» es un resumen calculado («Agrega «…»» o «Cambia a «…»»).
+- En campos de lista solo se pueden proponer opciones existentes. El ejemplo de Figma «Ampliar de 40 a 48 horas» no es posible con la estructura actual.
+- Aprobar pide confirmación, que no aparece en Figma.
+- Al rechazar se vuelve a la bandeja con un aviso: Figma no tiene frame del resultado.
+
+### 6.3 Pantallas que hay que revisar en el navegador
+
+No hubo un navegador para comparar. Conviene revisar a 1440 px y 1280 px, en este orden:
+
+1. Las pantallas **sin frame**, que siguen el estilo de las vecinas:
+   - `/roles` (lista de Roles y permisos);
+   - `/guias/:id` (guía publicada para el coordinador);
+   - `/mis-sugerencias` (listado del docente);
+   - los estados «aprobada» y «rechazada» de `/mis-sugerencias/:id`;
+   - la revisión de una sugerencia ya decidida.
+2. Las de **más densidad**:
+   - el editor de versión (`/mis-versiones/:id`) con un campo abierto;
+   - la revisión de sugerencia (las dos columnas pasan a una sola por debajo de 1280 px);
+   - `/guias/estructura`.
+3. **Sugerir cambio**: la lista de campos y el detalle pasan a una sola columna por debajo de 1280 px.
 
 ---
 
-## 7. Errores encontrados y correcciones aplicadas
+## 7. Cambios a pruebas heredadas (verificación del 11 oct)
 
-Todos los cambios están sin confirmar (sin commit) y solo afectan a archivos de pruebas.
-
-| Archivo | Problema | Cambio |
-|---|---|---|
-| `frontend/src/app/features/users/user-list/user-list.spec.ts` | `NG0201: No provider found for ActivatedRoute`. El componente usa `RouterLink` y el test no daba un router. | Se agregó `import { provideRouter }` y `providers: [provideRouter([])]`. |
-| `frontend/src/app/features/users/user-form/user-form.spec.ts` | El mismo error `NG0201`. | El mismo cambio. |
-| `frontend/src/app/app.spec.ts` | La prueba heredada del andamiaje de Angular buscaba un `<h1>` con "Hello, frontend". Ese texto ya no existe: `app.html` ahora es solo `<router-outlet />`. | La prueba ahora se llama "should render the router outlet" y comprueba que existe `router-outlet`. |
-| `frontend/src/app/core/interceptors/auth-interceptor.spec.ts` | "No test suite found". El archivo contiene la implementación del interceptor en lugar de pruebas (B-05). | **Sin cambios.** Corregirlo cambia el comportamiento de la app y borraría la única copia de ese código. Queda pendiente de decisión. |
-
-No hubo errores de compilación ni de arranque. No se modificaron `package.json` ni `package-lock.json`.
+Los arreglos de `user-list.spec.ts`, `user-form.spec.ts` y `app.spec.ts` están en el commit `8f79fa7`. `auth-interceptor.spec.ts` ya tiene pruebas reales: verifica que se agrega el encabezado con sesión y que no se agrega sin ella.
 
 ---
 
-## 8. Observaciones de integración con el backend
+## 8. Pendiente para conectar el backend real
 
-Solo se reportan; no se cambió nada. Fuente: ramas `origin/develop` y `origin/feature/formularios-dinamicos`, proyecto `gestion-guias/`.
+### 8.1 Decisión de autenticación: Keycloak o login propio
 
-### 8.1 Endpoints que espera el front
+El backend (`gestion-guias`) valida JWT de Keycloak (`src/auth/keycloak.strategy.ts`) y no tiene `POST /auth/login`. **Recomendación:** usar Keycloak directamente desde el front, con el flujo *Authorization Code + PKCE*. Un login propio que reenvíe usuario y contraseña a Keycloak (*password grant*) está desaconsejado en OAuth 2.1.
 
-| Uso | Endpoint esperado | Estado en el backend |
-|---|---|---|
-| Login | `POST http://localhost:3000/api/auth/login` → `{ token, usuario }` | **No existe.** El backend autentica con Keycloak (`src/auth/keycloak.strategy.ts`). |
-| Usuarios (CRUD) | Hoy ninguno: `UserApi` es solo mock. | El backend expone `POST/GET /users`, `GET/PATCH /users/:id`, `PATCH /users/:id/deactivate` y `PATCH /users/:id/role`, con `@Roles('admin')`. |
+**Pasos para integrar Keycloak** (el front ya está preparado):
 
-### 8.2 Diferencias conocidas
+1. **Cliente en Keycloak.** Crear un cliente **público** (sin secreto), por ejemplo `athenadev-frontend`:
+   - *Standard flow* activado; *Direct access grants* desactivado;
+   - **PKCE `S256`** obligatorio;
+   - *Valid redirect URIs*: `http://localhost:4200/*`; *Web origins*: `http://localhost:4200`;
+   - roles de realm `admin`, `coordinador`, `docente`, `docente_autorizado`, asignados a cada usuario.
+2. **Librería.** Instalar `keycloak-angular` (usa `keycloak-js`). Una alternativa es `keycloak-js` sola con un servicio propio. Es un cambio de `package.json` que debe aprobar el equipo.
+3. **Implementación.** Crear `core/auth/providers/keycloak-auth-provider.ts` que implemente `AuthProvider`:
+   - `restaurarSesion()`: `keycloak.init({ onLoad: 'check-sso', pkceMethod: 'S256', silentCheckSsoRedirectUri: origin + '/silent-check-sso.html' })`.
+   - `login()`: `keycloak.login({ redirectUri })`. El formulario lo muestra Keycloak (ver el paso 7).
+   - `refrescar()`: `keycloak.updateToken(30)` y luego `GET /users/me`, para obtener nombre, estado y rol actualizados. Esto mantiene HE-01-HU-03 y HU-04: desactivación y cambio de rol sin cerrar sesión.
+   - `token()`: `keycloak.token`.
+   - `logout()`: `keycloak.logout({ redirectUri: origin + '/login' })`, que cierra también la sesión SSO.
+   - El rol sale de `mapKeycloakRoles(keycloak.tokenParsed.realm_access.roles)`, en `core/auth/role-mapping.ts`, que ya tiene pruebas. Si los roles se definen por cliente, se leen de `resource_access['athenadev-frontend'].roles`.
+4. **Activación.** En `core/auth/provide-auth.ts`, cambiar la fábrica de `AUTH_PROVIDER` por `inject(KeycloakAuthProvider)`. Es el único cambio necesario: `Auth`, los guards, el `Shell` y las pantallas no cambian.
+5. **Token en las peticiones.** `core/interceptors/auth-interceptor.ts` ya agrega `Authorization: Bearer <token>` desde `Auth.token()`. Falta asegurar que el token esté vigente: llamar a `updateToken(30)` antes de cada petición o usar el `includeBearerTokenInterceptor` de `keycloak-angular`, configurado solo para la URL de la API.
+6. **Cerrar sesión.** `Shell.salir()` ya llama a `auth.logout()` y navega a `/login`. Con Keycloak, la navegación la hace `keycloak.logout`.
+7. **Pantalla de login de Figma como tema de Keycloak.** Con PKCE, la pantalla de login es la de Keycloak, así que el diseño de Figma se lleva a un **tema propio** `athenadev`:
+   - Ubicación: `themes/athenadev/login/`, con `theme.properties` (`parent=keycloak.v2`, `import=common/keycloak`), `resources/css/login.css` y, si hace falta, `login.ftl`.
+   - Correspondencia con Figma:
+     - panel lateral morado con «System Plus Piendamó», logo «A+» y textos institucionales → plantilla y CSS;
+     - «Mantener sesión iniciada» → *Remember me* del realm;
+     - «¿Olvidaste tu contraseña?» → *Forgot password* (requiere SMTP);
+     - el mensaje de error genérico → `invalidUserMessage` en `messages_es.properties`.
+   - Se activa en *Realm settings → Themes → Login theme*.
+   - Las imágenes y los colores salen de los tokens de `src/styles.scss`. La ruta `/login` del front queda solo como entrada que llama a `keycloak.login()`.
 
-1. **Autenticación.** El backend usa Keycloak (Bearer JWT de Keycloak). El front tiene su propio login simulado contra `/api/auth/login`. Hay que decidir si el front usa el flujo de Keycloak (p. ej. `keycloak-angular` o OIDC) o si el backend expone un endpoint de login que haga de intermediario con Keycloak.
-2. **Roles.** Backend: `admin`, `coordinador`, `docente`, `docente_autorizado` (`users/entities/user.entity.ts`). Front: `ADMINISTRADOR`, `COORDINADOR`, `DOCENTE`, `DOCENTE_AUTORIZADO` (`shared/models/user.ts:1-5`). Además, `ADMINISTRADOR` frente a `admin` no es solo un cambio de mayúsculas.
-3. **Nombres de campos.** Backend: `id: string`, `name`, `email`, `role`, `isActive`. Front: `id: number`, `nombre`, `correo`, `rol`, `activo`. Hace falta un adaptador o unificar los nombres.
-4. **Contraseña en el registro.** El `CreateUserDto` del backend **exige `password` (mínimo 8 caracteres)**. Esto contradice HE-01 HU-01, donde la contraseña la genera el sistema y el administrador no la escribe. `UpdateUserDto` también acepta `password`.
-5. **Prefijo y CORS.** El backend escucha en el puerto `3000` sin `setGlobalPrefix('api')` y sin `enableCors()` (`src/main.ts`). El front apunta a `http://localhost:3000/api` desde `localhost:4200`, así que las peticiones fallarían por ruta y por CORS. Alternativa: un `proxy.conf.json` en Angular.
-6. **HE-02.** El backend expone `GET /programs`, `GET /programs/:programId`, `POST/GET /programs/:programId/modules`, `GET /programs/:programId/modules/name-availability`, `GET/PATCH /modules/:moduleId`, `PATCH /modules/:moduleId/{register,deactivate,reactivate}`, `POST/GET /modules/:moduleId/competencies`, `GET /modules/:moduleId/competencies/next-code`, `GET/PATCH/DELETE /competencies/:competencyId` y `GET /competencies/:competencyId/{history,versions/:version}`. También hay un módulo paralelo `/academic/*` (`/academic/modules`, `/academic/competencies`…) que se superpone con el anterior: hay que confirmar con el equipo de backend cuál es el oficial.
-7. **HE-03 / HE-04** (`/academic`, más completo en `feature/formularios-dinamicos`): `POST/GET /academic/guides`, `GET/PATCH /academic/guides/:id`, `PATCH /academic/guides/:id/publish`, `GET /academic/guides/:id/export`, `PUT /academic/modules/:moduleId/guide-fields`, `PUT /academic/modules/:moduleId/teacher-guide-fields`, `PUT/DELETE /academic/modules/:moduleId/teachers/:teacherId`, `POST /academic/guides/:guideId/personalized-versions`, `GET /academic/personalized-versions`, `GET/PATCH /academic/personalized-versions/:id` y `GET /academic/personalized-versions/:id/export`.
-8. **HE-05:** no hay endpoints de sugerencias en ninguna rama del backend.
+### 8.2 Adaptador de datos y roles
+
+- **Usuario.** El backend usa `id: string`, `name`, `email`, `role` (`admin`, `coordinador`, `docente`, `docente_autorizado`) e `isActive`. El front usa `id: number`, `nombre`, `correo`, `rol` (`ADMINISTRADOR`…) y `activo`.
+  - Hace falta un `user-adapter.ts` con `desdeApi` y `haciaApi`.
+  - `role-mapping.ts` ya tiene `mapKeycloakRole` y `toBackendRole` para los roles.
+  - Hay que cambiar `id` a `string` en el front, o mapearlo.
+- **Contraseña.** `CreateUserDto` exige `password` (mínimo 8 caracteres). Eso contradice HE-01-HU-01, donde la genera el sistema. El backend debe generarla, o crear el usuario en Keycloak con *required action* `UPDATE_PASSWORD`.
+- **Propiedades de campo.** Los campos de la estructura usan `help`, `maxLength` y `teacherEditable`, que no están en `guide-field.dto.ts`. El `ValidationPipe` con `whitelist` las descartaría. El backend debe agregarlas al DTO.
+
+### 8.3 Prefijo `/api` y CORS
+
+El backend escucha en `:3000` sin `setGlobalPrefix('api')` y sin `enableCors()`. Hay dos opciones:
+- pedir `app.setGlobalPrefix('api')` y `app.enableCors({ origin: 'http://localhost:4200' })`;
+- o agregar `proxy.conf.json` en Angular (`/api` → `http://localhost:3000`, `pathRewrite: { '^/api': '' }`) y usarlo con `ng serve --proxy-config`.
+
+Además, hay que crear `src/environments/` con `apiUrl` y los datos de Keycloak (`url`, `realm`, `clientId`).
+
+### 8.4 Doble API académica
+
+El backend tiene `/programs`, `/modules` y `/competencies` y, en paralelo, `/academic/*`. Hay que confirmar con el equipo de backend cuál es la oficial para HE-02.
+
+### 8.5 Endpoints que faltan en el backend
+
+| Épica | Lo que usa el front y no existe |
+|---|---|
+| HE-01 | `GET /users/me`; historial de eventos de un usuario («Historial reciente»); disponibilidad de correo (`GET /users/email-availability`); conteo por rol para «Roles y permisos»; reactivar usuario. |
+| HE-02 | Motivo opcional al inhabilitar; resumen del programa (tarjetas); número de guías publicadas por competencia antes de eliminar. Confirmar que existen `next-code` y `name-availability` en la API elegida (8.4). |
+| HE-03 | Versionado de la estructura con cálculo de impacto (`version`, guías en borrador y publicadas afectadas); historial de eventos de la guía; docentes asignados al módulo para el modal de publicación; resumen del listado. |
+| HE-04 | Guías visibles para el docente filtradas por asignación, con el conteo de guías ocultas; nombre de la versión (`name`) y su unicidad por docente; contenido base de la copia (`baseContent`) para marcar «Adaptado»; guardado campo por campo con fecha (`PATCH …/personalized-versions/:id/fields/:key`); resumen de aislamiento (número de versiones de otros docentes en el módulo). |
+| HE-05 | **Todo.** Contrato propuesto: `POST /academic/guides/:guideId/suggestions`, `GET /academic/suggestions?status=&moduleId=&guideId=&order=`, `GET /academic/suggestions/mine`, `GET /academic/suggestions/:id`, `PATCH /academic/suggestions/:id/approve` (aplica el cambio, sube la versión y registra el evento en una sola transacción) y `PATCH /academic/suggestions/:id/reject` con `{ reason, feedback }`. Los errores esperados son los de `suggestion-api.ts` (`NO_CHANGES`, `SUGGESTION_ALREADY_PENDING`, `SUGGESTION_ALREADY_DECIDED`, `GUIDE_CHANGED`, `FEEDBACK_TOO_SHORT`…). |
+
+### 8.6 Cambio de los servicios
+
+Cada `*-api.ts` lee hoy `MockDb` dentro de `simular()`. Para conectarlos:
+1. Inyectar `HttpClient`.
+2. Reemplazar cada método por la llamada HTTP, con los mismos nombres, parámetros y tipos de retorno.
+3. Traducir los errores HTTP a `ApiError(code)` con los mismos códigos, para que las pantallas no cambien.
+
+Las pruebas de servicio actuales describen el comportamiento esperado. Sirven como especificación para las pruebas del backend o para pruebas con `HttpTestingController`.

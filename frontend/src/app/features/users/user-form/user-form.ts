@@ -8,7 +8,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { startWith } from 'rxjs';
+import { debounceTime, filter, startWith, switchMap, tap } from 'rxjs';
 import { Auth } from '../../../core/auth/auth';
 import { Role, ROLE_LABELS } from '../../../shared/models/user';
 import { Icon } from '../../../shared/ui/icon/icon';
@@ -50,40 +50,60 @@ export class UserForm {
 
   private cambios = toSignal(this.form.valueChanges.pipe(startWith(null)));
 
+  // Se verifica mientras se escribe: "Correo disponible" o "ya está registrado"
+  correoDisponible = signal(false);
+
   constructor() {
-    this.form.controls.correo.valueChanges
-      .pipe(takeUntilDestroyed())
-      .subscribe(() => this.correoEnUso.set(false));
+    const correo = this.form.controls.correo;
+    correo.valueChanges
+      .pipe(
+        tap(() => {
+          this.correoEnUso.set(false);
+          this.correoDisponible.set(false);
+        }),
+        debounceTime(400),
+        filter(() => correo.valid),
+        switchMap((valor) => this.api.correoDisponible(valor)),
+        takeUntilDestroyed(),
+      )
+      .subscribe((disponible) => {
+        this.correoDisponible.set(disponible);
+        this.correoEnUso.set(!disponible);
+      });
   }
 
   // Panel "Antes de registrar": se actualiza mientras se escribe
   checklist = computed(() => {
     this.cambios(); // fuerza el recálculo cada vez que el formulario cambia
     const { nombre, correo, rol } = this.form.controls;
-    const correoOk = correo.valid && !this.correoEnUso();
     return [
       {
         ok: nombre.valid,
+        icono: 'circle-check',
         titulo: 'Nombre completo',
         detalle: nombre.valid ? 'Dato obligatorio ingresado' : 'Dato obligatorio pendiente',
       },
       {
-        ok: correoOk,
+        ok: this.correoDisponible(),
+        icono: 'circle-check',
         titulo: 'Correo único',
-        detalle: this.correoEnUso()
-          ? 'Ya existe en el directorio'
-          : correo.valid
-            ? 'Dominio institucional válido'
-            : 'Pendiente de validar',
+        detalle: this.detalleCorreo(correo.valid),
       },
       {
         ok: rol.valid,
+        icono: 'circle-check',
         titulo: 'Un solo rol',
         detalle: rol.value ? this.labels[rol.value] : 'Selecciona un rol',
       },
-      { ok: true, titulo: 'Acceso protegido', detalle: 'Contraseña cifrada' },
+      { ok: true, icono: 'shield-check', titulo: 'Acceso protegido', detalle: 'Contraseña cifrada' },
     ];
   });
+
+  private detalleCorreo(formatoValido: boolean): string {
+    if (this.correoEnUso()) return 'Ya existe en el directorio';
+    if (this.correoDisponible()) return 'Disponible en el directorio';
+    return formatoValido ? 'Verificando disponibilidad…' : 'Pendiente de validar';
+  }
 
   mensajeNombre(): string | null {
     const c = this.form.controls.nombre;

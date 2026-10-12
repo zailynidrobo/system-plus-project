@@ -24,17 +24,17 @@
       <small class="hint">Escribe nombres y apellidos como aparecen en el registro institucional.</small>
     }
 
-    <label for="correo">Correo institucional *</label>
+    <label for="correo">Correo electrónico *</label>
     <div class="control" [class.control--error]="mensajeCorreo()">
       <app-icon [name]="correoDisponible() ? 'mail-check' : 'mail'" [size]="18" />
-      <input id="correo" type="email" formControlName="correo" placeholder="nombre@systemplus.edu.co" autocomplete="off" />
+      <input id="correo" type="email" formControlName="correo" placeholder="nombre@dominio.com" autocomplete="off" />
     </div>
     @if (mensajeCorreo(); as msg) {
       <small class="error">{{ msg }}</small>
     } @else if (correoDisponible()) {
-      <small class="hint">Correo disponible. Debe ser único y pertenecer al dominio &#64;systemplus.edu.co.</small>
+      <small class="hint">Correo disponible. Debe ser único en el directorio; se acepta cualquier dominio.</small>
     } @else {
-      <small class="hint">Debe ser único y pertenecer al dominio &#64;systemplus.edu.co.</small>
+      <small class="hint">Debe ser único en el directorio; se acepta cualquier dominio.</small>
     }
 
     <label for="rol">Rol *</label>

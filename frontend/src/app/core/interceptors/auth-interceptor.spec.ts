@@ -6,7 +6,7 @@ import { User } from '../../shared/models/user';
 import { limpiarSesion } from '../../../testing/test-helpers';
 import { authInterceptor } from './auth-interceptor';
 
-const USUARIO: User = { id: 1, nombre: 'Prueba', correo: 'p@systemplus.edu.co', rol: 'DOCENTE', activo: true };
+const USUARIO: User = { id: 1, nombre: 'Prueba', correo: 'p@example.com', rol: 'DOCENTE', activo: true };
 
 describe('authInterceptor', () => {
   let http: HttpClient;

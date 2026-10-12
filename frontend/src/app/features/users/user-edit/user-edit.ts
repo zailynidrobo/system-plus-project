@@ -1,10 +1,8 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import {
-  AbstractControl,
   FormBuilder,
   ReactiveFormsModule,
-  ValidationErrors,
   Validators,
 } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -13,15 +11,8 @@ import { EventoUsuario, ROLE_LABELS, User } from '../../../shared/models/user';
 import { fechaCorta } from '../../../shared/utils/fechas';
 import { Icon } from '../../../shared/ui/icon/icon';
 import { UserApi } from '../user-api';
+import { validarCorreo } from '../../../shared/utils/correo';
 
-const DOMINIO = '@systemplus.edu.co';
-
-function correoInstitucional(control: AbstractControl): ValidationErrors | null {
-  const valor = String(control.value ?? '').trim().toLowerCase();
-  if (!valor) return null;
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor)) return { formato: true };
-  return valor.endsWith(DOMINIO) ? null : { dominio: true };
-}
 
 @Component({
   selector: 'app-user-edit',
@@ -45,7 +36,7 @@ export class UserEdit {
 
   form = this.fb.nonNullable.group({
     nombre: ['', [Validators.required, Validators.minLength(5), Validators.pattern(/\S/)]],
-    correo: ['', [Validators.required, correoInstitucional]],
+    correo: ['', [Validators.required, validarCorreo]],
   });
 
   private cambios = toSignal(this.form.valueChanges.pipe(startWith(null)));
@@ -110,9 +101,8 @@ export class UserEdit {
     if (this.correoEnUso()) return 'Este correo ya está registrado en el directorio.';
     const c = this.form.controls.correo;
     if (!c.touched || c.valid) return null;
-    if (c.hasError('required')) return 'Ingresa el correo institucional.';
-    if (c.hasError('formato')) return 'Ingresa un correo válido.';
-    return `Debe pertenecer al dominio ${DOMINIO}.`;
+    if (c.hasError('required')) return 'Ingresa el correo electrónico.';
+    return 'Ingresa un correo válido, por ejemplo nombre@dominio.com.';
   }
 
   private cargarHistorial(): void {

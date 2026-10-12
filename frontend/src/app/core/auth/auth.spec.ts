@@ -32,7 +32,7 @@ describe('Auth (login simulado)', () => {
 
   it('da el mismo error genérico para contraseña incorrecta, correo inexistente o usuario desactivado', async () => {
     const malaClave = await capturarError(auth.login({ correo: CORREOS.admin, contrasena: 'x' }));
-    const noExiste = await capturarError(auth.login({ correo: 'nadie@systemplus.edu.co', contrasena: '123456' }));
+    const noExiste = await capturarError(auth.login({ correo: 'nadie@example.com', contrasena: '123456' }));
     const inactivo = await capturarError(auth.login({ correo: CORREOS.inactivo, contrasena: '123456' }));
 
     for (const err of [malaClave, noExiste, inactivo]) expect(err.code).toBe('CREDENCIALES_INVALIDAS');

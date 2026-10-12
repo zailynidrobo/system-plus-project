@@ -21,13 +21,14 @@ const ROLES: Role[] = ['COORDINADOR', 'DOCENTE', 'DOCENTE_AUTORIZADO', 'DOCENTE'
 const ACCESOS = ['Hoy, 8:42 a. m.', 'Ayer, 4:18 p. m.', '25 sep, 10:06 a. m.', '18 sep, 2:31 p. m.', '24 sep, 9:54 a. m.', '23 sep, 7:12 a. m.'];
 
 // Usuarios de prueba que pueden iniciar sesión (contraseña 123456), por posición en NOMBRES.
+// example.com es un dominio reservado para ejemplos: el sistema acepta correos de cualquier dominio.
 // Los nombres salen de Figma: Laura Muñoz es la coordinadora y Julián Andrés Ospina el docente.
 const CUENTAS_DE_PRUEBA: Record<number, string> = {
-  1: 'docente@systemplus.edu.co', // Julián Andrés Ospina · Docente
-  2: 'autorizado@systemplus.edu.co', // Paola Valencia · Docente Autorizado
-  3: 'inactivo@systemplus.edu.co', // Carlos Ramírez · Docente desactivado
-  4: 'admin@systemplus.edu.co', // Diana Marcela Ruiz · Administrador
-  6: 'coordinador@systemplus.edu.co', // Laura Muñoz · Coordinador Académico
+  1: 'docente@example.com', // Julián Andrés Ospina · Docente
+  2: 'autorizado@example.com', // Paola Valencia · Docente Autorizado
+  3: 'inactivo@example.com', // Carlos Ramírez · Docente desactivado
+  4: 'admin@example.com', // Diana Marcela Ruiz · Administrador
+  6: 'coordinador@example.com', // Laura Muñoz · Coordinador Académico
 };
 
 export const CONTRASENA_DE_PRUEBA = '123456';
@@ -55,7 +56,7 @@ export function crearUsuarios(): UsuarioMock[] {
     return {
       id: i + 1,
       nombre,
-      correo: cuenta ?? `${partes[0]}.${partes[partes.length - 1]}@systemplus.edu.co`,
+      correo: cuenta ?? `${partes[0]}.${partes[partes.length - 1]}@example.com`,
       contrasena: cuenta ? CONTRASENA_DE_PRUEBA : null,
       rol: ROLES[i % ROLES.length],
       activo: i % 8 !== 3,

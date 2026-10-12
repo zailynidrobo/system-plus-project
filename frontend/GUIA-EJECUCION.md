@@ -89,11 +89,11 @@ Todos usan la contraseña **`123456`**.
 
 | Correo | Nombre | Rol | Qué puede hacer | Entra a |
 |---|---|---|---|---|
-| `admin@systemplus.edu.co` | Diana Marcela Ruiz | Administrador | Registrar, editar y desactivar usuarios; asignar roles (HE-01). | `/usuarios` |
-| `coordinador@systemplus.edu.co` | Laura Muñoz | Coordinador Académico | Módulos y competencias (HE-02); guías base y su estructura (HE-03); revisar, aprobar y rechazar sugerencias (HE-05). | `/modulos` |
-| `docente@systemplus.edu.co` | Julián Andrés Ospina | Docente | Ver las guías de sus módulos (POO y Bases de Datos), crear y editar versiones propias (HE-04) y enviar sugerencias (HE-05). | `/mis-modulos` |
-| `autorizado@systemplus.edu.co` | Paola Valencia | Docente Autorizado | Lo mismo que el docente, en POO y Redes y conectividad. | `/mis-modulos` |
-| `inactivo@systemplus.edu.co` | Carlos Ramírez | Docente (desactivado) | No puede entrar: recibe el mensaje genérico de credenciales inválidas. | — |
+| `admin@example.com` | Diana Marcela Ruiz | Administrador | Registrar, editar y desactivar usuarios; asignar roles (HE-01). | `/usuarios` |
+| `coordinador@example.com` | Laura Muñoz | Coordinador Académico | Módulos y competencias (HE-02); guías base y su estructura (HE-03); revisar, aprobar y rechazar sugerencias (HE-05). | `/modulos` |
+| `docente@example.com` | Julián Andrés Ospina | Docente | Ver las guías de sus módulos (POO y Bases de Datos), crear y editar versiones propias (HE-04) y enviar sugerencias (HE-05). | `/mis-modulos` |
+| `autorizado@example.com` | Paola Valencia | Docente Autorizado | Lo mismo que el docente, en POO y Redes y conectividad. | `/mis-modulos` |
+| `inactivo@example.com` | Carlos Ramírez | Docente (desactivado) | No puede entrar: recibe el mensaje genérico de credenciales inválidas. | — |
 
 **Los usuarios y los datos académicos salen de la misma base en memoria** (`src/app/core/mock/mock-db.ts`). Por eso:
 - Si el administrador desactiva o cambia el rol de un usuario, el cambio aplica en su siguiente navegación, sin cerrar sesión.

@@ -97,11 +97,11 @@ La contraseña de todos es `123456`.
 
 | Correo | Nombre | Rol | Inicio |
 |---|---|---|---|
-| `admin@systemplus.edu.co` | Diana Marcela Ruiz | Administrador | `/usuarios` |
-| `coordinador@systemplus.edu.co` | Laura Muñoz | Coordinador Académico | `/modulos` |
-| `docente@systemplus.edu.co` | Julián Andrés Ospina | Docente (POO y Bases de Datos) | `/mis-modulos` |
-| `autorizado@systemplus.edu.co` | Paola Valencia | Docente Autorizado (POO y Redes) | `/mis-modulos` |
-| `inactivo@systemplus.edu.co` | Carlos Ramírez | Docente desactivado | No entra |
+| `admin@example.com` | Diana Marcela Ruiz | Administrador | `/usuarios` |
+| `coordinador@example.com` | Laura Muñoz | Coordinador Académico | `/modulos` |
+| `docente@example.com` | Julián Andrés Ospina | Docente (POO y Bases de Datos) | `/mis-modulos` |
+| `autorizado@example.com` | Paola Valencia | Docente Autorizado (POO y Redes) | `/mis-modulos` |
+| `inactivo@example.com` | Carlos Ramírez | Docente desactivado | No entra |
 
 ---
 

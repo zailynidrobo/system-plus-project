@@ -12,11 +12,11 @@ import { User } from '../app/shared/models/user';
 export const SIN_LATENCIA: Provider = { provide: MOCK_LATENCY, useValue: 0 };
 
 export const CORREOS = {
-  admin: 'admin@systemplus.edu.co',
-  coordinador: 'coordinador@systemplus.edu.co',
-  docente: 'docente@systemplus.edu.co',
-  autorizado: 'autorizado@systemplus.edu.co',
-  inactivo: 'inactivo@systemplus.edu.co',
+  admin: 'admin@example.com',
+  coordinador: 'coordinador@example.com',
+  docente: 'docente@example.com',
+  autorizado: 'autorizado@example.com',
+  inactivo: 'inactivo@example.com',
 } as const;
 
 export function limpiarSesion(): void {

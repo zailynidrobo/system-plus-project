@@ -57,8 +57,8 @@ describe('UserApi (mock compartido con el login)', () => {
   });
 
   it('verifica en vivo si un correo está disponible', async () => {
-    expect(await firstValueFrom(api.correoDisponible(' DOCENTE@systemplus.edu.co '))).toBe(false);
-    expect(await firstValueFrom(api.correoDisponible('nueva.persona@systemplus.edu.co'))).toBe(true);
+    expect(await firstValueFrom(api.correoDisponible(' DOCENTE@example.com '))).toBe(false);
+    expect(await firstValueFrom(api.correoDisponible('nueva.persona@example.com'))).toBe(true);
   });
 
   it('cuenta los usuarios por rol para "Roles y permisos"', async () => {
@@ -91,5 +91,10 @@ describe('UserApi (mock compartido con el login)', () => {
     usuario.nombre = 'Cambiado a mano';
 
     expect((await firstValueFrom(api.obtener(1))).nombre).not.toBe('Cambiado a mano');
+  });
+
+  it('registra correos de cualquier dominio', async () => {
+    const u = await firstValueFrom(api.crear({ nombre: 'Ana Pérez', correo: 'ana.perez@gmail.com', rol: 'DOCENTE' }));
+    expect(u.correo).toBe('ana.perez@gmail.com');
   });
 });

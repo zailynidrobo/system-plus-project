@@ -1,129 +1,215 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { Role, User } from './entities/user.entity.js';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import * as bcrypt from 'bcrypt';
+import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
-import { UpdateRoleDto } from './dto/update-role.dto.js';
-import { KeycloakAdminService, KeycloakUser } from './keycloak-admin.service.js';
-import { generateTemporaryPassword } from './temporary-password.js';
-import { joinName, splitName } from './user-name.js';
+import { Role, User } from './entities/user.entity.js';
+import { KeycloakUsersService } from './keycloak-users.service.js';
 
-const ROLES = Object.values(Role);
-
-// HE-01 exige un solo rol activo. Si en Keycloak llegara a tener varios, gana el de mayor jerarquía.
-const ROLE_PRIORITY: Role[] = [
-  Role.ADMIN,
-  Role.COORDINADOR,
-  Role.DOCENTE_AUTORIZADO,
-  Role.DOCENTE,
-];
-
-/** Respuesta de la creación: la contraseña solo viaja si la generó la API. */
-export type CreatedUser = User & { temporaryPassword?: string };
-
-/** Gestión de usuarios (HE-01) sobre Keycloak: ahí viven las cuentas, las contraseñas y los roles. */
 @Injectable()
 export class UsersService {
-  constructor(private readonly keycloak: KeycloakAdminService) {}
+  constructor(
+    @InjectRepository(User)
+    private readonly users: Repository<User>,
+    private readonly keycloakUsers: KeycloakUsersService,
+  ) {}
 
-  private pickRole(roleNames: string[]): Role | null {
-    return ROLE_PRIORITY.find((role) => roleNames.includes(role)) ?? null;
+  private safe(user: User) {
+    const {
+      password: _password,
+      keycloakUserId: _keycloakUserId,
+      ...rest
+    } = user;
+    return rest;
   }
 
-  private toUser(user: KeycloakUser, role: Role | null): User {
-    return {
-      id: user.id,
-      name: joinName(user),
-      email: user.email ?? user.username,
+  private async getOrFail(id: string) {
+    const user = await this.users.findOneBy({ id });
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+    return user;
+  }
+
+  async create(dto: CreateUserDto) {
+    const email = dto.email.trim().toLowerCase();
+    if (await this.users.findOneBy({ email })) {
+      throw new ConflictException('El correo ya está registrado');
+    }
+
+    const role = dto.role ?? Role.DOCENTE;
+    const keycloakUserId = await this.keycloakUsers.createUser({
+      name: dto.name,
+      email,
+      password: dto.password,
       role,
-      isActive: user.enabled,
-      createdAt: user.createdTimestamp
-        ? new Date(user.createdTimestamp).toISOString()
-        : undefined,
-    };
-  }
-
-  async create(dto: CreateUserDto): Promise<CreatedUser> { // HU-01
-    const generated = dto.password === undefined;
-    const password = dto.password ?? generateTemporaryPassword();
-
-    // La contraseña es siempre temporal: quien la recibe debe cambiarla en su primer ingreso.
-    const id = await this.keycloak.createUser({
-      email: dto.email.trim().toLowerCase(),
-      ...splitName(dto.name),
-      password,
-      temporary: true,
     });
-
     try {
-      await this.keycloak.setRealmRole(id, dto.role ?? Role.DOCENTE, ROLES);
-    } catch (error) {
-      // Sin rol la cuenta no serviría: se deshace para no dejar usuarios a medias.
-      await this.keycloak.deleteUser(id).catch(() => undefined);
-      throw error;
+      const user = await this.users.save({
+        name: dto.name,
+        email,
+        password: await bcrypt.hash(dto.password, 10),
+        role,
+        isActive: true,
+        keycloakUserId,
+      });
+      return this.safe(user);
+    } catch {
+      try {
+        await this.keycloakUsers.deleteUser(keycloakUserId);
+      } catch {
+        throw new InternalServerErrorException(
+          'No se pudo guardar el usuario y tampoco revertirlo en Keycloak',
+        );
+      }
+      throw new InternalServerErrorException(
+        'No se pudo guardar el usuario en PostgreSQL; se revirtió el alta en Keycloak',
+      );
+    }
+  }
+
+  async findAll() {
+    return (await this.users.find()).map((user) => this.safe(user));
+  }
+
+  async findOne(id: string) {
+    return this.safe(await this.getOrFail(id));
+  }
+
+  async findByEmail(email: string) {
+    const user = await this.users.findOneBy({
+      email: email.trim().toLowerCase(),
+      isActive: true,
+    });
+    return user;
+  }
+
+  async update(id: string, dto: UpdateUserDto) {
+    const user = await this.getOrFail(id);
+    if (
+      dto.name === undefined &&
+      dto.email === undefined &&
+      dto.password === undefined
+    ) {
+      throw new BadRequestException(
+        'Debe proporcionar al menos un dato para actualizar',
+      );
     }
 
-    const created = await this.findOne(id);
-    return generated ? { ...created, temporaryPassword: password } : created;
-  }
-
-  async findAll(): Promise<User[]> {
-    // Una consulta por rol en vez de una por usuario: son 4 en total, sin importar cuántos usuarios haya.
-    const [users, roleMembers] = await Promise.all([
-      this.keycloak.listUsers(),
-      Promise.all(
-        ROLES.map(async (role) => [role, await this.keycloak.listUserIdsByRole(role)] as const),
-      ),
-    ]);
-
-    return users
-      .filter((user) => !user.username.startsWith('service-account-'))
-      .map((user) => {
-        const roles = roleMembers.filter(([, ids]) => ids.has(user.id)).map(([role]) => role);
-        return this.toUser(user, this.pickRole(roles));
-      });
-  }
-
-  async findOne(id: string): Promise<User> {
-    const [user, roleNames] = await Promise.all([
-      this.keycloak.getUser(id),
-      this.keycloak.getUserRealmRoles(id),
-    ]);
-    return this.toUser(user, this.pickRole(roleNames));
-  }
-
-  async update(id: string, dto: UpdateUserDto): Promise<User> {
-    if (dto.name === undefined && dto.email === undefined && dto.password === undefined) {
-      throw new BadRequestException('Debe proporcionar al menos un dato para actualizar');
+    const oldUser = Object.assign(new User(), user);
+    const email = dto.email?.trim().toLowerCase();
+    if (email !== undefined) {
+      const duplicate = await this.users.findOneBy({ email });
+      if (duplicate && duplicate.id !== id) {
+        throw new ConflictException('El correo ya está registrado');
+      }
     }
 
-    if (dto.name !== undefined || dto.email !== undefined) {
-      const name = dto.name === undefined ? undefined : splitName(dto.name);
-      await this.keycloak.updateUser(id, {
-        email: dto.email?.trim().toLowerCase(),
-        firstName: name?.firstName,
-        // Si el nombre nuevo no trae apellido, se borra el anterior para que no queden mezclados
-        lastName: name ? (name.lastName ?? '') : undefined,
-      });
+    const updatedName = dto.name ?? user.name;
+    const updatedEmail = email ?? user.email;
+    const hashedPassword =
+      dto.password === undefined
+        ? undefined
+        : await bcrypt.hash(dto.password, 10);
+    await this.keycloakUsers.updateUser(user.keycloakUserId, {
+      email: updatedEmail,
+      firstName: updatedName,
+      enabled: user.isActive,
+    });
+    if (dto.name !== undefined) user.name = dto.name;
+    if (email !== undefined) user.email = email;
+    if (hashedPassword !== undefined) user.password = hashedPassword;
+
+    let saved: User;
+    try {
+      saved = await this.users.save(user);
+    } catch {
+      await this.restoreKeycloakProfile(oldUser);
+      throw new InternalServerErrorException(
+        'No se pudo guardar la edición en PostgreSQL; se restauró el perfil de Keycloak',
+      );
     }
 
     if (dto.password !== undefined) {
-      // Quien cambia la contraseña es un administrador, así que el usuario debe cambiarla al ingresar.
-      await this.keycloak.setPassword(id, dto.password, true);
+      try {
+        await this.keycloakUsers.resetPassword(
+          saved.keycloakUserId,
+          dto.password,
+        );
+      } catch (error) {
+        try {
+          await this.users.save(oldUser);
+          await this.restoreKeycloakProfile(oldUser);
+        } catch {
+          throw new InternalServerErrorException(
+            'Falló el cambio de contraseña y no se pudo restaurar el estado anterior; verifica ambos sistemas',
+          );
+        }
+        throw error;
+      }
     }
-
-    return this.findOne(id);
+    return this.safe(saved);
   }
 
-  async deactivate(id: string): Promise<User> { // HU-03
-    await this.keycloak.updateUser(id, { enabled: false });
-    // Desactivar no borra al usuario; solo impide nuevos ingresos y cierra sus sesiones abiertas.
-    await this.keycloak.logoutUser(id).catch(() => undefined);
-    return this.findOne(id);
+  async deactivate(id: string) {
+    const user = await this.getOrFail(id);
+    if (!user.isActive) return this.safe(user);
+
+    await this.keycloakUsers.setEnabled(user.keycloakUserId, false);
+    user.isActive = false;
+    try {
+      return this.safe(await this.users.save(user));
+    } catch {
+      try {
+        await this.keycloakUsers.setEnabled(user.keycloakUserId, true);
+      } catch {
+        throw new InternalServerErrorException(
+          'No se pudo guardar la desactivación ni reactivar la cuenta en Keycloak',
+        );
+      }
+      throw new InternalServerErrorException(
+        'No se pudo guardar la desactivación en PostgreSQL; se reactivó la cuenta de Keycloak',
+      );
+    }
   }
 
-  async updateRole(id: string, dto: UpdateRoleDto): Promise<User> { // HU-04
-    await this.keycloak.getUser(id);
-    await this.keycloak.setRealmRole(id, dto.role, ROLES);
-    return this.findOne(id);
+  async updateRole(id: string, dto: { role: Role }) {
+    const user = await this.getOrFail(id);
+    if (user.role === dto.role) return this.safe(user);
+
+    const oldRole = user.role;
+    await this.keycloakUsers.changeRole(user.keycloakUserId, oldRole, dto.role);
+    user.role = dto.role;
+    try {
+      return this.safe(await this.users.save(user));
+    } catch {
+      try {
+        await this.keycloakUsers.changeRole(
+          user.keycloakUserId,
+          dto.role,
+          oldRole,
+        );
+      } catch {
+        throw new InternalServerErrorException(
+          'No se pudo guardar ni restaurar el rol; verifica PostgreSQL y Keycloak',
+        );
+      }
+      throw new InternalServerErrorException(
+        'No se pudo guardar el rol en PostgreSQL; se restauró el rol de Keycloak',
+      );
+    }
+  }
+
+  private async restoreKeycloakProfile(user: User) {
+    await this.keycloakUsers.updateUser(user.keycloakUserId, {
+      email: user.email,
+      firstName: user.name,
+      enabled: user.isActive,
+    });
   }
 }

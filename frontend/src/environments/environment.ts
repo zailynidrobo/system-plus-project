@@ -1,0 +1,21 @@
+/**
+ * Configuración de la app.
+ *
+ * auth: 'keycloak' → inicio de sesión real por redirección a Keycloak (requiere Keycloak en Docker).
+ *       'mock'     → login simulado con los usuarios de prueba (no necesita backend ni Keycloak).
+ *
+ * api:  'http'     → la pantalla de usuarios (HE-01) usa el backend real en apiUrl.
+ *       'mock'     → usa los usuarios simulados en memoria (no necesita backend).
+ *
+ * Los datos de keycloak deben coincidir con el realm y el client creados en Keycloak.
+ */
+export const environment = {
+  auth: 'keycloak' as 'keycloak' | 'mock',
+  api: 'http' as 'http' | 'mock',
+  apiUrl: 'http://localhost:3000',
+  keycloak: {
+    url: 'http://localhost:8080',
+    realm: 'system-plus',
+    clientId: 'system-plus-front',
+  },
+};

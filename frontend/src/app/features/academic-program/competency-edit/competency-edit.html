@@ -1,0 +1,89 @@
+<header class="ui-page-head">
+  <div>
+    <h1>Editar competencia</h1>
+    <p>Modifica únicamente el texto de la competencia seleccionada.</p>
+  </div>
+</header>
+
+@if (competencia(); as c) {
+  <div class="ui-layout">
+    <div>
+      <a class="ui-back" [routerLink]="['/modulos', moduleId]"><app-icon name="arrow-left" [size]="15" /> Volver a competencias</a>
+
+      <form class="ui-card" [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+        <div class="ui-card__head">
+          <h2>{{ c.code }}</h2>
+          <p>{{ modulo()?.name }} · La edición no afecta otras competencias.</p>
+        </div>
+
+        <div class="ui-box">
+          <small class="ui-label"><strong>Texto anterior</strong> · versión {{ guardada() ? c.version - 1 : c.version }}</small>
+          <p class="ui-muted">{{ textoAnterior() }}</p>
+        </div>
+
+        <div class="ui-field">
+          <label for="texto">Texto de la competencia *</label>
+          <div class="ui-control" [class.ui-control--dup]="duplicada() !== null">
+            <textarea id="texto" formControlName="text" rows="3"></textarea>
+          </div>
+          @if (duplicada() !== null) {
+            <p class="ui-help ui-help--error">Ya existe una competencia con este texto en el módulo ({{ duplicada() }}).</p>
+          } @else if (form.controls.text.touched && form.controls.text.invalid) {
+            <p class="ui-help ui-help--error">Escribe el texto de la competencia.</p>
+          } @else {
+            <p class="ui-help">El código {{ c.code }} y la asociación con el módulo permanecen sin cambios.</p>
+          }
+        </div>
+
+        <div class="ui-notice ui-notice--info">
+          <app-icon name="focus" [size]="18" />
+          <div>
+            <strong>Edición aislada</strong>
+            <p>Solo cambiará {{ c.code }}. Las demás competencias, el módulo y sus guías no serán modificados.</p>
+          </div>
+        </div>
+
+        @if (error()) {
+          <p class="ui-help ui-help--error" role="alert">No pudimos guardar el cambio. Inténtalo de nuevo en unos minutos.</p>
+        }
+
+        <div class="ui-actions">
+          <button type="button" class="ui-btn" (click)="descartar()" [disabled]="!hayCambios()">Descartar cambios</button>
+          <button type="submit" class="ui-btn ui-btn--primary" [disabled]="guardando() || !hayCambios()">
+            <app-icon name="save" [size]="16" /> {{ guardando() ? 'Guardando…' : 'Guardar cambio' }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <aside class="ui-side">
+      @if (guardada()) {
+        <section class="ui-result">
+          <span class="ui-pill ui-pill--ok ui-self-start">Cambio confirmado</span>
+          <span class="ui-circle ui-circle--ok"><app-icon name="circle-check" [size]="23" /></span>
+          <div>
+            <h4>Competencia actualizada</h4>
+            <p>El nuevo texto de {{ c.code }} se guardó correctamente como versión {{ c.version }}.</p>
+          </div>
+          <div class="ui-box ui-box--gold">
+            <small class="ui-label ui-label--gold">Trazabilidad</small>
+            <p>Editada por {{ c.updatedBy?.name }} · Hoy, {{ hora(c.updatedAt) }}</p>
+          </div>
+        </section>
+      }
+
+      <section class="ui-side-card">
+        <h3 class="ui-side-title">Competencias no afectadas</h3>
+        <ul class="ui-checks">
+          @for (o of otras(); track o.id) {
+            <li><app-icon name="check" [size]="14" /> {{ o.code }} · Sin cambios</li>
+          } @empty {
+            <li class="ui-muted">El módulo no tiene otras competencias.</li>
+          }
+        </ul>
+      </section>
+    </aside>
+  </div>
+} @else {
+  <p class="ui-state">Cargando competencia...</p>
+}

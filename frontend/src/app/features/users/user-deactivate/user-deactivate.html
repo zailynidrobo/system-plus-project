@@ -1,0 +1,128 @@
+@if (cargando()) {
+  <p class="state">Cargando usuario...</p>
+} @else if (usuario(); as u) {
+  @if (!u.activo && !hecho()) {
+    <h1 class="title">Usuario ya desactivado</h1>
+    <p class="subtitle">{{ u.nombre }} ya no tiene acceso a AthenaDev.</p>
+    <a class="btn-primary" routerLink="/usuarios">
+      <app-icon name="arrow-left" [size]="16" /> Volver a usuarios
+    </a>
+  } @else {
+    <h1 class="title">Desactivar usuario</h1>
+    <p class="subtitle">Revoca el acceso sin eliminar el historial ni los datos institucionales.</p>
+
+    <div class="layout">
+      <section class="card">
+        @if (!hecho()) {
+          <header class="card__head">
+            <span class="head-icon"><app-icon name="user-x" [size]="26" /></span>
+            <div>
+              <h2>¿Desactivar a {{ u.nombre }}?</h2>
+              <p>Esta acción revocará su acceso a AthenaDev de forma inmediata.</p>
+            </div>
+          </header>
+        } @else {
+          <header class="card__head">
+            <span class="head-icon head-icon--ok"><app-icon name="circle-check" [size]="26" /></span>
+            <div>
+              <h2>Usuario desactivado</h2>
+              <p>El acceso de {{ u.nombre }} fue revocado correctamente.</p>
+            </div>
+          </header>
+        }
+
+        <div class="summary">
+          <span class="avatar">{{ iniciales() }}</span>
+          <div class="summary__info">
+            <strong>{{ u.nombre }}</strong>
+            <small>{{ u.correo }}</small>
+          </div>
+          <span class="pill pill--role">{{ rolVisible() }}</span>
+          @if (u.activo) {
+            <span class="pill pill--ok"><i></i> Activo</span>
+          } @else {
+            <span class="pill pill--off"><i></i> Desactivado</span>
+          }
+        </div>
+
+        @if (!hecho()) {
+          <p class="label">Al confirmar:</p>
+          <ul class="effects">
+            <li>
+              <span class="effects__icon"><app-icon name="log-out" [size]="16" /></span>
+              Se cerrarán sus sesiones y ya no podrá iniciar sesión.
+            </li>
+            <li>
+              <span class="effects__icon"><app-icon name="database" [size]="16" /></span>
+              Su perfil, historial académico y registros se conservarán.
+            </li>
+            <li>
+              <span class="effects__icon"><app-icon name="history" [size]="16" /></span>
+              La desactivación quedará registrada para auditoría.
+            </li>
+          </ul>
+
+          <div class="notice">
+            <app-icon name="circle-alert" [size]="18" />
+            <div>
+              <strong>No se realizará borrado físico</strong>
+              <p>
+                La cuenta podrá reactivarse posteriormente. Ningún dato académico o histórico será
+                eliminado.
+              </p>
+            </div>
+          </div>
+
+          @if (error()) {
+            <p class="error" role="alert">
+              No pudimos desactivar al usuario. Inténtalo de nuevo en unos minutos.
+            </p>
+          }
+
+          <div class="actions">
+            <a class="link" routerLink="/usuarios">Cancelar</a>
+            <button type="button" class="btn-danger" (click)="confirmar()" [disabled]="procesando()">
+              <app-icon name="user-x" [size]="18" />
+              {{ procesando() ? 'Desactivando...' : 'Sí, desactivar usuario' }}
+            </button>
+          </div>
+        } @else {
+          <div class="actions actions--end">
+            <a class="btn-primary" routerLink="/usuarios">
+              <app-icon name="arrow-left" [size]="16" /> Volver a usuarios
+            </a>
+          </div>
+        }
+      </section>
+
+      <aside class="side">
+        <section class="side__card">
+          <span class="tag">{{ hecho() ? 'COMPLETADO' : 'DESPUÉS DE CONFIRMAR' }}</span>
+          <span class="side__check"><app-icon name="circle-check" [size]="22" /></span>
+          <h3>Usuario desactivado</h3>
+          <p>El acceso de {{ u.nombre }} fue revocado correctamente.</p>
+
+          <div class="side__row">
+            <span>Estado de la cuenta</span>
+            <span class="pill pill--off"><i></i> Desactivado</span>
+          </div>
+          <p class="side__kept">
+            <app-icon name="circle-x" [size]="16" /> Historial, cursos y datos personales conservados.
+          </p>
+        </section>
+
+        <section class="side__audit">
+          <app-icon name="scroll" [size]="18" />
+          <strong>Registro de auditoría</strong>
+          <p>Acción: desactivación · Responsable: {{ responsable() }} · Fecha: hoy, {{ hora() }}</p>
+        </section>
+      </aside>
+    </div>
+  }
+} @else {
+  <h1 class="title">Usuario no encontrado</h1>
+  <p class="subtitle">El usuario que buscas no existe o fue retirado del directorio.</p>
+  <a class="btn-primary" routerLink="/usuarios">
+    <app-icon name="arrow-left" [size]="16" /> Volver a usuarios
+  </a>
+}

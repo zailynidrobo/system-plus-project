@@ -1,0 +1,100 @@
+<header class="ui-page-head">
+  <div>
+    <h1>Guías base de mis módulos</h1>
+    <p>Consulta los lineamientos institucionales de los módulos que tienes asignados.</p>
+  </div>
+</header>
+
+<div class="ui-notice ui-notice--info ui-mb">
+  <app-icon name="info" [size]="16" />
+  <div>
+    <strong>Vista filtrada por asignación</strong>
+    <p>
+      Solo ves las guías de los {{ modulos().length }} módulos que coordinación te asignó. Las guías de otros módulos no
+      están disponibles para tu perfil.
+    </p>
+  </div>
+</div>
+
+<div class="ui-actions ui-mb">
+  <label class="ui-search">
+    <app-icon name="search" [size]="16" />
+    <input
+      type="search"
+      placeholder="Buscar en mis guías…"
+      aria-label="Buscar en mis guías"
+      [value]="filtro().busqueda"
+      (input)="cambiar({ busqueda: $any($event.target).value })"
+    />
+  </label>
+  <label class="ui-select">
+    <select aria-label="Filtrar por módulo" (change)="cambiar({ moduleId: $any($event.target).value ? +$any($event.target).value : null })">
+      <option value="">Módulo: Mis módulos ({{ modulos().length }})</option>
+      @for (m of modulos(); track m.id) {
+        <option [value]="m.id">{{ m.name }}</option>
+      }
+    </select>
+  </label>
+</div>
+
+@if (cargando() && !datos()) {
+  <p class="ui-state">Cargando guías…</p>
+} @else if (datos(); as d) {
+  @if (d.guias.length === 0) {
+    <section class="ui-card">
+      <p class="ui-empty">
+        @if (modulos().length === 0) {
+          Aún no tienes módulos asignados. Cuando coordinación te asigne uno, verás aquí sus guías base publicadas.
+        } @else {
+          No hay guías publicadas que coincidan con la búsqueda.
+        }
+      </p>
+    </section>
+  } @else {
+    <div class="ui-grid-cards ui-mb">
+      @for (g of d.guias; track g.id) {
+        <article class="ui-gcard">
+          <div class="ui-gcard__head">
+            <span class="ui-tile ui-tile--md"><app-icon [name]="icono(g.competencyPrefix)" [size]="19" /></span>
+            <div class="ui-gcard__title">
+              <strong>{{ g.title }}</strong>
+              <small>{{ g.code }} · {{ g.competencyCode }}</small>
+            </div>
+            <span class="ui-pill ui-pill--ok"><i></i> Publicada</span>
+          </div>
+          <div class="ui-kv-box">
+            <div class="ui-kv"><span>Módulo</span><strong>{{ g.moduleName }}</strong></div>
+            <div class="ui-kv"><span>Versión vigente</span><strong>{{ g.version }} · {{ fecha(g.updatedAt) }}</strong></div>
+            <div class="ui-kv">
+              <span>Mi espacio</span>
+              @if (g.misVersiones.length) {
+                <span class="ui-pill ui-pill--info ui-pill--sm"><app-icon name="folder" [size]="12" /> Ya tienes tu versión</span>
+              } @else {
+                <span class="ui-pill ui-pill--neutral ui-pill--sm">Sin versión propia</span>
+              }
+            </div>
+          </div>
+          <div class="ui-gcard__actions">
+            <a class="ui-btn ui-btn--outline ui-btn--xs" [routerLink]="['/mis-modulos/guias', g.id, 'sugerir']">
+              <app-icon name="message-square" [size]="13" /> Sugerir cambio
+            </a>
+            <a class="ui-btn ui-btn--primary ui-btn--xs" [routerLink]="['/mis-modulos/guias', g.id]">
+              <app-icon name="eye" [size]="13" /> Consultar guía
+            </a>
+          </div>
+        </article>
+      }
+    </div>
+  }
+
+  @if (d.ocultas.total > 0) {
+    <div class="ui-footnote">
+      <span class="ui-tile ui-tile--sm ui-tile--neutral"><app-icon name="eye-off" [size]="16" /></span>
+      <p>
+        {{ d.ocultas.total }} {{ d.ocultas.total === 1 ? 'guía publicada' : 'guías publicadas' }} de otros módulos
+        ({{ otrosModulos() }}) no se muestran porque no estás asignado a ellos.
+      </p>
+      <span class="ui-pill ui-pill--neutral">No asignado</span>
+    </div>
+  }
+}

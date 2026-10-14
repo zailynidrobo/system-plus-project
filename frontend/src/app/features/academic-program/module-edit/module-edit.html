@@ -1,0 +1,115 @@
+@if (cargando()) {
+  <p class="ui-state">Cargando módulo...</p>
+} @else if (modulo(); as m) {
+  <header class="ui-page-head">
+    <div>
+      <h1>Editar módulo</h1>
+      <p>Actualiza el nombre o la descripción sin alterar competencias ni guías asociadas.</p>
+    </div>
+  </header>
+
+  <div class="ui-layout">
+    <div>
+      <a class="ui-back" routerLink="/modulos"><app-icon name="arrow-left" [size]="15" /> Volver al programa académico</a>
+
+      <form class="ui-card" [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+        <div class="ui-hero">
+          <span class="ui-circle ui-circle--gold ui-circle--lg"><app-icon [name]="icono(m.competencyPrefix)" [size]="23" /></span>
+          <div class="ui-hero__info">
+            <strong>{{ m.name }}</strong>
+            <small>{{ m.code }} · Actualizado el {{ fecha(m.updatedAt) }}</small>
+          </div>
+          <div class="ui-hero__tags">
+            <span class="ui-pill" [class]="pill(m.status)"><i></i> {{ labels[m.status] }}</span>
+            <span class="ui-pill">{{ m.competenciesCount }} competencias</span>
+          </div>
+        </div>
+
+        <div class="ui-separator"></div>
+
+        <div class="ui-card__head">
+          <h2>Información editable</h2>
+          <p>Modifica el nombre o la descripción. El código {{ m.code }} no cambia.</p>
+        </div>
+
+        <div class="ui-fields">
+          <div class="ui-field">
+            <label for="nombre">Nombre del módulo *</label>
+            <div class="ui-control" [class.ui-control--dup]="duplicado()">
+              <input id="nombre" type="text" formControlName="name" autocomplete="off" />
+            </div>
+            @if (duplicado(); as d) {
+              <p class="ui-help ui-help--error">
+                Ya existe “{{ d.name }}” ({{ d.code }}). Usa un nombre diferente o
+                <a [routerLink]="['/modulos', d.id]">abre el módulo existente</a>.
+              </p>
+            } @else if (form.controls.name.touched && form.controls.name.invalid) {
+              <p class="ui-help ui-help--error">Ingresa el nombre del módulo.</p>
+            } @else {
+              <p class="ui-help">Este nombre se mostrará inmediatamente en listados y nuevas guías.</p>
+            }
+          </div>
+
+          <div class="ui-field">
+            <label for="descripcion">Descripción {{ m.status === 'draft' ? '' : '*' }}</label>
+            <div class="ui-control" [class.ui-control--error]="faltaDescripcion()">
+              <textarea id="descripcion" formControlName="description" rows="3"></textarea>
+            </div>
+            @if (faltaDescripcion()) {
+              <p class="ui-help ui-help--error">La descripción es obligatoria.</p>
+            }
+          </div>
+        </div>
+
+        <div class="ui-notice ui-notice--info">
+          <app-icon name="info" [size]="18" />
+          <div>
+            <strong>Alcance de esta edición</strong>
+            <p>
+              Las {{ m.competenciesCount }} competencias y {{ m.guidesCount }} guías asociadas permanecen sin cambios.
+              Las guías publicadas conservarán su trazabilidad.
+            </p>
+          </div>
+        </div>
+
+        @if (errorGeneral()) {
+          <p class="ui-help ui-help--error" role="alert">No pudimos guardar los cambios. Inténtalo de nuevo en unos minutos.</p>
+        }
+
+        <div class="ui-actions">
+          <button type="button" class="ui-btn" (click)="descartar()" [disabled]="!hayCambios()">Descartar cambios</button>
+          <button type="submit" class="ui-btn ui-btn--primary" [disabled]="guardando() || !hayCambios()">
+            <app-icon name="save" [size]="16" /> {{ guardando() ? 'Guardando…' : 'Guardar cambios' }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <aside class="ui-side">
+      <section class="ui-result">
+        <span class="ui-pill ui-pill--ok ui-self-start">{{ guardado() ? 'Guardado' : 'Después de guardar' }}</span>
+        <span class="ui-circle ui-circle--ok"><app-icon name="circle-check" [size]="23" /></span>
+        <div>
+          <h4>Cambios guardados</h4>
+          <p>El nuevo nombre ya aparece en el programa académico.</p>
+        </div>
+        <div class="ui-box">
+          <small class="ui-label">Nombre actual</small>
+          <strong class="ui-name-accent">{{ m.name }}</strong>
+          <span class="ui-pill ui-self-start" [class]="pill(m.status)"><i></i> {{ labels[m.status] }}</span>
+        </div>
+      </section>
+
+      <div class="ui-notice ui-notice--ok">
+        <app-icon name="refresh-cw" [size]="18" />
+        <div>
+          <strong>Aplicación inmediata</strong>
+          <p>El cambio está visible en el listado, el detalle del módulo y la creación de nuevas guías.</p>
+        </div>
+      </div>
+    </aside>
+  </div>
+} @else {
+  <p class="ui-state">El módulo que buscas no existe.</p>
+  <a class="ui-btn ui-btn--primary" routerLink="/modulos"><app-icon name="arrow-left" [size]="16" /> Volver al programa</a>
+}

@@ -1,0 +1,164 @@
+@if (version(); as v) {
+  <header class="ui-page-head">
+    <div>
+      <h1>Editar mi versión</h1>
+      <p>Ajusta tu planeación campo por campo. Tu avance se guarda automáticamente.</p>
+      <a class="ui-back ui-back--inline" routerLink="/mis-versiones" [state]="{ guardado: aviso() }">
+        <app-icon name="arrow-left" [size]="13" /> Volver a mis versiones
+      </a>
+    </div>
+    <div class="ui-page-head__actions cabecera">
+      <span
+        class="ui-saved"
+        [class.ui-saved--busy]="estado() === 'guardando' || estado() === 'pendiente'"
+        [class.ui-saved--error]="estado() === 'error'"
+        role="status"
+      >
+        <app-icon [name]="estado() === 'error' ? 'circle-alert' : estado() === 'listo' ? 'cloud-check' : 'clock'" [size]="15" />
+        {{ indicador() }}
+      </span>
+      <a class="ui-btn ui-btn--outline ui-btn--md" [routerLink]="['/mis-modulos/guias', v.guideId]">
+        <app-icon name="eye" [size]="15" /> Ver guía base
+      </a>
+    </div>
+  </header>
+
+  <div class="ui-layout ui-layout--docente">
+    <section class="ui-card ui-card--compact">
+      <div class="ui-hero">
+        <span class="ui-tile ui-tile--md"><app-icon name="folder" [size]="19" /></span>
+        <div class="ui-hero__info">
+          <strong class="titulo">{{ v.name }}</strong>
+          <small>Basada en {{ v.guideCode }} {{ v.baseVersion }} · Creada el {{ fecha(v.createdAt) }}</small>
+        </div>
+        <span class="ui-pill ui-pill--info">Mi versión</span>
+      </div>
+
+      @if (v.guideVersion !== v.baseVersion) {
+        <div class="ui-notice ui-notice--info">
+          <app-icon name="info" [size]="16" />
+          <div>
+            <strong>La guía base cambió a {{ v.guideVersion }}</strong>
+            <p>Coordinación actualizó la guía después de que creaste tu versión. Tu copia no se modificó.</p>
+          </div>
+        </div>
+      }
+
+      @for (f of v.fields; track f.key) {
+        <section class="campo" [class.is-editing]="editando() === f.key">
+          <div class="campo__head">
+            <strong>{{ f.label }}</strong>
+            <span class="ui-cell">
+              @if (editando() === f.key) {
+                <span class="ui-pill ui-pill--info ui-pill--sm">Editando</span>
+              } @else {
+                @if (adaptado(f.key)) {
+                  <span class="ui-pill ui-pill--gold ui-pill--sm">Adaptado</span>
+                }
+                @if (editable(f)) {
+                  <button type="button" class="ui-icon-btn" [attr.aria-label]="'Editar ' + f.label" title="Editar campo" (click)="editar(f)">
+                    <app-icon name="pencil" [size]="13" />
+                  </button>
+                } @else {
+                  <span class="ui-lock"><app-icon name="lock" [size]="11" /> Definido por coordinación</span>
+                }
+              }
+            </span>
+          </div>
+
+          @if (editando() === f.key) {
+            <div class="ui-control" [class.ui-control--error]="errorCampo()">
+              @switch (f.type) {
+                @case ('textarea') {
+                  <textarea
+                    [attr.aria-label]="f.label"
+                    [attr.maxlength]="f.maxLength ?? null"
+                    [value]="borrador()"
+                    (input)="escribir($any($event.target).value)"
+                  ></textarea>
+                }
+                @case ('select') {
+                  <select [attr.aria-label]="f.label" [value]="borrador()" (change)="escribir($any($event.target).value)">
+                    @if (!f.required) {
+                      <option value="">Sin seleccionar</option>
+                    }
+                    @for (o of f.options ?? []; track o) {
+                      <option [value]="o" [selected]="o === borrador()">{{ o }}</option>
+                    }
+                  </select>
+                }
+                @default {
+                  <input
+                    [type]="f.type === 'number' ? 'number' : f.type === 'date' ? 'date' : 'text'"
+                    [attr.aria-label]="f.label"
+                    [attr.maxlength]="f.maxLength ?? null"
+                    [value]="borrador()"
+                    (input)="escribir($any($event.target).value)"
+                  />
+                }
+              }
+            </div>
+            @if (errorCampo()) {
+              <p class="ui-help ui-help--error">{{ errorCampo() }}</p>
+            }
+            <div class="campo__foot">
+              <small class="campo__base">Base institucional: “{{ texto(f.key, true) || 'Sin diligenciar' }}”</small>
+              @if (f.maxLength) {
+                <small class="campo__base">{{ borrador().length }}/{{ f.maxLength }}</small>
+              }
+              <button type="button" class="ui-btn ui-btn--xs" (click)="descartar()">Descartar</button>
+              <button type="button" class="ui-btn ui-btn--primary ui-btn--xs" [disabled]="estado() === 'guardando'" (click)="guardar(true)">
+                <app-icon name="check" [size]="13" /> Guardar campo
+              </button>
+            </div>
+          } @else if (texto(f.key); as t) {
+            <p>{{ t }}</p>
+          } @else {
+            <p class="campo__vacio">Sin diligenciar</p>
+          }
+        </section>
+      }
+    </section>
+
+    <aside class="ui-side">
+      <section class="ui-side-card">
+        <h3 class="ui-side-title">Progreso de adaptación</h3>
+        <div class="ui-progress" role="progressbar" [attr.aria-valuenow]="progreso()" aria-valuemin="0" aria-valuemax="100">
+          <span [style.width.%]="progreso()"></span>
+        </div>
+        <small class="ui-muted">{{ v.adaptedKeys.length }} de {{ v.editableCount }} campos adaptados</small>
+        <ul class="ui-options">
+          @if (campoEditando(); as c) {
+            <li>
+              <app-icon name="pencil" [size]="15" />
+              <div><strong>{{ c.label }}</strong><small>Editando ahora</small></div>
+            </li>
+          }
+          @for (r of recientes(); track r.label) {
+            <li class="reciente">
+              <app-icon name="circle-check" [size]="15" />
+              <div><strong>{{ r.label }}</strong><small>{{ r.cuando }}</small></div>
+            </li>
+          }
+        </ul>
+      </section>
+
+      <section class="ui-side-note ui-side-note--ok">
+        <app-icon name="cloud-check" [size]="18" />
+        <strong>Guardado automático activo</strong>
+        <p>Cada campo se guarda al confirmarlo y tu avance se conserva aunque cierres la sesión.</p>
+      </section>
+    </aside>
+  </div>
+
+  @if (toast(); as t) {
+    <div class="ui-toast" role="status"><app-icon name="circle-check" [size]="16" /> {{ t }}</div>
+  }
+} @else if (noExiste()) {
+  <section class="ui-card">
+    <p class="ui-empty">Esta versión no existe o pertenece al espacio de otro docente.</p>
+  </section>
+  <a class="ui-btn ui-btn--primary ui-self-start" routerLink="/mis-versiones"><app-icon name="arrow-left" [size]="15" /> Volver a mis versiones</a>
+} @else {
+  <p class="ui-state">Cargando versión…</p>
+}

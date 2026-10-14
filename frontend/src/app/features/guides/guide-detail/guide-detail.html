@@ -1,0 +1,85 @@
+@if (cargando()) {
+  <p class="ui-state">Cargando guía...</p>
+} @else if (guia(); as g) {
+  <header class="ui-page-head">
+    <div>
+      <h1>{{ g.status === 'Publicada' ? 'Guía publicada' : 'Guía en borrador' }}</h1>
+      <p>Consulta el contenido oficial de la guía base y su trazabilidad.</p>
+      <a class="ui-back ui-back--inline" routerLink="/guias"><app-icon name="arrow-left" [size]="13" /> Volver a guías base</a>
+    </div>
+    @if (g.status === 'Borrador') {
+      <div class="ui-page-head__actions">
+        <a class="ui-btn ui-btn--outline" [routerLink]="['/guias', g.id, 'editar']" [queryParams]="{ publicar: 1 }"><app-icon name="send" [size]="14" /> Publicar…</a>
+        <a class="ui-btn ui-btn--primary" [routerLink]="['/guias', g.id, 'editar']"><app-icon name="pencil" [size]="15" /> Editar borrador</a>
+      </div>
+    }
+  </header>
+
+  <div class="ui-layout">
+    <section class="ui-card">
+      <div class="ui-hero ui-hero--divided">
+        <span class="ui-tile ui-tile--md" [class.ui-tile--ok]="g.status === 'Publicada'" [class.ui-tile--warn]="g.status === 'Borrador'">
+          <app-icon name="file-text" [size]="19" />
+        </span>
+        <div class="ui-hero__info">
+          <strong>{{ g.title }}</strong>
+          <small>
+            {{ g.code }} · {{ g.moduleName }} · {{ g.competencyCode }}@if (g.competencyDeleted) { (competencia eliminada) }
+            @if (g.status === 'Publicada') { · Versión {{ g.version.replace('v', '') }} }
+          </small>
+        </div>
+        @if (g.status === 'Publicada') {
+          <span class="ui-pill ui-pill--ok"><i></i> Publicada</span>
+        } @else {
+          <span class="ui-pill ui-pill--warn"><i></i> Borrador</span>
+        }
+      </div>
+
+      @if (g.status === 'Publicada') {
+        <div class="ui-notice ui-notice--info">
+          <app-icon name="lock" [size]="16" />
+          <div>
+            <strong>Documento institucional protegido</strong>
+            <p>Las guías publicadas no se editan directamente. Los cambios llegan por sugerencias de los docentes y su aprobación.</p>
+          </div>
+        </div>
+      }
+
+      <app-guide-content [fields]="g.fields" [content]="g.content" />
+    </section>
+
+    <aside class="ui-side">
+      @if (g.status === 'Publicada') {
+        <section class="ui-side-card">
+          <small class="ui-label ui-label--ok">Registro de publicación</small>
+          <div class="ui-kv"><span>Publicada por</span><strong>{{ g.publishedBy?.name }}</strong></div>
+          <div class="ui-kv"><span>Fecha</span><strong>{{ fecha(g.publishedAt) }}</strong></div>
+          <div class="ui-kv"><span>Hora</span><strong>{{ hora(g.publishedAt) }}</strong></div>
+          <div class="ui-kv"><span>Versión vigente</span><strong>{{ g.version }} · {{ fecha(g.updatedAt) }}</strong></div>
+        </section>
+      }
+      <section class="ui-side-card" id="historial">
+        <h3 class="ui-side-title"><app-icon name="history" [size]="15" /> Historial</h3>
+        <ul class="ui-timeline">
+          @for (e of historial(); track $index) {
+            <li>
+              <span class="ui-timeline__mark"><app-icon name="check" [size]="11" /></span>
+              <div>
+                <strong>{{ e.titulo }}</strong>
+                <small>{{ cuando(e.fecha) }} · {{ e.autor }}</small>
+              </div>
+            </li>
+          }
+        </ul>
+      </section>
+      <section class="ui-side-note ui-side-note--info">
+        <app-icon name="sliders" [size]="18" />
+        <strong>Estructura v{{ g.structureVersion }}</strong>
+        <p>{{ g.fields.length }} campos. La guía conserva la estructura con la que se diligenció.</p>
+      </section>
+    </aside>
+  </div>
+} @else {
+  <p class="ui-state">La guía que buscas no existe.</p>
+  <a class="ui-btn ui-btn--primary" routerLink="/guias"><app-icon name="arrow-left" [size]="15" /> Volver a guías base</a>
+}

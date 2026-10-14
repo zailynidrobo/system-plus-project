@@ -1,0 +1,68 @@
+.docente { font-size: 14.5px !important; font-weight: 500 !important; }
+
+// Contenido actual (rojo) frente a cambio propuesto (verde), Figma 5003:1186
+.comparar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+
+  @media (max-width: 1280px) { grid-template-columns: 1fr; }
+}
+
+.comparar__col {
+  overflow: hidden;
+  border: 1px solid var(--color-border-figma);
+  border-radius: 10px;
+  text-align: left;
+
+  p { margin: 0; padding: 10px 12px 12px; font-size: 12.5px; line-height: 1.5; white-space: pre-wrap; color: #3c4058; }
+  mark { border-radius: 3px; background: #cdebd9; color: #1f5e3d; }
+}
+
+.comparar__head {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.comparar__col--off { border-color: #f1c9c4; }
+.comparar__col--off .comparar__head { background: var(--color-danger-bg-figma); color: var(--color-danger-figma); }
+.comparar__col--ok { border-color: #cdebd9; }
+.comparar__col--ok .comparar__head { background: #e8f6ee; color: var(--color-success-figma); }
+.comparar__col--ok p { background: #f6fbf8; }
+
+.justificacion {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 13px 15px;
+  border: 1px solid var(--color-border-figma);
+  border-radius: 10px;
+
+  strong { font-size: 12.5px; font-weight: 600; color: var(--color-text-figma); }
+  p { margin: 0; font-size: 12.5px; line-height: 1.5; color: #3c4058; }
+}
+
+.rechazar { color: var(--color-danger-figma); }
+
+// Resultado "Sugerencia aprobada" (5003:831)
+.resultado {
+  align-items: center;
+  gap: 6px;
+  width: min(600px, 100%);
+  padding: 30px 34px;
+  text-align: center;
+
+  h2 { margin: 10px 0 0; font-size: 21px !important; font-weight: 500 !important; color: var(--color-primary) !important; }
+}
+
+.texto { max-width: 440px; margin: 0 0 10px; font-size: 13px; line-height: 1.45; color: var(--color-muted-figma); }
+.vigente { width: 100%; }
+.ancho { width: 100%; margin-top: 8px; text-align: left; }
+.flex { flex: 1; min-width: 0; }
+.ui-actions { margin-top: 6px; }
+.verde li { color: var(--color-success-figma); }

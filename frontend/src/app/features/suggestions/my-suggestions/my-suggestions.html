@@ -1,0 +1,68 @@
+<header class="ui-page-head">
+  <div>
+    <h1>Mis sugerencias</h1>
+    <p>Sigue el estado de las propuestas que enviaste a coordinación académica.</p>
+  </div>
+  <div class="ui-page-head__actions">
+    <a class="ui-btn ui-btn--primary ui-btn--md" routerLink="/mis-modulos"><app-icon name="message-square-plus" [size]="15" /> Nueva sugerencia</a>
+  </div>
+</header>
+
+<section class="ui-stats">
+  <article class="ui-stat">
+    <span class="ui-tile ui-tile--warn"><app-icon name="clock" [size]="18" /></span>
+    <div><small>Pendientes</small><strong>{{ pendientes() }}</strong><em>en revisión</em></div>
+  </article>
+  <article class="ui-stat">
+    <span class="ui-tile ui-tile--ok"><app-icon name="circle-check" [size]="18" /></span>
+    <div><small>Aprobadas</small><strong>{{ aprobadas() }}</strong><em>aplicadas en la guía</em></div>
+  </article>
+  <article class="ui-stat">
+    <span class="ui-tile ui-tile--danger"><app-icon name="circle-x" [size]="18" /></span>
+    <div><small>Rechazadas</small><strong>{{ rechazadas() }}</strong><em>con retroalimentación</em></div>
+  </article>
+</section>
+
+<section class="ui-panel">
+  @if (cargando()) {
+    <p class="ui-empty">Cargando sugerencias…</p>
+  } @else if (sugerencias().length === 0) {
+    <p class="ui-empty">Aún no has enviado sugerencias. Abre una guía base de tus módulos y usa “Sugerir cambio”.</p>
+  } @else {
+    <div class="ui-table-wrap">
+      <table class="ui-table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Guía · Campo</th>
+            <th>Propuesta</th>
+            <th>Enviada</th>
+            <th>Estado</th>
+            <th class="ui-right">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (s of sugerencias(); track s.id) {
+            <tr>
+              <td><strong>{{ s.code }}</strong></td>
+              <td>
+                <div class="ui-cell">
+                  <div><strong>{{ s.guideCode }}</strong><small>{{ s.fieldLabel }}</small></div>
+                </div>
+              </td>
+              <td>{{ s.summary }}</td>
+              <td>{{ hace(s.createdAt) }}</td>
+              <td><span class="ui-pill" [class]="pill[s.status]"><i></i> {{ s.status }}</span></td>
+              <td class="ui-actions-cell">
+                <a class="ui-btn ui-btn--outline ui-btn--xs" [routerLink]="['/mis-sugerencias', s.id]">Ver</a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="ui-table-foot">
+      Mostrando {{ sugerencias().length }} {{ sugerencias().length === 1 ? 'sugerencia' : 'sugerencias' }}
+    </div>
+  }
+</section>

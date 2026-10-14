@@ -1,0 +1,7 @@
+.aviso-texto { color: #1f5e3d !important; }
+
+.fila { cursor: pointer; }
+.fila:hover td { background: #fafbfd; }
+.fila.is-current td { background: #f7f7fd; }
+
+.ui-icon-btn { width: 28px; height: 28px; color: var(--color-primary); }

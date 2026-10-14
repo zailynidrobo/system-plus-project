@@ -16,6 +16,8 @@ export const ROLES_DOCENTES: Role[] = ['DOCENTE', 'DOCENTE_AUTORIZADO'];
 
 export interface User {
   id: number;
+  /** Identificador del usuario en Keycloak y en el backend (UUID). Solo en sesiones reales. */
+  keycloakId?: string;
   nombre: string;
   correo: string;
   rol: Role;

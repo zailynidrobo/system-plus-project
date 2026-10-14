@@ -1,12 +1,21 @@
 import { Observable } from 'rxjs';
 import { LoginRequest, User } from '../../shared/models/user';
 
+/** Por qué la pantalla de login no puede redirigir sola a un inicio de sesión externo. */
+export type ProblemaLogin = 'SIN_ROL' | 'SERVICIO_NO_DISPONIBLE';
+
 /**
  * Contrato de autenticación. Pantallas, guards y menú NO lo usan directamente: usan `Auth`.
- * Hoy lo implementa MockAuthProvider; para Keycloak se agrega KeycloakAuthProvider
- * y se cambia una línea en provide-auth.ts.
+ * Lo implementan MockAuthProvider (login simulado) y KeycloakAuthProvider (login real);
+ * provide-auth.ts elige cuál según environment.auth.
  */
 export interface AuthProvider {
+  /** true si el login lo hace un servicio externo (Keycloak) y la app no pide credenciales. */
+  readonly loginExterno?: boolean;
+
+  /** Solo con login externo: motivo por el que no se puede redirigir, o null si todo está bien. */
+  problemaLogin?(): ProblemaLogin | null;
+
   /** Usuario de la sesión guardada al arrancar la app, o null. */
   restaurarSesion(): User | null;
 

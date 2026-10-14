@@ -244,3 +244,24 @@ Recargaste la página o escribiste una URL en la barra del navegador. Los datos 
 
 **Entro con un rol y veo «Sin acceso»**
 Abriste una ruta de otro rol, por ejemplo `/sugerencias` con el docente. Usa el menú lateral o vuelve a `/`, que lleva al inicio de tu rol.
+
+## 11. Iniciar sesión con Keycloak
+
+El modo de autenticación se elige en `src/environments/environment.ts`:
+
+| `auth` | Qué hace |
+|---|---|
+| `'keycloak'` | Login real: `/login` redirige a Keycloak y vuelve con el token. Requiere Keycloak en Docker. |
+| `'mock'` | Login simulado con los usuarios de la sección 6. No necesita Keycloak ni backend. |
+
+Para usar Keycloak:
+
+1. Tener Keycloak corriendo (`docker run ... quay.io/keycloak/keycloak:26.3 start-dev`) en `http://localhost:8080`.
+2. Tener el realm `system-plus` con el client público `system-plus-front` (redirect URI y web origin `http://localhost:4200`), los roles `admin`, `coordinador`, `docente` y `docente_autorizado`, el mapper de audience `system-plus-api` y usuarios con un rol asignado.
+3. Si los nombres del realm o del client cambian, ajustar el bloque `keycloak` de `environment.ts`.
+4. Entrar a <http://localhost:4200>: la app lleva a la pantalla de Keycloak. Al cerrar sesión se cierra también en Keycloak.
+
+Notas:
+- Un usuario de Keycloak sin ninguno de los cuatro roles ve el aviso «Tu cuenta no tiene un rol asignado».
+- Un cambio de rol hecho en Keycloak se aplica cuando el token se renueva.
+- Con Keycloak activo, las pantallas de gestión siguen usando datos simulados hasta que se conecten con el backend (siguiente paso de HE-01).

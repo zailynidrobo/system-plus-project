@@ -286,3 +286,22 @@ Cosas a tener en cuenta:
 - Los usuarios de Keycloak que no tienen uno de los cuatro roles no aparecen en el listado.
 - El historial de «Editar usuario» solo muestra la fecha de registro; el backend aún no guarda eventos.
 - Los ids de las rutas (`/usuarios/2863311530/editar`) son un número derivado del UUID de Keycloak.
+
+
+## 13. Programa académico (módulos y competencias) con el backend real
+
+En `src/environments/environment.ts`:
+
+| `apiAcademico` | Qué hace |
+|---|---|
+| `'mock'` (por defecto) | Módulos y competencias simulados en memoria. Es lo que necesitan hoy las pantallas de **Guías** y **Espacio docente**. |
+| `'http'` | Las pantallas de **Programa académico** (módulos y competencias) leen y guardan en el backend (PostgreSQL). |
+
+Para probar `'http'`: Keycloak + Postgres + backend encendidos (sección 12) y entrar con un usuario **Coordinador** (es el único rol que puede crear y editar; los demás solo consultan).
+
+Cosas a tener en cuenta:
+- **No mezcles pantallas.** Las guías (HE-03) siguen simuladas y buscan los módulos en los datos de prueba: con `'http'` activado, crear o ver guías falla hasta que las guías también pasen al backend. Por eso el valor por defecto es `'mock'`.
+- El backend no tiene guías todavía: «guías publicadas» sale en 0 y al eliminar una competencia no se listan guías afectadas.
+- Los ids de las rutas son un número derivado del UUID del backend. Si recargas una pantalla de detalle, el front vuelve a consultar el listado para saber a qué UUID corresponde.
+- En el listado de módulos «creado por / actualizado por» vienen vacíos; solo el detalle del módulo trae la auditoría.
+- El nombre de un módulo se busca en el backend sin ignorar tildes (en el mock sí).

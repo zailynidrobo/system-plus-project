@@ -1,12 +1,8 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, DataSource, Repository } from 'typeorm';
 import { AuthenticatedUser } from '../../auth/current-user.decorator.js';
+import { badRequest, conflict, notFound } from '../api-errors.js';
 import {
   buildCompetencyPrefix,
   cleanText,
@@ -71,7 +67,7 @@ export class CurricularModulesService {
           lock: { mode: 'pessimistic_write' },
         });
         if (!program)
-          throw new NotFoundException('Programa académico no encontrado');
+          throw notFound('NOT_FOUND', 'Programa académico no encontrado');
 
         const siblings = await manager.find(CurricularModule, {
           where: { programId },
@@ -214,7 +210,8 @@ export class CurricularModulesService {
     user: AuthenticatedUser,
   ) {
     if (dto.name === undefined && dto.description === undefined) {
-      throw new BadRequestException(
+      throw badRequest(
+        'NOTHING_TO_UPDATE',
         'Debe proporcionar al menos un dato para actualizar',
       );
     }
@@ -253,12 +250,14 @@ export class CurricularModulesService {
   async register(id: string, user: AuthenticatedUser) {
     const module = await this.getOrFail(id);
     if (module.status !== CurricularModuleStatus.DRAFT) {
-      throw new ConflictException(
+      throw conflict(
+        'INVALID_STATUS',
         'Solo los módulos en borrador pueden registrarse',
       );
     }
     if (!module.description?.trim()) {
-      throw new BadRequestException(
+      throw badRequest(
+        'DESCRIPTION_REQUIRED',
         'La descripción es obligatoria para registrar el módulo',
       );
     }
@@ -280,10 +279,11 @@ export class CurricularModulesService {
   ) {
     const module = await this.getOrFail(id);
     if (module.status === CurricularModuleStatus.INACTIVE) {
-      throw new ConflictException('El módulo ya está inhabilitado');
+      throw conflict('INVALID_STATUS', 'El módulo ya está inhabilitado');
     }
     if (module.status === CurricularModuleStatus.DRAFT) {
-      throw new ConflictException(
+      throw conflict(
+        'INVALID_STATUS',
         'Un módulo en borrador no se puede inhabilitar',
       );
     }
@@ -302,7 +302,8 @@ export class CurricularModulesService {
   async reactivate(id: string, user: AuthenticatedUser) {
     const module = await this.getOrFail(id);
     if (module.status !== CurricularModuleStatus.INACTIVE) {
-      throw new ConflictException(
+      throw conflict(
+        'INVALID_STATUS',
         'Solo los módulos inhabilitados pueden habilitarse',
       );
     }
@@ -324,12 +325,14 @@ export class CurricularModulesService {
   async assertAvailableForGuides(id: string): Promise<CurricularModule> {
     const module = await this.getOrFail(id);
     if (module.status !== CurricularModuleStatus.ACTIVE) {
-      throw new BadRequestException(
+      throw badRequest(
+        'MODULE_NOT_ACTIVE',
         'El módulo no está disponible para crear nuevas guías',
       );
     }
     if ((await this.competencies.countBy({ moduleId: id })) === 0) {
-      throw new BadRequestException(
+      throw badRequest(
+        'MODULE_WITHOUT_COMPETENCIES',
         'El módulo debe tener al menos una competencia activa para crear guías',
       );
     }
@@ -338,7 +341,7 @@ export class CurricularModulesService {
 
   async getOrFail(id: string): Promise<CurricularModule> {
     const module = await this.modules.findOneBy({ id });
-    if (!module) throw new NotFoundException('Módulo no encontrado');
+    if (!module) throw notFound('NOT_FOUND', 'Módulo no encontrado');
     return module;
   }
 

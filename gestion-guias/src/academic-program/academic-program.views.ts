@@ -21,6 +21,9 @@ export function toModuleView(
     id: module.id,
     programId: module.programId,
     code: module.code,
+    sequence: module.sequence,
+    /** Sigla de los códigos de competencia (POO → COMP-POO-01); el front la usa para el ícono. */
+    competencyPrefix: module.competencyPrefix,
     name: module.name,
     description: module.description,
     status: module.status,
@@ -55,6 +58,7 @@ export function toCompetencyView(
     id: competency.id,
     moduleId: competency.moduleId,
     code: competency.code,
+    sequence: competency.sequence,
     text: competency.text,
     version: competency.version,
     status: competency.deletedAt ? ('deleted' as const) : ('active' as const),

@@ -1,12 +1,8 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, Not, Repository } from 'typeorm';
 import { AuthenticatedUser } from '../../auth/current-user.decorator.js';
+import { badRequest, conflict, notFound } from '../api-errors.js';
 import {
   cleanText,
   formatCompetencyCode,
@@ -121,10 +117,11 @@ export class CompetenciesService {
     const result = await this.dataSource.transaction(async (manager) => {
       await this.lockEditableModule(manager, moduleId);
       const competency = await manager.findOneBy(Competency, { id });
-      if (!competency) throw new NotFoundException('Competencia no encontrada');
+      if (!competency) throw notFound('NOT_FOUND', 'Competencia no encontrada');
 
       if (competency.text === text) {
-        throw new BadRequestException(
+        throw badRequest(
+          'NO_CHANGES',
           'El texto de la competencia no presenta cambios',
         );
       }
@@ -161,7 +158,7 @@ export class CompetenciesService {
     const module = await this.dataSource.transaction(async (manager) => {
       const locked = await this.lockEditableModule(manager, moduleId);
       const competency = await manager.findOneBy(Competency, { id });
-      if (!competency) throw new NotFoundException('Competencia no encontrada');
+      if (!competency) throw notFound('NOT_FOUND', 'Competencia no encontrada');
 
       await manager.update(Competency, id, {
         deletedById: user.id,
@@ -211,7 +208,7 @@ export class CompetenciesService {
       version,
     });
     if (!revision)
-      throw new NotFoundException('Versión de competencia no encontrada');
+      throw notFound('NOT_FOUND', 'Versión de competencia no encontrada');
     return {
       competencyId: competency.id,
       moduleId: competency.moduleId,
@@ -230,7 +227,7 @@ export class CompetenciesService {
       where: { id },
       withDeleted,
     });
-    if (!competency) throw new NotFoundException('Competencia no encontrada');
+    if (!competency) throw notFound('NOT_FOUND', 'Competencia no encontrada');
     return competency;
   }
 
@@ -243,14 +240,16 @@ export class CompetenciesService {
       where: { id: moduleId },
       lock: { mode: 'pessimistic_write' },
     });
-    if (!module) throw new NotFoundException('Módulo no encontrado');
+    if (!module) throw notFound('NOT_FOUND', 'Módulo no encontrado');
     if (module.status === CurricularModuleStatus.DRAFT) {
-      throw new ConflictException(
+      throw conflict(
+        'MODULE_NOT_ACTIVE',
         'Registra el módulo antes de gestionar sus competencias',
       );
     }
     if (module.status === CurricularModuleStatus.INACTIVE) {
-      throw new ConflictException(
+      throw conflict(
+        'MODULE_NOT_ACTIVE',
         'El módulo está inhabilitado; habilítalo para gestionar sus competencias',
       );
     }

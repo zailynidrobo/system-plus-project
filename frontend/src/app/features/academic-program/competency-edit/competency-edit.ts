@@ -9,6 +9,7 @@ import { CompetencyView } from '../../../shared/models/competency';
 import { Icon } from '../../../shared/ui/icon/icon';
 import { hora } from '../../../shared/utils/fechas';
 import { CompetencyApi } from '../competency-api';
+import { COMPETENCIA_MAX, COMPETENCIA_MIN, longitudCompetencia } from '../competency-text';
 import { ModuleApi } from '../module-api';
 
 // Figma HE-02-HU-05 · Editar competencia (204:3021)
@@ -33,10 +34,14 @@ export class CompetencyEdit {
   guardada = signal(false);
   duplicada = signal<string | null>(null);
   error = signal(false);
+  detalleError = signal('');
+  errorCarga = signal(false);
+  minimo = COMPETENCIA_MIN;
+  maximo = COMPETENCIA_MAX;
 
   hora = hora;
 
-  form = this.fb.nonNullable.group({ text: ['', [Validators.required, Validators.pattern(/\S/)]] });
+  form = this.fb.nonNullable.group({ text: ['', [Validators.required, Validators.pattern(/\S/), longitudCompetencia]] });
   private valores = toSignal(this.form.valueChanges.pipe(startWith(null)));
 
   hayCambios = computed(() => {
@@ -46,10 +51,24 @@ export class CompetencyEdit {
   });
 
   constructor() {
-    this.moduleApi.obtener(this.moduleId).subscribe((m) => this.modulo.set(m));
-    this.api.obtener(this.competencyId).subscribe((c) => this.mostrar(c, c.text));
-    this.api.listar(this.moduleId).subscribe((l) => this.otras.set(l.filter((c) => c.id !== this.competencyId)));
+    this.cargar();
     this.form.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => this.duplicada.set(null));
+  }
+
+  cargar(): void {
+    this.errorCarga.set(false);
+    this.moduleApi.obtener(this.moduleId).subscribe({
+      next: (m) => this.modulo.set(m),
+      error: () => this.errorCarga.set(true),
+    });
+    this.api.obtener(this.competencyId).subscribe({
+      next: (c) => this.mostrar(c, c.text),
+      error: () => this.errorCarga.set(true),
+    });
+    this.api.listar(this.moduleId).subscribe({
+      next: (l) => this.otras.set(l.filter((c) => c.id !== this.competencyId)),
+      error: () => this.otras.set([]),
+    });
   }
 
   descartar(): void {
@@ -62,6 +81,7 @@ export class CompetencyEdit {
     if (this.form.invalid || !this.hayCambios()) return;
     this.guardando.set(true);
     this.error.set(false);
+    this.detalleError.set('');
     this.api.actualizar(this.competencyId, this.form.controls.text.value).subscribe({
       next: (r) => {
         this.guardando.set(false);
@@ -71,7 +91,11 @@ export class CompetencyEdit {
       error: (err: ApiError<{ code: string }>) => {
         this.guardando.set(false);
         if (err.code === 'COMPETENCY_DUPLICATED') this.duplicada.set(err.data?.code ?? '');
-        else this.error.set(true);
+        else {
+          const mensajes = (err.data as unknown as { mensajes?: string[] } | undefined)?.mensajes;
+          this.detalleError.set(err.code === 'VALIDATION_ERROR' ? (mensajes ?? []).join(' ') : '');
+          this.error.set(true);
+        }
       },
     });
   }

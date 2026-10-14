@@ -121,7 +121,12 @@
         } @empty {
           <tr>
             <td colspan="5" class="ui-empty">
-              {{ cargando() ? 'Cargando módulos...' : 'No hay módulos que coincidan con la búsqueda.' }}
+              @if (error()) {
+                No se pudieron cargar los módulos.
+                <button type="button" class="ui-btn ui-btn--outline ui-btn--sm retry" (click)="cargar()">Reintentar</button>
+              } @else {
+                {{ cargando() ? 'Cargando módulos...' : 'No hay módulos que coincidan con la búsqueda.' }}
+              }
             </td>
           </tr>
         }

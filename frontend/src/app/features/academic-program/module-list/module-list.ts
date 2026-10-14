@@ -25,6 +25,7 @@ export class ModuleList {
   modulos = signal<ModuleView[]>([]);
   resumen = signal<ResumenModulos | null>(null);
   cargando = signal(true);
+  error = signal(false);
 
   // Acciones sin frame propio (rehabilitar / registrar borrador) se confirman en un modal
   accion = signal<{ tipo: 'rehabilitar' | 'registrar'; modulo: ModuleView } | null>(null);
@@ -36,11 +37,19 @@ export class ModuleList {
 
   cargar(): void {
     this.cargando.set(true);
-    this.api.listar(this.filtro()).subscribe((m) => {
-      this.modulos.set(m);
-      this.cargando.set(false);
+    this.error.set(false);
+    this.api.listar(this.filtro()).subscribe({
+      next: (m) => {
+        this.modulos.set(m);
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.modulos.set([]);
+        this.error.set(true);
+        this.cargando.set(false);
+      },
     });
-    this.api.resumen().subscribe((r) => this.resumen.set(r));
+    this.api.resumen().subscribe({ next: (r) => this.resumen.set(r), error: () => this.resumen.set(null) });
   }
 
   cambiar(cambios: Partial<FiltroModulos>): void {

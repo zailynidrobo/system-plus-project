@@ -29,7 +29,15 @@
           @if (duplicada() !== null) {
             <p class="ui-help ui-help--error">Ya existe una competencia con este texto en el módulo ({{ duplicada() }}).</p>
           } @else if (form.controls.text.touched && form.controls.text.invalid) {
-            <p class="ui-help ui-help--error">Escribe el texto de la competencia.</p>
+            <p class="ui-help ui-help--error">
+              @if (form.controls.text.hasError('corto')) {
+                El texto debe tener al menos {{ minimo }} caracteres.
+              } @else if (form.controls.text.hasError('largo')) {
+                El texto admite máximo {{ maximo }} caracteres.
+              } @else {
+                Escribe el texto de la competencia.
+              }
+            </p>
           } @else {
             <p class="ui-help">El código {{ c.code }} y la asociación con el módulo permanecen sin cambios.</p>
           }
@@ -44,7 +52,7 @@
         </div>
 
         @if (error()) {
-          <p class="ui-help ui-help--error" role="alert">No pudimos guardar el cambio. Inténtalo de nuevo en unos minutos.</p>
+          <p class="ui-help ui-help--error" role="alert">{{ detalleError() || 'No pudimos guardar el cambio. Inténtalo de nuevo en unos minutos.' }}</p>
         }
 
         <div class="ui-actions">
@@ -84,6 +92,11 @@
       </section>
     </aside>
   </div>
+} @else if (errorCarga()) {
+  <p class="ui-state">
+    No se pudo cargar la competencia.
+    <button type="button" class="ui-btn ui-btn--outline ui-btn--sm" (click)="cargar()">Reintentar</button>
+  </p>
 } @else {
   <p class="ui-state">Cargando competencia...</p>
 }

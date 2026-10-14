@@ -56,7 +56,15 @@
             @if (duplicada() !== null) {
               <p class="ui-help ui-help--error">Ya existe una competencia con este texto en el módulo ({{ duplicada() }}).</p>
             } @else if (form.controls.text.touched && form.controls.text.invalid) {
-              <p class="ui-help ui-help--error">Escribe el texto de la competencia.</p>
+              <p class="ui-help ui-help--error">
+                @if (form.controls.text.hasError('corto')) {
+                  El texto debe tener al menos {{ minimo }} caracteres.
+                } @else if (form.controls.text.hasError('largo')) {
+                  El texto admite máximo {{ maximo }} caracteres.
+                } @else {
+                  Escribe el texto de la competencia.
+                }
+              </p>
             } @else {
               <p class="ui-help">Redacta el resultado en infinitivo y describe una capacidad observable.</p>
             }
@@ -72,7 +80,7 @@
         </div>
 
         @if (error()) {
-          <p class="ui-help ui-help--error" role="alert">No pudimos asociar la competencia. Inténtalo de nuevo en unos minutos.</p>
+          <p class="ui-help ui-help--error" role="alert">{{ detalleError() || 'No pudimos asociar la competencia. Inténtalo de nuevo en unos minutos.' }}</p>
         }
 
         <div class="ui-actions">
@@ -113,6 +121,11 @@
       </div>
     </aside>
   </div>
+} @else if (errorCarga()) {
+  <p class="ui-state">
+    No se pudo cargar el módulo.
+    <button type="button" class="ui-btn ui-btn--outline ui-btn--sm" (click)="cargarModulo()">Reintentar</button>
+  </p>
 } @else {
   <p class="ui-state">Cargando módulo...</p>
 }

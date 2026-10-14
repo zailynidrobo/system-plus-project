@@ -3,6 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { AppModule } from './../src/app.module.js';
+import { KeycloakAdminService } from './../src/users/keycloak-admin.service.js';
 import { startKeycloakTestServer } from './keycloak-test-server.js';
 
 describe('AppController (e2e)', () => {
@@ -16,7 +17,14 @@ describe('AppController (e2e)', () => {
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      // /users habla con Keycloak; en las pruebas lo reemplazamos por un Keycloak vacío.
+      .overrideProvider(KeycloakAdminService)
+      .useValue({
+        listUsers: async () => [],
+        listUserIdsByRole: async () => new Set<string>(),
+      })
+      .compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();

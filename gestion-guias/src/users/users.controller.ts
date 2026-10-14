@@ -3,6 +3,7 @@ import { Roles } from '../auth/roles.decorator.js';
 import { UsersService } from './users.service.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
+import { UpdateRoleDto } from './dto/update-role.dto.js';
 
 @Controller('users')
 @Roles('admin')
@@ -35,10 +36,7 @@ export class UsersController {
   }
 
   @Patch(':id/role')
-  updateRole(
-    @Param('id') id: string,
-    @Body() dto: Parameters<UsersService['updateRole']>[1],
-  ) {
+  updateRole(@Param('id') id: string, @Body() dto: UpdateRoleDto) {
     return this.users.updateRole(id, dto);
   }
 }

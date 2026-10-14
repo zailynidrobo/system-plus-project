@@ -1,88 +1,129 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import { randomUUID } from 'crypto';
-import * as bcrypt from 'bcrypt';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { Role, User } from './entities/user.entity.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
+import { UpdateRoleDto } from './dto/update-role.dto.js';
+import { KeycloakAdminService, KeycloakUser } from './keycloak-admin.service.js';
+import { generateTemporaryPassword } from './temporary-password.js';
+import { joinName, splitName } from './user-name.js';
 
+const ROLES = Object.values(Role);
+
+// HE-01 exige un solo rol activo. Si en Keycloak llegara a tener varios, gana el de mayor jerarquía.
+const ROLE_PRIORITY: Role[] = [
+  Role.ADMIN,
+  Role.COORDINADOR,
+  Role.DOCENTE_AUTORIZADO,
+  Role.DOCENTE,
+];
+
+/** Respuesta de la creación: la contraseña solo viaja si la generó la API. */
+export type CreatedUser = User & { temporaryPassword?: string };
+
+/** Gestión de usuarios (HE-01) sobre Keycloak: ahí viven las cuentas, las contraseñas y los roles. */
 @Injectable()
 export class UsersService {
-  private users: User[] = [];
+  constructor(private readonly keycloak: KeycloakAdminService) {}
 
-  private safe(user: User) {
-    const { password: _password, ...rest } = user;
-    return rest;
+  private pickRole(roleNames: string[]): Role | null {
+    return ROLE_PRIORITY.find((role) => roleNames.includes(role)) ?? null;
   }
 
-  private getOrFail(id: string) {
-    const user = this.users.find((u) => u.id === id);
-    if (!user) throw new NotFoundException('Usuario no encontrado');
-    return user;
-  }
-
-  async create(dto: CreateUserDto) { // HU-01
-    if (this.users.some((u) => u.email === dto.email)) {
-      throw new ConflictException('El correo ya está registrado');
-    }
-    const user: User = {
-      id: randomUUID(),
-      name: dto.name,
-      email: dto.email,
-      password: await bcrypt.hash(dto.password, 10),
-      role: dto.role ?? Role.DOCENTE,
-      isActive: true,
+  private toUser(user: KeycloakUser, role: Role | null): User {
+    return {
+      id: user.id,
+      name: joinName(user),
+      email: user.email ?? user.username,
+      role,
+      isActive: user.enabled,
+      createdAt: user.createdTimestamp
+        ? new Date(user.createdTimestamp).toISOString()
+        : undefined,
     };
-    this.users.push(user);
-    return this.safe(user);
   }
 
-  findAll() {
-    return this.users.map((u) => this.safe(u));
+  async create(dto: CreateUserDto): Promise<CreatedUser> { // HU-01
+    const generated = dto.password === undefined;
+    const password = dto.password ?? generateTemporaryPassword();
+
+    // La contraseña es siempre temporal: quien la recibe debe cambiarla en su primer ingreso.
+    const id = await this.keycloak.createUser({
+      email: dto.email.trim().toLowerCase(),
+      ...splitName(dto.name),
+      password,
+      temporary: true,
+    });
+
+    try {
+      await this.keycloak.setRealmRole(id, dto.role ?? Role.DOCENTE, ROLES);
+    } catch (error) {
+      // Sin rol la cuenta no serviría: se deshace para no dejar usuarios a medias.
+      await this.keycloak.deleteUser(id).catch(() => undefined);
+      throw error;
+    }
+
+    const created = await this.findOne(id);
+    return generated ? { ...created, temporaryPassword: password } : created;
   }
 
-  findOne(id: string) {
-    return this.safe(this.getOrFail(id));
+  async findAll(): Promise<User[]> {
+    // Una consulta por rol en vez de una por usuario: son 4 en total, sin importar cuántos usuarios haya.
+    const [users, roleMembers] = await Promise.all([
+      this.keycloak.listUsers(),
+      Promise.all(
+        ROLES.map(async (role) => [role, await this.keycloak.listUserIdsByRole(role)] as const),
+      ),
+    ]);
+
+    return users
+      .filter((user) => !user.username.startsWith('service-account-'))
+      .map((user) => {
+        const roles = roleMembers.filter(([, ids]) => ids.has(user.id)).map(([role]) => role);
+        return this.toUser(user, this.pickRole(roles));
+      });
   }
 
-  findByEmail(email: string) {
-    return this.users.find((u) => u.email === email && u.isActive);
+  async findOne(id: string): Promise<User> {
+    const [user, roleNames] = await Promise.all([
+      this.keycloak.getUser(id),
+      this.keycloak.getUserRealmRoles(id),
+    ]);
+    return this.toUser(user, this.pickRole(roleNames));
   }
 
-  async update(id: string, dto: UpdateUserDto) {
-    const user = this.getOrFail(id);
-
+  async update(id: string, dto: UpdateUserDto): Promise<User> {
     if (dto.name === undefined && dto.email === undefined && dto.password === undefined) {
       throw new BadRequestException('Debe proporcionar al menos un dato para actualizar');
     }
 
-    if (dto.email !== undefined && this.users.some((u) => u.id !== id && u.email === dto.email)) {
-      throw new ConflictException('El correo ya está registrado');
+    if (dto.name !== undefined || dto.email !== undefined) {
+      const name = dto.name === undefined ? undefined : splitName(dto.name);
+      await this.keycloak.updateUser(id, {
+        email: dto.email?.trim().toLowerCase(),
+        firstName: name?.firstName,
+        // Si el nombre nuevo no trae apellido, se borra el anterior para que no queden mezclados
+        lastName: name ? (name.lastName ?? '') : undefined,
+      });
     }
 
-    const hashedPassword =
-      dto.password === undefined ? undefined : await bcrypt.hash(dto.password, 10);
+    if (dto.password !== undefined) {
+      // Quien cambia la contraseña es un administrador, así que el usuario debe cambiarla al ingresar.
+      await this.keycloak.setPassword(id, dto.password, true);
+    }
 
-    if (dto.name !== undefined) user.name = dto.name;
-    if (dto.email !== undefined) user.email = dto.email;
-    if (hashedPassword !== undefined) user.password = hashedPassword;
-
-    return this.safe(user);
+    return this.findOne(id);
   }
 
-  deactivate(id: string) { // HU-03
-    const user = this.getOrFail(id);
-    user.isActive = false;
-    return this.safe(user);
+  async deactivate(id: string): Promise<User> { // HU-03
+    await this.keycloak.updateUser(id, { enabled: false });
+    // Desactivar no borra al usuario; solo impide nuevos ingresos y cierra sus sesiones abiertas.
+    await this.keycloak.logoutUser(id).catch(() => undefined);
+    return this.findOne(id);
   }
 
-  updateRole(id: string, dto: { role: Role }) { // HU-04
-    const user = this.getOrFail(id);
-    user.role = dto.role;
-    return this.safe(user);
+  async updateRole(id: string, dto: UpdateRoleDto): Promise<User> { // HU-04
+    await this.keycloak.getUser(id);
+    await this.keycloak.setRealmRole(id, dto.role, ROLES);
+    return this.findOne(id);
   }
 }

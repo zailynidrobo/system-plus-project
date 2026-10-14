@@ -74,9 +74,30 @@ To configure the API:
 5. Start the API. It fails at startup if either Keycloak setting is missing.
 
 The API does not implement the browser login flow: the client application signs in through
-Keycloak and sends the resulting access token to this API. The existing `/users` operations
-manage in-memory application user records; they do not create or update Keycloak identities.
-Manage Keycloak accounts in Keycloak itself.
+Keycloak and sends the resulting access token to this API.
+
+### HE-01 — Usuarios, roles y permisos (sobre Keycloak)
+
+Los usuarios **viven en Keycloak**; `/users` es un puente hacia la API de administración de Keycloak
+(no hay tabla de usuarios en PostgreSQL). Crear, editar, desactivar y cambiar el rol desde `/users`
+modifica directamente el usuario en Keycloak. El rol es un *realm role* (`admin`, `coordinador`,
+`docente`, `docente_autorizado`); cada usuario tiene uno solo.
+
+Para que la API pueda administrar usuarios necesita su propia cuenta de servicio:
+
+1. En el realm, **Clients → Create client**: Client ID `system-plus-api`, *Client authentication* ON,
+   *Service accounts roles* ON, y *Standard flow* OFF.
+2. En la pestaña **Credentials** copia el *Client secret* a `KEYCLOAK_ADMIN_CLIENT_SECRET` en `.env`.
+3. En **Service accounts roles → Assign role → Filter by clients**, asigna del client
+   `realm-management`: `manage-users`, `view-users`, `query-users` y `view-realm`.
+4. Asegúrate de que existen los realm roles `admin`, `coordinador`, `docente` y `docente_autorizado`.
+
+Variables: `KEYCLOAK_ADMIN_CLIENT_ID` (por defecto `system-plus-api`), `KEYCLOAK_ADMIN_CLIENT_SECRET`
+y `CORS_ORIGIN` (orígenes del front separados por coma; por defecto `http://localhost:4200`).
+
+Contraseñas: toda contraseña queda como **temporal** (el usuario debe cambiarla al primer ingreso).
+Si `POST /users` no recibe `password`, la API genera una y la devuelve una sola vez en
+`temporaryPassword`.
 
 ## HE-02 — Gestión del programa académico (módulos y competencias)
 

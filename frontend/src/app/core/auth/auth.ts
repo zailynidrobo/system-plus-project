@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { LoginRequest, Role, User } from '../../shared/models/user';
+import { ProblemaLogin } from './auth-provider';
 import { AUTH_PROVIDER } from './provide-auth';
 
 /**
@@ -14,6 +15,14 @@ export class Auth {
   private _user = signal<User | null>(this.provider.restaurarSesion());
   readonly user = this._user.asReadonly();
   readonly isLoggedIn = computed(() => this._user() !== null);
+
+  /** true si el login es externo (Keycloak): la pantalla de login redirige en vez de pedir datos. */
+  readonly loginExterno = this.provider.loginExterno ?? false;
+
+  /** Con login externo: por qué no se puede redirigir automáticamente, o null. */
+  problemaLogin(): ProblemaLogin | null {
+    return this.provider.problemaLogin?.() ?? null;
+  }
 
   login(credenciales: LoginRequest, recordar = false): Observable<User> {
     return this.provider.login(credenciales, recordar).pipe(tap((u) => this._user.set(u)));

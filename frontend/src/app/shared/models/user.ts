@@ -16,6 +16,8 @@ export const ROLES_DOCENTES: Role[] = ['DOCENTE', 'DOCENTE_AUTORIZADO'];
 
 export interface User {
   id: number;
+  /** Identificador del usuario en Keycloak y en el backend (UUID). Solo en sesiones reales. */
+  keycloakId?: string;
   nombre: string;
   correo: string;
   rol: Role;
@@ -23,6 +25,11 @@ export interface User {
   ultimoAcceso?: string;
   /** Fecha de registro (ISO). */
   creadoEn?: string;
+}
+
+/** Respuesta de crear un usuario: la contraseña temporal solo existe en este momento (se muestra una vez). */
+export interface UsuarioCreado extends User {
+  contrasenaTemporal?: string;
 }
 
 /** Evento del "Historial reciente" de un usuario (Editar usuario), listo para mostrar. */

@@ -27,16 +27,30 @@
       </div>
     </div>
 
-    <div class="notice">
-      <app-icon name="shield-check" [size]="20" />
-      <div>
-        <strong>Credencial inicial generada de forma segura</strong>
-        <p>
-          La contraseña temporal no es visible en texto plano. Se enviaron instrucciones de acceso
-          al correo registrado.
-        </p>
+    @if (contrasenaTemporal) {
+      <div class="notice">
+        <app-icon name="shield-check" [size]="20" />
+        <div>
+          <strong>Contraseña temporal</strong>
+          <p>
+            Entrégala a la persona por un medio seguro. Solo se muestra ahora y deberá cambiarla
+            al iniciar sesión por primera vez.
+          </p>
+          <code class="temp">{{ contrasenaTemporal }}</code>
+        </div>
       </div>
-    </div>
+    } @else {
+      <div class="notice">
+        <app-icon name="shield-check" [size]="20" />
+        <div>
+          <strong>Credencial inicial generada de forma segura</strong>
+          <p>
+            La contraseña temporal no es visible en texto plano. Se enviaron instrucciones de acceso
+            al correo registrado.
+          </p>
+        </div>
+      </div>
+    }
 
     <div class="actions">
       <button type="button" class="btn-outline" disabled title="Pendiente: no hay pantalla de perfil diseñada">

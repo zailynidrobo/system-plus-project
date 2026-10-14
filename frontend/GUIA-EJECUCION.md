@@ -244,3 +244,45 @@ Recargaste la página o escribiste una URL en la barra del navegador. Los datos 
 
 **Entro con un rol y veo «Sin acceso»**
 Abriste una ruta de otro rol, por ejemplo `/sugerencias` con el docente. Usa el menú lateral o vuelve a `/`, que lleva al inicio de tu rol.
+
+## 11. Iniciar sesión con Keycloak
+
+El modo de autenticación se elige en `src/environments/environment.ts`:
+
+| `auth` | Qué hace |
+|---|---|
+| `'keycloak'` | Login real: `/login` redirige a Keycloak y vuelve con el token. Requiere Keycloak en Docker. |
+| `'mock'` | Login simulado con los usuarios de la sección 6. No necesita Keycloak ni backend. |
+
+Para usar Keycloak:
+
+1. Tener Keycloak corriendo (`docker run ... quay.io/keycloak/keycloak:26.3 start-dev`) en `http://localhost:8080`.
+2. Tener el realm `system-plus` con el client público `system-plus-front` (redirect URI y web origin `http://localhost:4200`), los roles `admin`, `coordinador`, `docente` y `docente_autorizado`, el mapper de audience `system-plus-api` y usuarios con un rol asignado.
+3. Si los nombres del realm o del client cambian, ajustar el bloque `keycloak` de `environment.ts`.
+4. Entrar a <http://localhost:4200>: la app lleva a la pantalla de Keycloak. Al cerrar sesión se cierra también en Keycloak.
+
+Notas:
+- Un usuario de Keycloak sin ninguno de los cuatro roles ve el aviso «Tu cuenta no tiene un rol asignado».
+- Un cambio de rol hecho en Keycloak se aplica cuando el token se renueva.
+- Las pantallas de gestión de usuarios usan el backend si `api` es `'http'` (sección 12); con `'mock'` siguen con datos simulados.
+
+## 12. Gestión de usuarios con el backend real
+
+En `src/environments/environment.ts`:
+
+| `api` | Qué hace |
+|---|---|
+| `'http'` | Las pantallas de **Usuarios** y **Roles** leen y guardan en el backend (`apiUrl`, por defecto `http://localhost:3000`), que administra los usuarios en Keycloak. |
+| `'mock'` | Datos simulados en memoria (sección 6). No necesita backend. |
+
+Para usar `'http'`, juntos:
+
+1. Keycloak encendido (`docker start keycloak`) y `auth: 'keycloak'`.
+2. Postgres encendido y el backend (`gestion-guias`) corriendo con `pnpm start:dev`, con su `.env` completo (incluye el secreto de la cuenta de servicio `system-plus-api`; ver el README del backend).
+3. Entrar al front con un usuario con rol **Administrador**: solo ese rol puede usar `/users` en el backend.
+
+Cosas a tener en cuenta:
+- Al registrar un usuario, la pantalla de confirmación muestra la **contraseña temporal** una sola vez: entrégala a la persona; Keycloak le pedirá cambiarla al primer ingreso.
+- Los usuarios de Keycloak que no tienen uno de los cuatro roles no aparecen en el listado.
+- El historial de «Editar usuario» solo muestra la fecha de registro; el backend aún no guarda eventos.
+- Los ids de las rutas (`/usuarios/2863311530/editar`) son un número derivado del UUID de Keycloak.

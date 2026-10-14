@@ -1,10 +1,7 @@
-import {
-  Injectable,
-  NotFoundException,
-  OnApplicationBootstrap,
-} from '@nestjs/common';
+import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { notFound } from '../api-errors.js';
 import { Program } from '../entities/program.entity.js';
 import {
   CurricularModule,
@@ -57,7 +54,7 @@ export class ProgramsService implements OnApplicationBootstrap {
   async getOrFail(id: string): Promise<Program> {
     const program = await this.programs.findOneBy({ id });
     if (!program)
-      throw new NotFoundException('Programa académico no encontrado');
+      throw notFound('NOT_FOUND', 'Programa académico no encontrado');
     return program;
   }
 

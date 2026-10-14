@@ -264,4 +264,25 @@ Para usar Keycloak:
 Notas:
 - Un usuario de Keycloak sin ninguno de los cuatro roles ve el aviso «Tu cuenta no tiene un rol asignado».
 - Un cambio de rol hecho en Keycloak se aplica cuando el token se renueva.
-- Con Keycloak activo, las pantallas de gestión siguen usando datos simulados hasta que se conecten con el backend (siguiente paso de HE-01).
+- Las pantallas de gestión de usuarios usan el backend si `api` es `'http'` (sección 12); con `'mock'` siguen con datos simulados.
+
+## 12. Gestión de usuarios con el backend real
+
+En `src/environments/environment.ts`:
+
+| `api` | Qué hace |
+|---|---|
+| `'http'` | Las pantallas de **Usuarios** y **Roles** leen y guardan en el backend (`apiUrl`, por defecto `http://localhost:3000`), que administra los usuarios en Keycloak. |
+| `'mock'` | Datos simulados en memoria (sección 6). No necesita backend. |
+
+Para usar `'http'`, juntos:
+
+1. Keycloak encendido (`docker start keycloak`) y `auth: 'keycloak'`.
+2. Postgres encendido y el backend (`gestion-guias`) corriendo con `pnpm start:dev`, con su `.env` completo (incluye el secreto de la cuenta de servicio `system-plus-api`; ver el README del backend).
+3. Entrar al front con un usuario con rol **Administrador**: solo ese rol puede usar `/users` en el backend.
+
+Cosas a tener en cuenta:
+- Al registrar un usuario, la pantalla de confirmación muestra la **contraseña temporal** una sola vez: entrégala a la persona; Keycloak le pedirá cambiarla al primer ingreso.
+- Los usuarios de Keycloak que no tienen uno de los cuatro roles no aparecen en el listado.
+- El historial de «Editar usuario» solo muestra la fecha de registro; el backend aún no guarda eventos.
+- Los ids de las rutas (`/usuarios/2863311530/editar`) son un número derivado del UUID de Keycloak.

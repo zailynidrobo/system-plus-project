@@ -27,6 +27,11 @@ export interface User {
   creadoEn?: string;
 }
 
+/** Respuesta de crear un usuario: la contraseña temporal solo existe en este momento (se muestra una vez). */
+export interface UsuarioCreado extends User {
+  contrasenaTemporal?: string;
+}
+
 /** Evento del "Historial reciente" de un usuario (Editar usuario), listo para mostrar. */
 export interface EventoUsuario {
   titulo: string;

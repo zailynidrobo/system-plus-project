@@ -28,6 +28,8 @@ export class UserList {
   total = signal(0);
   resumen = signal<ResumenUsuarios | null>(null);
   cargando = signal(true);
+  /** El backend no respondió: se muestra un aviso con «Reintentar» en vez de quedarse cargando. */
+  error = signal(false);
 
   totalPaginas = computed(() => Math.max(1, Math.ceil(this.total() / POR_PAGINA)));
   paginas = computed(() => Array.from({ length: this.totalPaginas() }, (_, i) => i + 1));
@@ -42,11 +44,12 @@ export class UserList {
 
   constructor() {
     this.cargar();
-    this.api.resumen().subscribe((r) => this.resumen.set(r));
+    this.api.resumen().subscribe({ next: (r) => this.resumen.set(r), error: () => this.resumen.set(null) });
   }
 
   cargar(): void {
     this.cargando.set(true);
+    this.error.set(false);
     this.api
       .listar({
         busqueda: this.busqueda(),
@@ -55,10 +58,18 @@ export class UserList {
         pagina: this.pagina(),
         porPagina: POR_PAGINA,
       })
-      .subscribe((res) => {
-        this.usuarios.set(res.items);
-        this.total.set(res.total);
-        this.cargando.set(false);
+      .subscribe({
+        next: (res) => {
+          this.usuarios.set(res.items);
+          this.total.set(res.total);
+          this.cargando.set(false);
+        },
+        error: () => {
+          this.usuarios.set([]);
+          this.total.set(0);
+          this.error.set(true);
+          this.cargando.set(false);
+        },
       });
   }
 

@@ -57,6 +57,34 @@ $ pnpm run test:e2e
 $ pnpm run test:cov
 ```
 
+## Arranque rápido (desarrollo)
+
+Para tener la app completa (Keycloak, base de datos, backend y front) en tu máquina:
+
+1. **Keycloak con el realm ya configurado.** Desde la raíz del repositorio, sigue [keycloak/README.md](../keycloak/README.md): un solo `docker run` con `--import-realm` crea los roles, los clients y cuatro usuarios de prueba.
+2. **PostgreSQL** con la base `gestion_guias`:
+   ```bash
+   docker run --name pg-guias -p 5432:5432 -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=gestion_guias -d postgres:16
+   ```
+   Si ya tienes otro PostgreSQL usando el puerto 5432 (por ejemplo, uno instalado en Windows), publica este en otro puerto (`-p 5433:5432`) y pon el mismo número en `DB_PORT`.
+3. **Variables de entorno.** Copia `.env.example` como `.env` y completa:
+   ```
+   KEYCLOAK_ADMIN_CLIENT_SECRET=dev-secret-system-plus-api
+   DB_PORT=5432
+   ```
+   El secreto es el de desarrollo del realm importado. Los cambios en `.env` solo se aplican al reiniciar el backend.
+4. **Backend:** `pnpm install` y `pnpm start:dev` (queda en <http://localhost:3000>).
+5. **Front:** ver [frontend/GUIA-EJECUCION.md](../frontend/GUIA-EJECUCION.md), secciones 11 y 12. Entra con `admin@example.com` / `12345678`.
+
+### Si algo falla
+
+| Síntoma | Causa probable |
+|---|---|
+| El backend no arranca y dice que la base de datos `gestion_guias` no existe | Está conectando a otro PostgreSQL (el del puerto 5432 de tu máquina) y no al de Docker. Revisa `DB_PORT` |
+| La pantalla de usuarios responde `502` con «Keycloak rechazó las credenciales de administración» | `KEYCLOAK_ADMIN_CLIENT_SECRET` no coincide con el secreto del client `system-plus-api`, o no reiniciaste el backend después de cambiarlo |
+| Responde `503` sobre Keycloak | Keycloak no está encendido, o falta `KEYCLOAK_ADMIN_CLIENT_SECRET` |
+| `403` en `/users` | El usuario con el que entraste no tiene el rol `admin` |
+
 ## Authentication and authorization
 
 All API routes except `GET /` require a valid Keycloak access token in

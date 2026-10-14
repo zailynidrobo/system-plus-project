@@ -35,6 +35,8 @@ export class RoleList {
   total = signal(0);
   conteo = signal<Record<Role, number> | null>(null);
   cargando = signal(true);
+  /** El backend no respondió: se muestra un aviso con «Reintentar» en vez de quedarse cargando. */
+  error = signal(false);
 
   totalPaginas = computed(() => Math.max(1, Math.ceil(this.total() / POR_PAGINA)));
   desde = computed(() => (this.total() === 0 ? 0 : (this.pagina() - 1) * POR_PAGINA + 1));
@@ -42,17 +44,26 @@ export class RoleList {
 
   constructor() {
     this.cargar();
-    this.api.conteoPorRol().subscribe((c) => this.conteo.set(c));
+    this.api.conteoPorRol().subscribe({ next: (c) => this.conteo.set(c), error: () => this.conteo.set(null) });
   }
 
   cargar(): void {
     this.cargando.set(true);
+    this.error.set(false);
     this.api
       .listar({ busqueda: this.busqueda(), rol: this.rol(), estado: 'TODOS', pagina: this.pagina(), porPagina: POR_PAGINA })
-      .subscribe((res) => {
-        this.usuarios.set(res.items);
-        this.total.set(res.total);
-        this.cargando.set(false);
+      .subscribe({
+        next: (res) => {
+          this.usuarios.set(res.items);
+          this.total.set(res.total);
+          this.cargando.set(false);
+        },
+        error: () => {
+          this.usuarios.set([]);
+          this.total.set(0);
+          this.error.set(true);
+          this.cargando.set(false);
+        },
       });
   }
 

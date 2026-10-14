@@ -121,7 +121,12 @@
         } @empty {
           <tr>
             <td colspan="5" class="empty">
-              {{ cargando() ? 'Cargando usuarios...' : 'No se encontraron usuarios.' }}
+              @if (error()) {
+                No se pudieron cargar los usuarios.
+                <button type="button" class="ui-btn ui-btn--outline ui-btn--sm retry" (click)="cargar()">Reintentar</button>
+              } @else {
+                {{ cargando() ? 'Cargando usuarios...' : 'No se encontraron usuarios.' }}
+              }
             </td>
           </tr>
         }

@@ -1,10 +1,10 @@
 import { Component, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { ROLE_LABELS, User } from '../../../shared/models/user';
+import { ROLE_LABELS, UsuarioCreado } from '../../../shared/models/user';
 import { Icon } from '../../../shared/ui/icon/icon';
 
 interface EstadoRegistro {
-  usuario?: User;
+  usuario?: UsuarioCreado;
   creadoPor?: string;
   fecha?: number;
 }
@@ -21,6 +21,8 @@ export class UserCreated {
   private estado = (history.state ?? {}) as EstadoRegistro;
   usuario = this.estado.usuario;
   creadoPor = this.estado.creadoPor ?? '';
+  /** Solo llega cuando el backend la generó; se muestra una vez para entregarla al usuario. */
+  contrasenaTemporal = this.usuario?.contrasenaTemporal ?? '';
   rol = this.usuario ? ROLE_LABELS[this.usuario.rol] : '';
 
   codigo = this.usuario ? `HE-01-${String(this.usuario.id).padStart(3, '0')}` : '';

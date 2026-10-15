@@ -76,6 +76,10 @@ export class CurricularModule {
   @Column({ type: 'int', default: 0 })
   competencySequence: number;
 
+  /** Último consecutivo de guía asignado; se incrementa bajo bloqueo del módulo. */
+  @Column({ type: 'int', default: 0 })
+  guideSequence: number;
+
   @Column({ type: 'varchar', length: 100 })
   createdById: string;
 

@@ -1,4 +1,10 @@
-import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  Index,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import type { GuideField, GuideFormType } from '../academic.entities.js';
 
 @Entity('academic_guide_field_configs')
@@ -22,4 +28,10 @@ export class GuideFieldConfigRecord {
 
   @Column({ type: 'jsonb' })
   fields: GuideField[];
+
+  @Column({ type: 'int', default: 1 })
+  version: number;
+
+  @UpdateDateColumn({ type: 'timestamptz' })
+  updatedAt: Date;
 }

@@ -192,32 +192,42 @@ Keycloak `sub`; coordinators manage assignments using the routes below.
 2. Assign a teacher with `PUT /academic/modules/:moduleId/teachers/:teacherId`.
 3. Configure module form fields with `PUT /academic/modules/:moduleId/guide-fields`, or use
    `PUT /academic/modules/:moduleId/competencies/:competencyId/guide-fields`.
-4. As coordinator, create a draft using `POST /academic/guides`, edit it with
-   `PATCH /academic/guides/:id`, and publish it with `PATCH /academic/guides/:id/publish`.
-5. As an assigned teacher, list published guides with `GET /academic/guides?moduleId=:moduleId`,
+4. As coordinator, preview the next code with
+   `GET /academic/modules/:moduleId/guides/next-code`, then create a draft using
+   `POST /academic/guides` with `{ "moduleId", "competencyId", "content" }`. The API requires
+   a competency from that module and generates the title (`Guía base · <module>`), code,
+   structure version, and initial content version. Edit it with `PATCH /academic/guides/:id`
+   and publish it with `PATCH /academic/guides/:id/publish`.
+5. Read a guide's audit history with `GET /academic/guides/:id/events`. Events include the
+   action, actor, and timestamp; their visibility follows the same coordinator/assigned-teacher
+   access rules as the guide.
+6. As an assigned teacher, list published guides with `GET /academic/guides?moduleId=:moduleId`,
    then create a personal copy with `POST /academic/guides/:guideId/personalized-versions`.
-6. Read and progressively edit only your copies with
+7. Read and progressively edit only your copies with
    `GET /academic/personalized-versions`, `GET /academic/personalized-versions/:id`, and
    `PATCH /academic/personalized-versions/:id` using `{ "content": { "fieldKey": "value" } }`.
-7. Configure the teacher-form fields independently with
+8. Configure the teacher-form fields independently with
    `PUT /academic/modules/:moduleId/teacher-guide-fields`. Form fields accept `section` and
    `description` so exports remain grouped into the configurable document sections.
-8. As coordinator, upload one supporting PDF or DOCX per request to
+9. As coordinator, upload one supporting PDF or DOCX per request to
    `POST /academic/guides/:guideId/support-materials` as multipart form data with the file in
    the `file` field (maximum 10 MB). The original file is stored in PostgreSQL and is not
    editable by the API.
-9. Coordinators and assigned teachers can list materials with
+10. Coordinators and assigned teachers can list materials with
    `GET /academic/guides/:guideId/support-materials`; teachers can only access materials for
    published guides in their assigned modules. Download an original file with
    `GET /academic/guides/:guideId/support-materials/:materialId/download`.
-10. Download the current guide or teacher version in either format:
+11. Download the current guide or teacher version in either format:
     `GET /academic/guides/:id/export?format=docx|pdf` and
     `GET /academic/personalized-versions/:id/export?format=docx|pdf`.
 
 Module and competency read/update/deactivation/deletion operations belong to HE-02 (`/modules/...` and `/competencies/...`). Deactivating a module retains its competencies and existing guide snapshots. Deleting a competency is a soft delete in HE-02, while existing guides retain their copied names and form definitions. Published guides cannot be edited. These records and teacher assignments persist in PostgreSQL and survive API restarts.
 
 Guide definitions keep a snapshot of their configured field definitions and entered values,
-so later form changes do not alter existing guides. Personalized versions similarly snapshot
+the structure version used at creation, and a content version (`v0` for drafts, `v1.0` when
+published), so later form changes do not alter existing guides. Field configurations increment
+their version each time they are changed. A guide reports `competencyDeleted` when its linked
+competency is later soft-deleted, while retaining its copied competency name. Personalized versions similarly snapshot
 the published guide's fields and content; editing a copy never writes to its base guide.
 Guide and personalized-version snapshots, content, and configured fields are stored as JSONB;
 module/competency metadata, field configurations, teacher assignments, and supporting file

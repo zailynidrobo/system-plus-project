@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types.js';
+import { randomUUID } from 'node:crypto';
 import { DataSource } from 'typeorm';
 import { AcademicModule } from '../src/academic/academic.module.js';
 import { AcademicProgramModule } from '../src/academic-program/academic-program.module.js';
@@ -84,7 +85,7 @@ describe('Academic API (e2e)', () => {
     // Sin competencias, HE-02 no habilita el módulo para crear guías.
     await request(app.getHttpServer())
       .post('/academic/guides')
-      .send({ moduleId, title: 'Guía sin competencias', content: {} })
+      .send({ moduleId, competencyId: randomUUID(), content: {} })
       .expect(400)
       .expect(({ body }) => {
         expect(body.code).toBe('MODULE_WITHOUT_COMPETENCIES');
@@ -95,6 +96,18 @@ describe('Academic API (e2e)', () => {
       .send({ text: 'Resuelve ecuaciones algebraicas' })
       .expect(201);
     const competencyId = competencyResponse.body.id as string;
+
+    await request(app.getHttpServer())
+      .post('/academic/guides')
+      .send({ moduleId, content: {} })
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .get(`/academic/modules/${moduleId}/guides/next-code`)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.code).toBe('GB-MAT-01');
+      });
 
     await request(app.getHttpServer())
       .put(
@@ -127,11 +140,17 @@ describe('Academic API (e2e)', () => {
       .send({
         moduleId,
         competencyId,
-        title: 'Guía de álgebra',
         content: {},
       })
       .expect(201);
     const guideId = guideResponse.body.id as string;
+    expect(guideResponse.body).toMatchObject({
+      code: 'GB-MAT-01',
+      title: 'Guía base · Matemáticas',
+      structureVersion: 1,
+      version: 'v0',
+      competencyDeleted: false,
+    });
     const materialResponse = await request(app.getHttpServer())
       .post(`/academic/guides/${guideId}/support-materials`)
       .attach('file', Buffer.from('%PDF-1.7\nmaterial de apoyo'), {
@@ -158,7 +177,20 @@ describe('Academic API (e2e)', () => {
       .expect(200)
       .expect(({ body }) => {
         expect(body.status).toBe('published');
+        expect(body.version).toBe('v1.0');
         expect(body.publishedAt).toBeDefined();
+      });
+    await request(app.getHttpServer())
+      .get(`/academic/guides/${guideId}/events`)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ title: 'Guía creada como borrador' }),
+            expect.objectContaining({ title: 'Objetivo editado' }),
+            expect.objectContaining({ title: 'Guía publicada' }),
+          ]),
+        );
       });
     await request(app.getHttpServer())
       .get(`/modules/${moduleId}`)
@@ -283,7 +315,10 @@ describe('Academic API (e2e)', () => {
       .get(`/academic/guides/${guideId}`)
       .expect(200)
       .expect(({ body }) => {
-        expect(body.competencyName).toContain('Resuelve ecuaciones algebraicas');
+        expect(body.competencyName).toContain(
+          'Resuelve ecuaciones algebraicas',
+        );
+        expect(body.competencyDeleted).toBe(true);
       });
 
     await request(app.getHttpServer())
@@ -292,7 +327,7 @@ describe('Academic API (e2e)', () => {
       .expect(200);
     await request(app.getHttpServer())
       .post('/academic/guides')
-      .send({ moduleId, title: 'Otra guía', content: {} })
+      .send({ moduleId, competencyId: randomUUID(), content: {} })
       .expect(400)
       .expect(({ body }) => {
         expect(body.code).toBe('MODULE_NOT_ACTIVE');

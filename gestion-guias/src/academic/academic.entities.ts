@@ -29,6 +29,8 @@ export interface GuideFieldConfig {
   competencyId?: string;
   formType: GuideFormType;
   fields: GuideField[];
+  version: number;
+  updatedAt: string;
 }
 
 export type GuideFormType = 'base' | 'teacher';
@@ -37,17 +39,34 @@ export type GuideContent = Record<string, unknown>;
 
 export interface AcademicGuide {
   id: string;
+  code: string;
   moduleId: string;
   moduleName: string;
   competencyId?: string;
   competencyName?: string;
+  competencyDeleted: boolean;
   title: string;
   content: GuideContent;
   fields: GuideField[];
+  structureVersion: number;
+  version: string;
   status: GuideStatus;
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;
+}
+
+export interface GuideActor {
+  id: string;
+  name: string;
+}
+
+export interface GuideEvent {
+  id: string;
+  guideId: string;
+  title: string;
+  author: GuideActor;
+  createdAt: string;
 }
 
 export interface PersonalizedGuideVersion {

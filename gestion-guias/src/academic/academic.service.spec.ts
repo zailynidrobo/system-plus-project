@@ -6,9 +6,10 @@ import {
 } from '@nestjs/common';
 import JSZip from 'jszip';
 import { randomUUID } from 'node:crypto';
-import { FindOptionsWhere, Repository } from 'typeorm';
+import { DataSource, FindOptionsWhere, Repository } from 'typeorm';
 import { AcademicService } from './academic.service.js';
 import { AcademicGuideRecord } from './entities/academic-guide-record.entity.js';
+import { GuideEventRecord } from './entities/guide-event-record.entity.js';
 import {
   CurricularModule,
   CurricularModuleStatus,
@@ -39,22 +40,38 @@ function memoryRepository<T extends { id: string }>() {
     });
 
   const repository = {
-    find: async () => [...live()],
+    find: async (options?: {
+      where?: FindOptionsWhere<T>;
+      withDeleted?: boolean;
+    }) => {
+      const available = options?.withDeleted ? records : live();
+      return options?.where
+        ? available.filter((record) => matches(record, options.where!))
+        : [...available];
+    },
     findBy: async (where: FindOptionsWhere<T>) =>
       live().filter((record) => matches(record, where)),
-    findOne: async (options: { where: FindOptionsWhere<T> }) =>
-      live().find((record) => matches(record, options.where)) ?? null,
+    findOne: async (options: {
+      where: FindOptionsWhere<T>;
+      withDeleted?: boolean;
+    }) =>
+      (options.withDeleted ? records : live()).find((record) =>
+        matches(record, options.where),
+      ) ?? null,
     findOneBy: async (where: FindOptionsWhere<T>) =>
       live().find((record) => matches(record, where)) ?? null,
     countBy: async (where: FindOptionsWhere<T>) =>
       live().filter((record) => matches(record, where)).length,
     findByIds: async (ids: string[]) =>
       records.filter((record) => ids.includes(record.id)),
-    save: async (record: T) => {
-      const index = records.findIndex((item) => item.id === record.id);
-      if (index < 0) records.push(record);
-      else records[index] = record;
-      return record;
+    save: async (record: T | T[]) => {
+      const saveOne = (item: T) => {
+        const index = records.findIndex((existing) => existing.id === item.id);
+        if (index < 0) records.push(item);
+        else records[index] = item;
+        return item;
+      };
+      return Array.isArray(record) ? record.map(saveOne) : saveOne(record);
     },
     remove: async (record: T) => {
       const index = records.findIndex((item) => item.id === record.id);
@@ -87,7 +104,9 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
     Repository<PersonalizedGuideVersionRecord>,
     Repository<ModuleTeacherAssignmentRecord>,
     Repository<GuideSupportMaterialRecord>,
+    Repository<GuideEventRecord>,
   ];
+  let dataSource: DataSource;
 
   beforeEach(() => {
     repositories = [
@@ -98,8 +117,38 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
       memoryRepository<PersonalizedGuideVersionRecord>(),
       memoryRepository<ModuleTeacherAssignmentRecord>(),
       memoryRepository<GuideSupportMaterialRecord>(),
+      memoryRepository<GuideEventRecord>(),
     ];
-    service = new AcademicService(...repositories);
+    const repositoryFor = (entity: Function) => {
+      if (entity === CurricularModule) return repositories[0];
+      if (entity === Competency) return repositories[1];
+      if (entity === GuideFieldConfigRecord) return repositories[2];
+      if (entity === AcademicGuideRecord) return repositories[3];
+      if (entity === GuideEventRecord) return repositories[7];
+      throw new Error(`Unexpected entity: ${entity.name}`);
+    };
+    const manager = {
+      findOne: (
+        entity: Function,
+        options: { where: FindOptionsWhere<{ id: string }> },
+      ) => repositoryFor(entity).findOne(options),
+      findOneBy: (entity: Function, where: FindOptionsWhere<{ id: string }>) =>
+        repositoryFor(entity).findOneBy(where),
+      countBy: (entity: Function, where: FindOptionsWhere<{ id: string }>) =>
+        repositoryFor(entity).countBy(where),
+      find: (
+        entity: Function,
+        options: { where: FindOptionsWhere<{ id: string }> },
+      ) => repositoryFor(entity).find(options),
+      save: (entity: Function, record: { id: string }) =>
+        repositoryFor(entity).save(record),
+    };
+    dataSource = {
+      transaction: <T>(
+        callback: (transactionManager: typeof manager) => Promise<T>,
+      ) => callback(manager),
+    } as unknown as DataSource;
+    service = new AcademicService(...repositories, dataSource);
   });
 
   /** Módulo de HE-02 ya guardado (en producción lo crea `CurricularModulesService`). */
@@ -119,6 +168,7 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
       status,
       competencyPrefix: 'MOD',
       competencySequence: 0,
+      guideSequence: 0,
     } as unknown as CurricularModule;
     const saved = await (repositories[0] as Repository<CurricularModule>).save(
       record,
@@ -149,6 +199,54 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
     return (repositories[1] as Repository<Competency>).save(record);
   };
 
+  const createGuide = async (
+    module: CurricularModule,
+    content: Record<string, unknown> = {},
+  ) => {
+    const competency = await (
+      repositories[1] as Repository<Competency>
+    ).findOneBy({
+      moduleId: module.id,
+    });
+    if (!competency) throw new Error('Test module must have a competency');
+    return service.createGuide({
+      moduleId: module.id,
+      competencyId: competency.id,
+      content,
+    });
+  };
+
+  it('assigns codes to existing guides during startup', async () => {
+    const module = await seedModule('Legado');
+    const legacyGuide = await (
+      repositories[3] as Repository<AcademicGuideRecord>
+    ).save({
+      id: randomUUID(),
+      code: null,
+      moduleId: module.id,
+      moduleName: module.name,
+      competencyId: null,
+      competencyName: null,
+      title: 'Guía anterior',
+      content: {},
+      fields: [],
+      structureVersion: 1,
+      version: 'v0',
+      status: 'draft',
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      publishedAt: null,
+    });
+
+    await service.onModuleInit();
+
+    expect(await service.findGuide(legacyGuide.id)).toMatchObject({
+      code: 'GB-MOD-01',
+      title: 'Guía anterior',
+    });
+    expect(module.guideSequence).toBe(1);
+  });
+
   it('requires an existing active HE-02 module to create a guide', async () => {
     const draftModule = await seedModule(
       'Borrador',
@@ -163,8 +261,18 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
       CurricularModuleStatus.ACTIVE,
       false,
     );
-    const guide = (moduleId: string) =>
-      service.createGuide({ moduleId, title: 'Guía', content: {} });
+    const guide = async (moduleId: string) => {
+      const competency = await (
+        repositories[1] as Repository<Competency>
+      ).findOneBy({
+        moduleId,
+      });
+      return service.createGuide({
+        moduleId,
+        competencyId: competency?.id ?? randomUUID(),
+        content: {},
+      });
+    };
     const errorCode = (code: string) => ({
       response: expect.objectContaining({ code }) as unknown,
     });
@@ -191,7 +299,6 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
       service.createGuide({
         moduleId: module.id,
         competencyId,
-        title: 'Guía',
         content: {},
       });
 
@@ -216,6 +323,9 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
       'Fuentes históricas',
       'COMP-HIS-01',
     );
+    expect(await service.previewNextGuideCode(module.id)).toEqual({
+      code: 'GB-MOD-01',
+    });
     await service.configureModuleGuideFields(module.id, {
       fields: [
         { key: 'summary', label: 'Resumen', type: 'text', required: true },
@@ -237,8 +347,16 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
     const draft = await service.createGuide({
       moduleId: module.id,
       competencyId: competency.id,
-      title: 'Análisis de fuentes',
       content: {},
+    });
+    expect(draft).toMatchObject({
+      code: 'GB-MOD-01',
+      title: 'Guía base · Historia',
+      structureVersion: 1,
+      version: 'v0',
+    });
+    expect(await service.previewNextGuideCode(module.id)).toEqual({
+      code: 'GB-MOD-02',
     });
 
     await expect(
@@ -256,12 +374,33 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
     const published = await service.publishGuide(draft.id);
 
     expect(published).toMatchObject({
+      title: 'Guía base · Historia',
+      code: 'GB-MOD-01',
+      structureVersion: 1,
+      version: 'v1.0',
+      competencyDeleted: false,
       status: 'published',
       moduleName: 'Historia',
       competencyName: 'COMP-HIS-01 · Fuentes históricas',
       content: { sourceType: 'secundaria', year: 2020 },
     });
     expect(published.publishedAt).toBeDefined();
+    expect(
+      await service.findGuideEventsForUser(draft.id, 'coordinator', [
+        'coordinador',
+      ]),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ title: 'Guía creada como borrador' }),
+        expect.objectContaining({ title: 'Tipo de fuente editado' }),
+        expect.objectContaining({ title: 'Guía publicada' }),
+      ]),
+    );
+    competency.deletedAt = new Date();
+    expect(await service.findGuide(draft.id)).toMatchObject({
+      competencyDeleted: true,
+      competencyName: 'COMP-HIS-01 · Fuentes históricas',
+    });
     await expect(
       service.updateGuide(draft.id, { title: 'Cambio' }),
     ).rejects.toThrow(ConflictException);
@@ -269,11 +408,7 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
 
   it('preserves published guide snapshots when a module is deactivated', async () => {
     const module = await seedModule('Literatura');
-    const draft = await service.createGuide({
-      moduleId: module.id,
-      title: 'Lectura crítica',
-      content: {},
-    });
+    const draft = await createGuide(module);
     await service.publishGuide(draft.id);
     module.status = CurricularModuleStatus.INACTIVE;
 
@@ -281,13 +416,7 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
       moduleName: 'Literatura',
       status: 'published',
     });
-    await expect(
-      service.createGuide({
-        moduleId: module.id,
-        title: 'Nueva guía',
-        content: {},
-      }),
-    ).rejects.toThrow(BadRequestException);
+    await expect(createGuide(module)).rejects.toThrow(BadRequestException);
   });
 
   it('isolates a teacher-owned version from the published guide and other teachers', async () => {
@@ -308,10 +437,8 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
         },
       ],
     });
-    const draft = await service.createGuide({
-      moduleId: module.id,
-      title: 'Guía institucional',
-      content: { activity: 'Experimento base' },
+    const draft = await createGuide(module, {
+      activity: 'Experimento base',
     });
     await service.publishGuide(draft.id);
     await service.assignTeacherToModule(module.id, 'teacher-1');
@@ -364,10 +491,8 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
         },
       ],
     });
-    const draft = await service.createGuide({
-      moduleId: module.id,
-      title: 'Guía persistente',
-      content: { summary: 'Contenido institucional' },
+    const draft = await createGuide(module, {
+      summary: 'Contenido institucional',
     });
     await service.publishGuide(draft.id);
     await service.assignTeacherToModule(module.id, 'teacher-1');
@@ -379,10 +504,10 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
       content: { notes: 'Contenido del docente' },
     });
 
-    const restartedService = new AcademicService(...repositories);
+    const restartedService = new AcademicService(...repositories, dataSource);
 
     expect(await restartedService.findGuide(draft.id)).toMatchObject({
-      title: 'Guía persistente',
+      title: 'Guía base · Persistencia',
       status: 'published',
     });
     expect(
@@ -402,11 +527,7 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
 
   it('stores PDF and DOCX support materials and limits teacher downloads to assigned published guides', async () => {
     const module = await seedModule('Materiales');
-    const guide = await service.createGuide({
-      moduleId: module.id,
-      title: 'Guía con apoyo',
-      content: {},
-    });
+    const guide = await createGuide(module);
     const pdf = Buffer.from('%PDF-1.7\ncontenido de prueba');
     const uploadedPdf = await service.addGuideSupportMaterial(guide.id, {
       originalname: 'lectura.pdf',
@@ -477,11 +598,7 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
 
   it('rejects support files that are not valid PDF or DOCX documents', async () => {
     const module = await seedModule('Validación de archivos');
-    const guide = await service.createGuide({
-      moduleId: module.id,
-      title: 'Guía',
-      content: {},
-    });
+    const guide = await createGuide(module);
 
     await expect(
       service.addGuideSupportMaterial(guide.id, {

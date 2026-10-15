@@ -7,9 +7,13 @@ import type {
 
 @Entity('academic_guides')
 @Index('IDX_academic_guides_module', ['moduleId'])
+@Index('UQ_academic_guides_code', ['code'], { unique: true })
 export class AcademicGuideRecord {
   @PrimaryColumn('uuid')
   id: string;
+
+  @Column({ type: 'varchar', length: 40, nullable: true })
+  code: string | null;
 
   @Column({ type: 'uuid' })
   moduleId: string;
@@ -32,6 +36,12 @@ export class AcademicGuideRecord {
 
   @Column({ type: 'jsonb' })
   fields: GuideField[];
+
+  @Column({ type: 'int', default: 1 })
+  structureVersion: number;
+
+  @Column({ type: 'varchar', length: 20, default: 'v0' })
+  version: string;
 
   @Column({ type: 'varchar', length: 20, default: 'draft' })
   status: GuideStatus;

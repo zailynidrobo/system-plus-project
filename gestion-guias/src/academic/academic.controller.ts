@@ -41,6 +41,12 @@ export class AcademicController {
     return this.academicService.configureModuleGuideFields(moduleId, dto);
   }
 
+  @Get('modules/:moduleId/guides/next-code')
+  @Roles('coordinador')
+  previewNextGuideCode(@Param('moduleId') moduleId: string) {
+    return this.academicService.previewNextGuideCode(moduleId);
+  }
+
   @Put('modules/:moduleId/teacher-guide-fields')
   @Roles('coordinador')
   configureTeacherGuideFields(
@@ -66,8 +72,11 @@ export class AcademicController {
 
   @Post('guides')
   @Roles('coordinador')
-  createGuide(@Body() dto: CreateGuideDto) {
-    return this.academicService.createGuide(dto);
+  createGuide(
+    @Body() dto: CreateGuideDto,
+    @Req() request: { user: KeycloakJwtPayload },
+  ) {
+    return this.academicService.createGuide(dto, this.guideActor(request.user));
   }
 
   @Get('guides')
@@ -90,6 +99,19 @@ export class AcademicController {
     @Req() request: { user: KeycloakJwtPayload },
   ) {
     return this.academicService.findGuideForUser(
+      id,
+      request.user.sub,
+      request.user.realm_access?.roles ?? [],
+    );
+  }
+
+  @Get('guides/:id/events')
+  @Roles('coordinador', 'docente')
+  findGuideEvents(
+    @Param('id') id: string,
+    @Req() request: { user: KeycloakJwtPayload },
+  ) {
+    return this.academicService.findGuideEventsForUser(
       id,
       request.user.sub,
       request.user.realm_access?.roles ?? [],
@@ -175,14 +197,25 @@ export class AcademicController {
 
   @Patch('guides/:id')
   @Roles('coordinador')
-  updateGuide(@Param('id') id: string, @Body() dto: UpdateGuideDto) {
-    return this.academicService.updateGuide(id, dto);
+  updateGuide(
+    @Param('id') id: string,
+    @Body() dto: UpdateGuideDto,
+    @Req() request: { user: KeycloakJwtPayload },
+  ) {
+    return this.academicService.updateGuide(
+      id,
+      dto,
+      this.guideActor(request.user),
+    );
   }
 
   @Patch('guides/:id/publish')
   @Roles('coordinador')
-  publishGuide(@Param('id') id: string) {
-    return this.academicService.publishGuide(id);
+  publishGuide(
+    @Param('id') id: string,
+    @Req() request: { user: KeycloakJwtPayload },
+  ) {
+    return this.academicService.publishGuide(id, this.guideActor(request.user));
   }
 
   @Put('modules/:moduleId/teachers/:teacherId')
@@ -289,5 +322,12 @@ export class AcademicController {
     return extension === 'pdf'
       ? 'application/pdf'
       : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  }
+
+  private guideActor(user: KeycloakJwtPayload) {
+    return {
+      id: user.sub,
+      name: user.preferred_username ?? user.email ?? user.sub,
+    };
   }
 }

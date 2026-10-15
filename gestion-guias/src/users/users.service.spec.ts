@@ -84,15 +84,6 @@ class FakeKeycloakAdmin {
 describe('UsersService (HE-01 sobre Keycloak)', () => {
   let keycloak: FakeKeycloakAdmin;
   let service: UsersService;
-  let users: User[];
-  let keycloak: {
-    createUser: ReturnType<typeof vi.fn>;
-    updateUser: ReturnType<typeof vi.fn>;
-    resetPassword: ReturnType<typeof vi.fn>;
-    changeRole: ReturnType<typeof vi.fn>;
-    setEnabled: ReturnType<typeof vi.fn>;
-    deleteUser: ReturnType<typeof vi.fn>;
-  };
 
   beforeEach(() => {
     keycloak = new FakeKeycloakAdmin();

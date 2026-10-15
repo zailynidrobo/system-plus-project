@@ -28,3 +28,4 @@ export class User {
   isActive: boolean;
   createdAt?: string;
 }
+

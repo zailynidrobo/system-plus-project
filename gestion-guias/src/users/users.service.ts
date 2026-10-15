@@ -32,6 +32,7 @@ export class UsersService {
   private toUser(user: KeycloakUser, role: Role | null): User {
     return {
       id: user.id,
+      keycloakUserId: user.id,
       name: joinName(user),
       email: user.email ?? user.username,
       role,

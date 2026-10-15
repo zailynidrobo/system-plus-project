@@ -4,6 +4,7 @@ import {
   IsBoolean,
   IsIn,
   IsNotEmpty,
+  IsOptional,
   IsString,
   Matches,
   ValidateIf,
@@ -30,4 +31,13 @@ export class GuideFieldDto {
   @ArrayMinSize(1)
   @IsString({ each: true })
   options?: string[];
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  section?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
 }

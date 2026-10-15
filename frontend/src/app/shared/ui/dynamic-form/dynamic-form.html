@@ -1,0 +1,84 @@
+<ng-template #campoTpl let-f>
+  <div class="ui-field" [formGroup]="form()">
+    <label [for]="'campo-' + f.key">
+      {{ f.label }} @if (f.required) { <span class="ui-required">*</span> }
+      @if (modificado(f.key)) { <span class="ui-tag">Modificado</span> }
+      @if (bloqueados().includes(f.key)) { <span class="ui-tag">Definido por coordinación</span> }
+    </label>
+
+    @switch (f.type) {
+      @case ('textarea') {
+        <div class="ui-control" [class.ui-control--error]="error(f.key)" [class.ui-control--readonly]="bloqueados().includes(f.key)">
+          <textarea [id]="'campo-' + f.key" [formControlName]="f.key" rows="3" [attr.maxlength]="f.maxLength ?? null" [placeholder]="f.help ?? ''"></textarea>
+        </div>
+        @if (f.maxLength) {
+          <span class="ui-counter">{{ longitud(f.key) }}/{{ f.maxLength }}</span>
+        }
+      }
+      @case ('select') {
+        @if ((f.options?.length ?? 0) <= 3) {
+          <div class="ui-chips" role="radiogroup" [attr.aria-label]="f.label">
+            @for (o of f.options ?? []; track o) {
+              <button
+                type="button"
+                class="ui-chip"
+                role="radio"
+                [class.is-selected]="form().controls[f.key].value === o"
+                [attr.aria-checked]="form().controls[f.key].value === o"
+                [disabled]="bloqueados().includes(f.key)"
+                (click)="elegir(f, o)"
+              >
+                @if (form().controls[f.key].value === o) { <app-icon name="check" [size]="12" /> }
+                {{ o }}
+              </button>
+            }
+          </div>
+        } @else {
+          <div class="ui-control" [class.ui-control--error]="error(f.key)" [class.ui-control--readonly]="bloqueados().includes(f.key)">
+            <select [id]="'campo-' + f.key" [formControlName]="f.key">
+              <option [ngValue]="null" disabled>Selecciona una opción</option>
+              @for (o of f.options ?? []; track o) {
+                <option [ngValue]="o">{{ o }}</option>
+              }
+            </select>
+          </div>
+        }
+      }
+      @case ('number') {
+        <div class="ui-control" [class.ui-control--error]="error(f.key)">
+          <input [id]="'campo-' + f.key" type="number" [formControlName]="f.key" />
+        </div>
+      }
+      @case ('date') {
+        <div class="ui-control" [class.ui-control--error]="error(f.key)">
+          <input [id]="'campo-' + f.key" type="date" [formControlName]="f.key" />
+        </div>
+      }
+      @default {
+        <div class="ui-control" [class.ui-control--error]="error(f.key)" [class.ui-control--readonly]="bloqueados().includes(f.key)">
+          <input [id]="'campo-' + f.key" type="text" [formControlName]="f.key" [attr.maxlength]="f.maxLength ?? null" [placeholder]="f.help ?? ''" />
+        </div>
+      }
+    }
+
+    @if (error(f.key)) {
+      <p class="ui-help ui-help--error">Este campo es obligatorio.</p>
+    }
+  </div>
+</ng-template>
+
+<div class="ui-fields">
+  @if (grupos().cortos.length) {
+    <div class="ui-grid-2">
+      @for (f of grupos().cortos; track f.key) {
+        <ng-container *ngTemplateOutlet="campoTpl; context: { $implicit: f }" />
+      }
+    </div>
+  }
+  @if (seccionContenido() && grupos().resto.length) {
+    <p class="ui-section-label">{{ seccionContenido() }}</p>
+  }
+  @for (f of grupos().resto; track f.key) {
+    <ng-container *ngTemplateOutlet="campoTpl; context: { $implicit: f }" />
+  }
+</div>

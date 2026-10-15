@@ -83,7 +83,7 @@
       }
 
       <div class="actions">
-        <a class="link" routerLink="/usuarios">{{ guardado() ? 'Volver a usuarios' : 'Cancelar' }}</a>
+        <a class="link" routerLink="/roles">{{ guardado() ? 'Volver a roles y permisos' : 'Cancelar' }}</a>
         <button type="button" class="btn-primary" (click)="guardar()" [disabled]="guardando() || !hayCambio()">
           <app-icon name="refresh-cw" [size]="18" />
           {{ guardando() ? 'Actualizando...' : 'Actualizar rol' }}

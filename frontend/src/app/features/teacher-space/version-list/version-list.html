@@ -1,0 +1,125 @@
+<header class="ui-page-head">
+  <div>
+    <h1>Mis versiones</h1>
+    <p>Tus adaptaciones viven en tu espacio personal y son independientes.</p>
+  </div>
+</header>
+
+@if (aviso; as a) {
+  <div class="ui-notice ui-notice--ok ui-mb" role="status">
+    <app-icon name="circle-check" [size]="16" />
+    <div>
+      <strong>Cambios guardados en tu versión</strong>
+      <p class="aviso-texto">
+        @if (a.campos.length === 1) {
+          Se actualizó “{{ a.campos[0] }}” en {{ a.versionName }}.
+        } @else {
+          Se actualizaron {{ a.campos.length }} campos en {{ a.versionName }}.
+        }
+        Ningún otro documento fue modificado.
+      </p>
+    </div>
+  </div>
+}
+
+@if (cargando()) {
+  <p class="ui-state">Cargando versiones…</p>
+} @else if (versiones().length === 0) {
+  <section class="ui-card">
+    <p class="ui-empty">
+      Aún no tienes versiones propias. Abre una guía base de tus módulos y usa “Crear mi versión”.
+    </p>
+  </section>
+  <a class="ui-btn ui-btn--primary ui-self-start" routerLink="/mis-modulos"><app-icon name="book-open" [size]="15" /> Ir a guías base</a>
+} @else {
+  @if (seleccionada(); as v) {
+    <div class="ui-grid-3 ui-mb">
+      <article class="ui-gcard is-selected">
+        <span class="ui-gcard__eyebrow ui-gcard__eyebrow--primary">Mi versión</span>
+        <div class="ui-gcard__title">
+          <strong>{{ v.name }}</strong>
+          <small>{{ dueno() }} · editada {{ haceMin(v.updatedAt) }}</small>
+        </div>
+        <div class="ui-kv-box">
+          <div class="ui-kv"><span>Campos adaptados</span><strong class="is-bold">{{ v.adaptedKeys.length }} de {{ v.editableCount }}</strong></div>
+          <div class="ui-kv"><span>Último cambio</span><strong>{{ etiqueta(v, v.lastField) }}</strong></div>
+        </div>
+        <span>
+          @if (v.adaptedKeys.length) {
+            <span class="ui-pill ui-pill--gold ui-pill--sm"><i></i> Modificada</span>
+          } @else {
+            <span class="ui-pill ui-pill--neutral ui-pill--sm"><i></i> Igual a la guía base</span>
+          }
+        </span>
+      </article>
+
+      <article class="ui-gcard">
+        <span class="ui-gcard__eyebrow ui-gcard__eyebrow--ok">Guía base institucional</span>
+        <div class="ui-gcard__title">
+          <strong>{{ v.guideCode }} · {{ v.guideVersion }}</strong>
+          <small>{{ v.guidePublishedBy }} · publicada el {{ fecha(v.guidePublishedAt) }}</small>
+        </div>
+        <div class="ui-kv-box">
+          <div class="ui-kv"><span>Campos modificados</span><strong class="is-bold">0</strong></div>
+          <div class="ui-kv"><span>Última modificación</span><strong>{{ fecha(v.guideUpdatedAt) }}</strong></div>
+        </div>
+        <span><span class="ui-pill ui-pill--ok ui-pill--sm"><app-icon name="lock" [size]="11" /> Sin cambios</span></span>
+      </article>
+
+      <article class="ui-gcard">
+        <span class="ui-gcard__eyebrow">Versiones de otros docentes</span>
+        <div class="ui-gcard__title">
+          <strong>{{ aislamiento()?.otrasVersiones ?? '–' }} {{ aislamiento()?.otrasVersiones === 1 ? 'versión' : 'versiones' }} del módulo {{ v.competencyPrefix }}</strong>
+          <small>{{ otrosDocentes() }}</small>
+        </div>
+        <div class="ui-kv-box">
+          <div class="ui-kv"><span>Afectadas por tu cambio</span><strong class="is-bold">0</strong></div>
+          <div class="ui-kv"><span>Acceso desde tu cuenta</span><strong>No permitido</strong></div>
+        </div>
+        <span><span class="ui-pill ui-pill--ok ui-pill--sm"><app-icon name="shield-check" [size]="11" /> Independientes</span></span>
+      </article>
+    </div>
+  }
+
+  <section class="ui-panel">
+    <div class="ui-table-wrap">
+      <table class="ui-table">
+        <thead>
+          <tr>
+            <th>Mi versión</th>
+            <th>Guía base de origen</th>
+            <th>Campos adaptados</th>
+            <th>Última edición</th>
+            <th class="ui-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (v of versiones(); track v.id) {
+            <tr class="fila" [class.is-current]="v.id === seleccionadaId()" (click)="seleccionar(v)">
+              <td>
+                <div class="ui-cell">
+                  <span class="ui-tile ui-tile--xs"><app-icon name="folder" [size]="15" /></span>
+                  <div>
+                    <strong>{{ v.name }}</strong>
+                    <small>Creada el {{ fecha(v.createdAt) }}</small>
+                  </div>
+                </div>
+              </td>
+              <td>{{ v.guideCode }} · {{ v.baseVersion }}</td>
+              <td>{{ v.adaptedKeys.length }} de {{ v.editableCount }}</td>
+              <td>{{ hace(v.updatedAt) }}</td>
+              <td class="ui-actions-cell">
+                <a class="ui-icon-btn" [routerLink]="['/mis-versiones', v.id]" title="Editar mi versión" aria-label="Editar mi versión" (click)="$event.stopPropagation()">
+                  <app-icon name="pencil" [size]="14" />
+                </a>
+                <a class="ui-icon-btn" [routerLink]="['/mis-modulos/guias', v.guideId]" title="Ver guía base" aria-label="Ver guía base de origen" (click)="$event.stopPropagation()">
+                  <app-icon name="eye" [size]="14" />
+                </a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+}

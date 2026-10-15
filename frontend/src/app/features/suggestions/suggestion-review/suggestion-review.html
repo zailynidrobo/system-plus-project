@@ -1,0 +1,189 @@
+@if (aprobada(); as a) {
+  <!-- HE-05-HU-03 · Sugerencia aprobada (5003:831) -->
+  <header class="ui-page-head">
+    <div>
+      <h1>Sugerencia aprobada</h1>
+      <p>La guía base se actualizó automáticamente con el cambio propuesto.</p>
+    </div>
+  </header>
+
+  <div class="ui-success__row">
+    <section class="ui-card resultado">
+      <span class="ui-circle ui-circle--soft ui-circle--ok"><app-icon name="circle-check" [size]="24" /></span>
+      <h2>Guía base actualizada a la versión {{ a.guia.version.replace('v', '') }}</h2>
+      <p class="texto">
+        Se aplicó la sugerencia {{ a.sugerencia.code }} de {{ corto(a.sugerencia.teacherName) }} en el campo “{{ a.sugerencia.fieldLabel }}”.
+      </p>
+
+      @let p = partes(a.sugerencia.currentValue, a.sugerencia.proposedValue);
+      <div class="comparar__col comparar__col--ok vigente">
+        <div class="comparar__head"><span>{{ a.sugerencia.fieldLabel }} · Ahora vigente</span><span>{{ a.guia.version }}</span></div>
+        <p>{{ p.igual }}<mark>{{ p.nuevo }}</mark></p>
+      </div>
+
+      <div class="ui-transfer__item ancho">
+        <span class="ui-tile ui-tile--xs ui-tile--ok"><app-icon name="file-text" [size]="15" /></span>
+        <div class="flex">
+          <strong>{{ a.guia.title }}</strong>
+          <small>{{ a.guia.code }} · {{ a.sugerencia.baseVersion }} → {{ a.guia.version }} · actualizada {{ hace(a.guia.updatedAt) }}</small>
+        </div>
+        <span class="ui-pill ui-pill--ok"><i></i> Publicada</span>
+      </div>
+
+      <div class="ui-actions ui-actions--center">
+        <a class="ui-btn ui-btn--outline ui-btn--md" [routerLink]="['/guias', a.guia.id]"><app-icon name="eye" [size]="15" /> Ver guía actualizada</a>
+        <a class="ui-btn ui-btn--primary ui-btn--md" routerLink="/sugerencias"><app-icon name="arrow-left" [size]="15" /> Volver a sugerencias</a>
+      </div>
+    </section>
+
+    <aside class="ui-success__side ui-side">
+      <section class="ui-side-card">
+        <small class="ui-label ui-label--ok">Registro de decisión</small>
+        <div class="ui-kv-list">
+          <div class="ui-kv"><span>Sugerencia</span><strong>{{ a.sugerencia.code }}</strong></div>
+          <div class="ui-kv"><span>Decisión</span><span class="ui-pill ui-pill--ok ui-pill--sm">Aprobada</span></div>
+          <div class="ui-kv"><span>Por</span><strong>{{ a.sugerencia.decidedBy?.name }}</strong></div>
+          <div class="ui-kv"><span>Fecha</span><strong>{{ fecha(a.sugerencia.decidedAt) }}</strong></div>
+        </div>
+      </section>
+      <section class="ui-side-card">
+        <h3 class="ui-side-title">Quién verá el cambio</h3>
+        <ul class="ui-options verde">
+          <li>
+            <app-icon name="circle-check" [size]="15" />
+            <div><strong>{{ corto(a.sugerencia.teacherName) }}</strong><small>Verá su sugerencia como aprobada</small></div>
+          </li>
+          <li>
+            <app-icon name="circle-check" [size]="15" />
+            <div>
+              <strong>{{ revision()?.docentesDelModulo }} docentes de {{ a.sugerencia.competencyPrefix }}</strong>
+              <small>Nueva versión {{ a.guia.version.replace('v', '') }} disponible en Guías base</small>
+            </div>
+          </li>
+        </ul>
+      </section>
+    </aside>
+  </div>
+} @else if (s(); as s) {
+  <header class="ui-page-head">
+    <div>
+      <h1>Revisar sugerencia {{ s.code }}</h1>
+      <p>Compara el contenido actual con el cambio propuesto antes de decidir.</p>
+      <a class="ui-back ui-back--inline" routerLink="/sugerencias"><app-icon name="arrow-left" [size]="13" /> Volver a sugerencias</a>
+    </div>
+  </header>
+
+  <div class="ui-layout ui-layout--docente">
+    <section class="ui-card ui-card--compact">
+      <div class="ui-hero">
+        <span class="ui-avatar ui-avatar--lg">{{ iniciales(s.teacherName) }}</span>
+        <div class="ui-hero__info">
+          <strong class="docente">{{ s.teacherName }}</strong>
+          <small>Docente · {{ s.moduleName }} · enviada {{ hace(s.createdAt) }}</small>
+        </div>
+        <span class="ui-pill ui-pill--sm" [class]="pill[s.status]"><i></i> {{ s.status }}</span>
+      </div>
+
+      <div class="ui-kv-box">
+        <div class="ui-kv"><span>Guía</span><strong>{{ s.guideCode }} · {{ s.moduleName }} · {{ s.baseVersion }}</strong></div>
+        <div class="ui-kv"><span>Campo afectado</span><strong class="is-bold">{{ s.fieldLabel }}</strong></div>
+      </div>
+
+      @let p = partes(s.currentValue, s.proposedValue);
+      <div class="comparar">
+        <div class="comparar__col comparar__col--off">
+          <div class="comparar__head"><span>Contenido actual</span><span>{{ s.baseVersion }}</span></div>
+          <p>{{ texto(s.currentValue) || 'Sin diligenciar' }}</p>
+        </div>
+        <div class="comparar__col comparar__col--ok">
+          <div class="comparar__head"><span>Cambio propuesto</span><span>{{ versionNueva() }}</span></div>
+          <p>{{ p.igual }}<mark>{{ p.nuevo }}</mark></p>
+        </div>
+      </div>
+
+      <div class="justificacion">
+        <strong>Justificación del docente</strong>
+        <p>{{ s.justification }}</p>
+      </div>
+
+      @if (desactualizada()) {
+        <div class="ui-notice ui-notice--gold">
+          <app-icon name="circle-alert" [size]="16" />
+          <div>
+            <strong>La guía cambió después de esta sugerencia</strong>
+            <p>El campo ya no tiene el texto que vio el docente. Aprobarla borraría el cambio vigente; recházala pidiendo que la envíe de nuevo.</p>
+          </div>
+        </div>
+      }
+      @if (error()) {
+        <div class="ui-notice ui-notice--danger" role="alert"><app-icon name="circle-alert" [size]="16" /><p>{{ error() }}</p></div>
+      }
+
+      @if (s.status === 'Pendiente') {
+        <div class="ui-actions">
+          <span></span>
+          <div class="ui-actions__right">
+            <button type="button" class="ui-btn ui-btn--outline ui-btn--md rechazar" (click)="rechazando.set(true)">
+              <app-icon name="circle-x" [size]="15" /> Rechazar
+            </button>
+            <button type="button" class="ui-btn ui-btn--primary ui-btn--md" [disabled]="desactualizada()" (click)="confirmando.set(true)">
+              <app-icon name="check" [size]="15" /> Aprobar y actualizar guía
+            </button>
+          </div>
+        </div>
+      } @else {
+        <div class="ui-notice" [class.ui-notice--ok]="s.status === 'Aprobada'" [class.ui-notice--danger]="s.status === 'Rechazada'">
+          <app-icon [name]="s.status === 'Aprobada' ? 'circle-check' : 'circle-x'" [size]="16" />
+          <div>
+            <strong>{{ s.status }} por {{ s.decidedBy?.name }} el {{ fecha(s.decidedAt) }}</strong>
+            @if (s.status === 'Aprobada') {
+              <p>La guía pasó a {{ s.resultingVersion }} con este cambio.</p>
+            } @else {
+              <p>{{ s.rejectReason }}. {{ s.feedback }}</p>
+            }
+          </div>
+        </div>
+      }
+    </section>
+
+    <aside class="ui-side">
+      <section class="ui-side-card">
+        <h3 class="ui-side-title">Impacto si se aprueba</h3>
+        <ul class="ui-options">
+          <li>
+            <app-icon name="file-text" [size]="15" />
+            <div><strong>Guía base pasa a {{ versionNueva() }}</strong><small>Se registra en el historial de versiones</small></div>
+          </li>
+          <li>
+            <app-icon name="users" [size]="15" />
+            <div><strong>{{ revision()?.docentesDelModulo }} docentes del módulo</strong><small>Verán la nueva versión en Guías base</small></div>
+          </li>
+          <li>
+            <app-icon name="shield-check" [size]="15" />
+            <div><strong>Versiones de docentes</strong><small>No se modifican automáticamente</small></div>
+          </li>
+        </ul>
+      </section>
+    </aside>
+  </div>
+
+  @if (confirmando()) {
+    <app-confirm-modal
+      [titulo]="'¿Aprobar la sugerencia ' + s.code + '?'"
+      [mensaje]="'El campo “' + s.fieldLabel + '” de ' + s.guideCode + ' se reemplaza por el cambio propuesto y la guía pasa a ' + versionNueva() + '.'"
+      icono="circle-check"
+      tono="ok"
+      textoConfirmar="Aprobar y actualizar guía"
+      [procesando]="procesando()"
+      (confirmar)="aprobar()"
+      (cancelar)="confirmando.set(false)"
+    />
+  }
+  @if (rechazando()) {
+    <app-reject-modal [sugerencia]="s" (rechazada)="rechazada($event)" (cancelar)="rechazando.set(false)" />
+  }
+} @else if (noExiste()) {
+  <section class="ui-card"><p class="ui-empty">La sugerencia que buscas no existe.</p></section>
+} @else {
+  <p class="ui-state">Cargando sugerencia…</p>
+}

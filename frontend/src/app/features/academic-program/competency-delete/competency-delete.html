@@ -1,0 +1,125 @@
+<header class="ui-page-head">
+  <div>
+    <h1>Eliminar competencia</h1>
+    <p>Retira una competencia del módulo preservando las guías ya publicadas.</p>
+  </div>
+</header>
+
+@if (competencia(); as c) {
+  @let eliminada = restantes() !== null;
+  @if (c.status === 'deleted' && !eliminada) {
+    <div class="ui-notice ui-notice--info">
+      <app-icon name="info" [size]="18" />
+      <div><strong>La competencia ya fue eliminada</strong><p>{{ c.code }} no aparece entre las competencias activas del módulo.</p></div>
+    </div>
+    <p><a class="ui-btn ui-btn--primary" [routerLink]="['/modulos', moduleId]">Volver al detalle</a></p>
+  } @else {
+    <div class="ui-layout ui-layout--wide-side">
+      <section class="ui-card">
+        @if (!eliminada) {
+          <div class="ui-confirm-head">
+            <span class="ui-circle ui-circle--danger"><app-icon name="trash-2" [size]="23" /></span>
+            <div>
+              <h2>¿Eliminar {{ c.code }}?</h2>
+              <p>La competencia dejará de estar disponible para nuevas guías del módulo.</p>
+            </div>
+          </div>
+        } @else {
+          <div class="ui-confirm-head">
+            <span class="ui-circle ui-circle--ok"><app-icon name="circle-check" [size]="23" /></span>
+            <div>
+              <h2>Competencia eliminada</h2>
+              <p>{{ c.code }} ya no aparece entre las competencias activas del módulo.</p>
+            </div>
+          </div>
+        }
+
+        <div class="ui-box">
+          <div class="ui-kv">
+            <span class="ui-code ui-code--md">{{ c.code }}</span>
+            <span class="ui-pill ui-pill--warn">{{ guias().length }} {{ guias().length === 1 ? 'guía publicada' : 'guías publicadas' }}</span>
+          </div>
+          <p class="ui-box__text">{{ c.text }}</p>
+          <small class="ui-muted">{{ modulo()?.name }}</small>
+        </div>
+
+        <div class="ui-notice">
+          <app-icon name="shield-check" [size]="18" />
+          <div>
+            <strong>Las guías publicadas no se afectan</strong>
+            @if (guias().length > 0) {
+              <p>Las guías {{ titulos() }} conservarán esta competencia como parte de su versión histórica.</p>
+            } @else {
+              <p>Ninguna guía publicada usa esta competencia. Las demás guías del módulo no cambian.</p>
+            }
+          </div>
+        </div>
+
+        @if (!eliminada) {
+          <div class="ui-effects">
+            <strong>Al confirmar:</strong>
+            <div class="ui-effect">
+              <span class="ui-tile ui-tile--xs ui-tile--danger"><app-icon name="unlink" [size]="14" /></span>
+              Se retirará del detalle del módulo y de nuevas selecciones.
+            </div>
+            <div class="ui-effect">
+              <span class="ui-tile ui-tile--xs ui-tile--ok"><app-icon name="archive" [size]="14" /></span>
+              Las versiones publicadas seguirán consultables sin cambios.
+            </div>
+            <div class="ui-effect">
+              <span class="ui-tile ui-tile--xs ui-tile--ok"><app-icon name="layers" [size]="14" /></span>
+              Las demás competencias permanecerán intactas.
+            </div>
+          </div>
+
+          @if (error()) {
+            <p class="ui-help ui-help--error" role="alert">No pudimos eliminar la competencia. Inténtalo de nuevo en unos minutos.</p>
+          }
+
+          <div class="ui-actions">
+            <a class="ui-btn" [routerLink]="['/modulos', moduleId]">Cancelar</a>
+            <button type="button" class="ui-btn ui-btn--danger" (click)="confirmar()" [disabled]="procesando()">
+              <app-icon name="trash-2" [size]="16" /> {{ procesando() ? 'Eliminando…' : 'Sí, eliminar competencia' }}
+            </button>
+          </div>
+        } @else {
+          <div class="ui-actions">
+            <span></span>
+            <a class="ui-btn ui-btn--primary" [routerLink]="['/modulos', moduleId]"><app-icon name="arrow-left" [size]="16" /> Volver al detalle</a>
+          </div>
+        }
+      </section>
+
+      <aside class="ui-side">
+        <section class="ui-result">
+          <span class="ui-pill ui-pill--ok ui-self-start">{{ eliminada ? 'Completado' : 'Después de confirmar' }}</span>
+          <span class="ui-circle ui-circle--ok"><app-icon name="circle-check" [size]="23" /></span>
+          <div>
+            <h4>Competencia eliminada</h4>
+            <p>{{ c.code }} ya no aparece entre las competencias activas del módulo.</p>
+          </div>
+          <div class="ui-box">
+            <div class="ui-kv">
+              <span>Competencias restantes</span>
+              <strong>{{ restantes() ?? (modulo()?.competenciesCount ?? 1) - 1 }} activas</strong>
+            </div>
+            <div class="ui-kv">
+              <span>Guías históricas afectadas</span>
+              <strong class="ui-help--ok">0</strong>
+            </div>
+          </div>
+        </section>
+
+        <div class="ui-notice ui-notice--ok">
+          <app-icon name="database-backup" [size]="18" />
+          <div>
+            <strong>Historial conservado</strong>
+            <p>Las {{ guias().length }} guías ya publicadas mantienen {{ c.code }} en su versión de consulta y auditoría.</p>
+          </div>
+        </div>
+      </aside>
+    </div>
+  }
+} @else {
+  <p class="ui-state">Cargando competencia...</p>
+}

@@ -1,6 +1,12 @@
-import { Injectable } from '@angular/core';
-import { Observable, delay, of, throwError } from 'rxjs';
-import { Role, User } from '../../shared/models/user';
+import { Injectable, inject } from '@angular/core';
+import { Observable } from 'rxjs';
+import { Auth } from '../../core/auth/auth';
+import { MOCK_LATENCY, simular } from '../../core/mock/latency';
+import { MockDb } from '../../core/mock/mock-db';
+import { UsuarioMock, sinContrasena, tituloRolAsignado } from '../../core/mock/seed-users';
+import { ApiError } from '../../shared/models/api-error';
+import { EventoUsuario, ROLE_LABELS, Role, User } from '../../shared/models/user';
+import { ahoraIso, fechaCorta } from '../../shared/utils/fechas';
 
 export interface FiltroUsuarios {
   busqueda: string;
@@ -28,118 +34,153 @@ export interface NuevoUsuario {
 }
 
 const normalizar = (t: string) =>
-  t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
-const NOMBRES = [
-  'María Camila Rojas', 'Julián Andrés Ospina', 'Paola Valencia', 'Carlos Ramírez',
-  'Diana Marcela Ruiz', 'Santiago Gómez', 'Laura Muñoz', 'Andrés Felipe Cruz',
-  'Natalia Herrera', 'Sebastián Mora', 'Valentina Díaz', 'Camilo Torres',
-  'Mariana Ortiz', 'Daniel Castro', 'Juliana Pineda', 'Esteban Ramos',
-  'Sara Delgado', 'Felipe Quintero', 'Isabela Rincón', 'Mateo Vargas',
-  'Lucía Salazar', 'Tomás Acosta', 'Gabriela León', 'Nicolás Peña',
-];
-const ROLES: Role[] = ['COORDINADOR', 'DOCENTE', 'DOCENTE_AUTORIZADO', 'DOCENTE', 'ADMINISTRADOR', 'DOCENTE'];
-const ACCESOS = ['Hoy, 8:42 a. m.', 'Ayer, 4:18 p. m.', '25 sep, 10:06 a. m.', '18 sep, 2:31 p. m.', '24 sep, 9:54 a. m.', '23 sep, 7:12 a. m.'];
-
-function crearMock(): User[] {
-  return NOMBRES.map((nombre, i) => {
-    const partes = normalizar(nombre).split(' ');
-    return {
-      id: i + 1,
-      nombre,
-      correo: `${partes[0]}.${partes[partes.length - 1]}@systemplus.edu.co`,
-      rol: ROLES[i % ROLES.length],
-      activo: i % 8 !== 3,
-      ultimoAcceso: ACCESOS[i % ACCESOS.length],
-    };
-  });
-}
-
+// Los usuarios viven en MockDb: son los mismos con los que se inicia sesión,
+// así desactivar o cambiar el rol aquí afecta al login (HU-03 y HU-04).
 @Injectable({ providedIn: 'root' })
 export class UserApi {
-  private datos = crearMock();
+  private db = inject(MockDb);
+  private auth = inject(Auth);
+  private ms = inject(MOCK_LATENCY);
 
   listar(f: FiltroUsuarios): Observable<PaginaUsuarios> {
-    const q = normalizar(f.busqueda.trim());
-    const filtrados = this.datos.filter((u) => {
-      const coincideTexto = !q || normalizar(u.nombre).includes(q) || normalizar(u.correo).includes(q);
-      const coincideRol = f.rol === 'TODOS' || u.rol === f.rol;
-      const coincideEstado =
-        f.estado === 'TODOS' || (f.estado === 'ACTIVO' ? u.activo : !u.activo);
-      return coincideTexto && coincideRol && coincideEstado;
+    return simular(this.ms, () => {
+      const q = normalizar(f.busqueda.trim());
+      const filtrados = this.db.usuarios.filter((u) => {
+        const coincideTexto = !q || normalizar(u.nombre).includes(q) || normalizar(u.correo).includes(q);
+        const coincideRol = f.rol === 'TODOS' || u.rol === f.rol;
+        const coincideEstado =
+          f.estado === 'TODOS' || (f.estado === 'ACTIVO' ? u.activo : !u.activo);
+        return coincideTexto && coincideRol && coincideEstado;
+      });
+      const inicio = (f.pagina - 1) * f.porPagina;
+      return {
+        items: filtrados.slice(inicio, inicio + f.porPagina).map(sinContrasena),
+        total: filtrados.length,
+      };
     });
-    const inicio = (f.pagina - 1) * f.porPagina;
-    return of({
-      items: filtrados.slice(inicio, inicio + f.porPagina),
-      total: filtrados.length,
-    }).pipe(delay(300));
   }
 
   resumen(): Observable<ResumenUsuarios> {
-    const activos = this.datos.filter((u) => u.activo).length;
-    return of({
-      total: this.datos.length,
-      activos,
-      desactivados: this.datos.length - activos,
-    }).pipe(delay(300));
+    return simular(this.ms, () => {
+      const activos = this.db.usuarios.filter((u) => u.activo).length;
+      return {
+        total: this.db.usuarios.length,
+        activos,
+        desactivados: this.db.usuarios.length - activos,
+      };
+    });
+  }
+
+  /** Tarjetas de "Roles y permisos": cuántos usuarios tienen cada rol. */
+  conteoPorRol(): Observable<Record<Role, number>> {
+    return simular(this.ms, () => {
+      const conteo = Object.fromEntries(Object.keys(ROLE_LABELS).map((r) => [r, 0])) as Record<Role, number>;
+      for (const u of this.db.usuarios) conteo[u.rol]++;
+      return conteo;
+    });
+  }
+
+  /** Validación en vivo del registro: "Correo disponible". */
+  correoDisponible(correo: string): Observable<boolean> {
+    return simular(this.ms, () => {
+      const buscado = correo.trim().toLowerCase();
+      return !this.db.usuarios.some((u) => u.correo.toLowerCase() === buscado);
+    });
+  }
+
+  /** "Historial reciente" de Editar usuario: el último acceso y los 2 eventos más recientes. */
+  historial(id: number): Observable<EventoUsuario[]> {
+    return simular(this.ms, () => {
+      const usuario = this.buscar(id);
+      const eventos: EventoUsuario[] = this.db.eventosUsuarios
+        .filter((e) => e.userId === id)
+        .sort((a, b) => b.fecha.localeCompare(a.fecha))
+        .slice(0, 2)
+        .map((e) => ({ titulo: e.titulo, detalle: `${fechaCorta(e.fecha)} · ${e.responsable}` }));
+      if (usuario.ultimoAcceso && usuario.ultimoAcceso !== 'Sin ingresos') {
+        eventos.unshift({ titulo: 'Inicio de sesión', detalle: `${usuario.ultimoAcceso} · Acceso seguro` });
+      }
+      return eventos;
+    });
   }
 
   // El backend real debe responder error si el correo ya existe y generar la contraseña temporal.
   crear(d: NuevoUsuario): Observable<User> {
-    const correo = d.correo.trim().toLowerCase();
-    if (this.datos.some((u) => u.correo.toLowerCase() === correo)) {
-      return throwError(() => new Error('CORREO_EN_USO')).pipe(delay(400));
-    }
-    const nuevo: User = {
-      id: Math.max(...this.datos.map((u) => u.id)) + 1,
-      nombre: d.nombre.trim(),
-      correo,
-      rol: d.rol,
-      activo: true,
-      ultimoAcceso: 'Sin ingresos',
-    };
-    this.datos = [nuevo, ...this.datos];
-    return of(nuevo).pipe(delay(500));
+    return simular(this.ms, () => {
+      const correo = d.correo.trim().toLowerCase();
+      if (this.db.usuarios.some((u) => u.correo.toLowerCase() === correo)) {
+        throw new ApiError('CORREO_EN_USO');
+      }
+      const nuevo: UsuarioMock = {
+        id: Math.max(...this.db.usuarios.map((u) => u.id)) + 1,
+        nombre: d.nombre.trim(),
+        correo,
+        // Nadie conoce la contraseña temporal; el backend real la genera y la guarda cifrada
+        contrasena: null,
+        rol: d.rol,
+        activo: true,
+        ultimoAcceso: 'Sin ingresos',
+        creadoEn: ahoraIso(),
+      };
+      this.db.usuarios = [nuevo, ...this.db.usuarios];
+      this.registrarEvento(nuevo.id, 'Usuario registrado');
+      this.registrarEvento(nuevo.id, tituloRolAsignado(nuevo.rol));
+      return sinContrasena(nuevo);
+    });
   }
 
-    obtener(id: number): Observable<User> {
-    const usuario = this.datos.find((u) => u.id === id);
-    if (!usuario) return throwError(() => new Error('NO_ENCONTRADO'));
-    return of({ ...usuario }).pipe(delay(300));
+  obtener(id: number): Observable<User> {
+    return simular(this.ms, () => sinContrasena(this.buscar(id)));
   }
 
   // Solo se editan nombre y correo. El rol y la contraseña no cambian aquí.
   actualizar(id: number, d: { nombre: string; correo: string }): Observable<User> {
-    const correo = d.correo.trim().toLowerCase();
-    const indice = this.datos.findIndex((u) => u.id === id);
-    if (indice === -1) return throwError(() => new Error('NO_ENCONTRADO'));
-
-    if (this.datos.some((u) => u.id !== id && u.correo.toLowerCase() === correo)) {
-      return throwError(() => new Error('CORREO_EN_USO')).pipe(delay(400));
-    }
-
-    const actualizado: User = { ...this.datos[indice], nombre: d.nombre.trim(), correo };
-    this.datos = this.datos.map((u, i) => (i === indice ? actualizado : u));
-    return of({ ...actualizado }).pipe(delay(500));
+    return simular(this.ms, () => {
+      const correo = d.correo.trim().toLowerCase();
+      this.buscar(id);
+      if (this.db.usuarios.some((u) => u.id !== id && u.correo.toLowerCase() === correo)) {
+        throw new ApiError('CORREO_EN_USO');
+      }
+      const actualizado = this.reemplazar(id, { nombre: d.nombre.trim(), correo });
+      this.registrarEvento(id, 'Datos actualizados');
+      return actualizado;
+    });
   }
 
-    // Desactivar NO borra: solo cambia el estado. El historial y los datos se conservan.
+  // Desactivar NO borra: solo cambia el estado. El historial y los datos se conservan.
   desactivar(id: number): Observable<User> {
-    const indice = this.datos.findIndex((u) => u.id === id);
-    if (indice === -1) return throwError(() => new Error('NO_ENCONTRADO'));
-
-    const actualizado: User = { ...this.datos[indice], activo: false };
-    this.datos = this.datos.map((u, i) => (i === indice ? actualizado : u));
-    return of({ ...actualizado }).pipe(delay(500));
+    return simular(this.ms, () => {
+      const actualizado = this.reemplazar(id, { activo: false });
+      this.registrarEvento(id, 'Usuario desactivado');
+      return actualizado;
+    });
   }
 
-    // Un usuario tiene un solo rol activo: este cambio reemplaza al anterior.
+  // Un usuario tiene un solo rol activo: este cambio reemplaza al anterior.
   cambiarRol(id: number, rol: Role): Observable<User> {
-    const indice = this.datos.findIndex((u) => u.id === id);
-    if (indice === -1) return throwError(() => new Error('NO_ENCONTRADO'));
+    return simular(this.ms, () => {
+      const actualizado = this.reemplazar(id, { rol });
+      this.registrarEvento(id, tituloRolAsignado(rol));
+      return actualizado;
+    });
+  }
 
-    const actualizado: User = { ...this.datos[indice], rol };
-    this.datos = this.datos.map((u, i) => (i === indice ? actualizado : u));
-    return of({ ...actualizado }).pipe(delay(500));
+  private buscar(id: number): UsuarioMock {
+    const usuario = this.db.usuarios.find((u) => u.id === id);
+    if (!usuario) throw new ApiError('NO_ENCONTRADO');
+    return usuario;
+  }
+
+  private registrarEvento(userId: number, titulo: string): void {
+    const responsable = this.auth.user()?.nombre ?? 'Sistema';
+    this.db.eventosUsuarios = [...this.db.eventosUsuarios, { userId, titulo, responsable, fecha: ahoraIso() }];
+  }
+
+  private reemplazar(id: number, cambios: Partial<UsuarioMock>): User {
+    const actualizado: UsuarioMock = { ...this.buscar(id), ...cambios };
+    this.db.usuarios = this.db.usuarios.map((u) => (u.id === id ? actualizado : u));
+    return sinContrasena(actualizado);
   }
 }

@@ -9,6 +9,5 @@ export const roleGuard: CanActivateFn = (route) => {
   const roles = (route.data['roles'] ?? []) as Role[];
 
   if (!auth.isLoggedIn()) return router.createUrlTree(['/login']);
-  // Pendiente: página de "sin accseo
-  return auth.hasRole(roles) ? true : router.createUrlTree(['/login']);
+  return auth.hasRole(roles) ? true : router.createUrlTree(['/sin-acceso']);
 };

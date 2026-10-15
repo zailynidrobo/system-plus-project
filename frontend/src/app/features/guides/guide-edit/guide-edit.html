@@ -1,0 +1,184 @@
+@if (cargando()) {
+  <p class="ui-state">Cargando guía...</p>
+} @else if (publicada(); as g) {
+  <!-- HE-03-HU-03-CA-01 · Publicada con éxito -->
+  <header class="ui-page-head">
+    <div>
+      <h1>Publicación completada</h1>
+      <p>La guía base ya es la referencia oficial del módulo.</p>
+    </div>
+  </header>
+
+  <div class="ui-success">
+    <div class="ui-success__row">
+      <section class="ui-success__card ui-success__card--narrow">
+        <span class="ui-circle ui-circle--ok ui-circle--soft"><app-icon name="circle-check" [size]="26" /></span>
+        <h2>Guía base publicada exitosamente</h2>
+        <p>Los docentes del módulo {{ g.moduleName }} ya pueden consultarla y construir su versión adaptada.</p>
+
+        <div class="ui-entity">
+          <span class="ui-tile ui-tile--ok"><app-icon name="file-text" [size]="18" /></span>
+          <div class="ui-entity__info">
+            <strong>{{ g.title }}</strong>
+            <span>{{ g.code }} · {{ g.competencyCode }} · Versión {{ g.version.replace('v', '') }}</span>
+          </div>
+          <span class="ui-pill ui-pill--ok"><i></i> Publicada</span>
+        </div>
+
+        <div class="ui-notice ui-notice--info">
+          <app-icon name="shield-check" [size]="16" />
+          <div>
+            <strong>Documento institucional protegido</strong>
+            <p>Los docentes podrán adaptar su propia versión sin modificar la guía original.</p>
+          </div>
+        </div>
+
+        <div class="ui-actions ui-actions--center">
+          <a class="ui-btn ui-btn--outline" [routerLink]="['/guias', g.id]"><app-icon name="eye" [size]="15" /> Ver guía publicada</a>
+          <a class="ui-btn ui-btn--primary" routerLink="/guias"><app-icon name="arrow-left" [size]="15" /> Volver a guías base</a>
+        </div>
+      </section>
+
+      <aside class="ui-side ui-success__side">
+        <section class="ui-side-card">
+          <small class="ui-label ui-label--ok">Registro de publicación</small>
+          <div class="ui-kv"><span>Publicada por</span><strong>{{ g.publishedBy?.name }}</strong></div>
+          <div class="ui-kv"><span>Fecha</span><strong>{{ fecha(g.publishedAt) }}</strong></div>
+          <div class="ui-kv"><span>Hora</span><strong>{{ hora(g.publishedAt) }}</strong></div>
+          <div class="ui-kv"><span>Estado anterior</span><span class="ui-pill ui-pill--warn">Borrador</span></div>
+        </section>
+        <section class="ui-side-card">
+          <h3 class="ui-side-title"><app-icon name="users" [size]="15" /> Visible para</h3>
+          <div class="ui-avatars">
+            @for (d of docentes().slice(0, 4); track d.id) {
+              <span class="ui-avatar" [title]="d.nombre">{{ iniciales(d.nombre) }}</span>
+            }
+            @if (docentes().length > 4) {
+              <span class="ui-avatar ui-avatar--alt">+{{ docentes().length - 4 }}</span>
+            }
+          </div>
+          <p class="ui-help">{{ docentes().length }} {{ docentes().length === 1 ? 'docente asignado' : 'docentes asignados' }} al módulo ya pueden consultarla.</p>
+        </section>
+      </aside>
+    </div>
+
+    <p class="ui-success__trace"><i class="ui-dot"></i> Transición registrada: Borrador → Publicada · HE-03-{{ g.code }}</p>
+  </div>
+} @else if (guia(); as g) {
+  <header class="ui-page-head">
+    <div>
+      <h1>Editar guía base</h1>
+      <p>Ajusta el contenido antes de que la guía se convierta en referencia oficial.</p>
+      <a class="ui-back ui-back--inline" routerLink="/guias"><app-icon name="arrow-left" [size]="13" /> Volver a guías base</a>
+    </div>
+  </header>
+
+  @if (g.status !== 'Borrador') {
+    <div class="ui-notice ui-notice--info">
+      <app-icon name="lock" [size]="18" />
+      <div>
+        <strong>Esta guía ya está publicada</strong>
+        <p>Una guía publicada no se edita directamente: los cambios llegan por sugerencias de los docentes y su aprobación.</p>
+      </div>
+    </div>
+    <p><a class="ui-btn ui-btn--primary" [routerLink]="['/guias', g.id]"><app-icon name="eye" [size]="15" /> Ver guía publicada</a></p>
+  } @else {
+    <div class="ui-layout">
+      <section class="ui-card">
+        <div class="ui-hero ui-hero--divided">
+          <span class="ui-tile ui-tile--warn ui-tile--md"><app-icon name="file-text" [size]="19" /></span>
+          <div class="ui-hero__info">
+            <strong>{{ g.title }}</strong>
+            <small>{{ g.code }} · Creada el {{ fecha(g.createdAt) }} · Editada {{ cuando(g.updatedAt) }}</small>
+          </div>
+          <span class="ui-pill ui-pill--warn"><i></i> Borrador</span>
+        </div>
+
+        <div class="ui-grid-2">
+          <div class="ui-field">
+            <label for="modulo">Módulo académico <span class="ui-required">*</span></label>
+            <div class="ui-control ui-control--readonly">
+              <app-icon name="lock" [size]="13" />
+              <input id="modulo" type="text" [value]="g.moduleName" readonly />
+            </div>
+            <p class="ui-help">El módulo no se puede cambiar después de crear la guía</p>
+          </div>
+          <div class="ui-field">
+            <label for="competencia">
+              Competencia asociada <span class="ui-required">*</span>
+              @if (competenciaId() !== g.competencyId) { <span class="ui-tag">Modificado</span> }
+            </label>
+            <div class="ui-control">
+              <select id="competencia" (change)="competenciaId.set(+$any($event.target).value)">
+                @for (c of competencias(); track c.id) {
+                  <option [value]="c.id" [selected]="c.id === competenciaId()">{{ c.code }} · {{ c.text }}</option>
+                }
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <app-dynamic-form [fields]="g.fields" [valores]="g.content" [original]="g.content" (cambio)="contenido.set($event)" />
+
+        <div class="ui-notice ui-notice--info">
+          <app-icon name="info" [size]="16" />
+          <div>
+            <strong>Alcance de esta edición</strong>
+            <p>Los cambios solo afectan este borrador. Las guías ya publicadas de este u otros módulos permanecen sin cambios.</p>
+          </div>
+        </div>
+
+        @if (guardado() && !hayCambios()) {
+          <div class="ui-notice ui-notice--ok" role="status">
+            <app-icon name="circle-check" [size]="16" />
+            <div><strong>Cambios guardados</strong><p>El borrador se actualizó correctamente.</p></div>
+          </div>
+        }
+        @if (error(); as e) {
+          <p class="ui-help ui-help--error" role="alert">{{ e }}</p>
+        }
+
+        <div class="ui-actions">
+          <button type="button" class="ui-btn" (click)="descartar()" [disabled]="!hayCambios()">Descartar cambios</button>
+          <div class="ui-actions__right">
+            <button type="button" class="ui-btn ui-btn--outline" (click)="abrirPublicar()" [disabled]="guardando()">
+              <app-icon name="send" [size]="14" /> Publicar…
+            </button>
+            <button type="button" class="ui-btn ui-btn--primary" (click)="guardar()" [disabled]="guardando() || !hayCambios()">
+              <app-icon name="save" [size]="15" /> {{ guardando() ? 'Guardando…' : 'Guardar cambios' }}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <aside class="ui-side">
+        <section class="ui-side-card">
+          <h3 class="ui-side-title"><app-icon name="history" [size]="15" /> Historial del borrador</h3>
+          <ul class="ui-timeline">
+            @for (e of historial().slice(0, 5); track $index) {
+              <li>
+                <span class="ui-timeline__mark"><app-icon name="check" [size]="11" /></span>
+                <div>
+                  <strong>{{ e.titulo }}</strong>
+                  <small>{{ cuando(e.fecha) }} · {{ e.autor }}</small>
+                </div>
+              </li>
+            }
+          </ul>
+        </section>
+        <section class="ui-side-note ui-side-note--ok">
+          <app-icon name="shield-check" [size]="18" />
+          <strong>Guías publicadas protegidas</strong>
+          <p>{{ publicadasTotal() }} guías publicadas no se verán afectadas por esta edición.</p>
+        </section>
+      </aside>
+    </div>
+  }
+
+  @if (modalPublicar()) {
+    <app-publish-modal [guia]="g" [docentes]="docentes().length" [procesando]="publicando()" (confirmar)="publicar()" (cancelar)="cerrarPublicar()" />
+  }
+} @else {
+  <p class="ui-state">La guía que buscas no existe.</p>
+  <a class="ui-btn ui-btn--primary" routerLink="/guias"><app-icon name="arrow-left" [size]="15" /> Volver a guías base</a>
+}

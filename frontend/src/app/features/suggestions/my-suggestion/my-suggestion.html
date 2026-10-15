@@ -1,0 +1,92 @@
+@if (sugerencia(); as s) {
+  <header class="ui-page-head">
+    <div>
+      <h1>{{ titulo() }}</h1>
+      <p>
+        @switch (s.status) {
+          @case ('Pendiente') { Tu propuesta llegó a coordinación académica. }
+          @case ('Aprobada') { Coordinación aplicó tu propuesta en la guía base. }
+          @default { Coordinación revisó tu propuesta y explicó su decisión. }
+        }
+      </p>
+    </div>
+  </header>
+
+  <div class="ui-success__row">
+    <section class="ui-card tarjeta">
+      <span class="ui-circle ui-circle--soft" [class.ui-circle--gold-soft]="s.status === 'Pendiente'" [class.ui-circle--ok]="s.status === 'Aprobada'" [class.ui-circle--danger]="s.status === 'Rechazada'">
+        <app-icon [name]="icono[s.status]" [size]="24" />
+      </span>
+      @switch (s.status) {
+        @case ('Pendiente') {
+          <h2>Sugerencia registrada</h2>
+          <p class="texto">Coordinación académica la verá en su bandeja de sugerencias. La decisión aparecerá aquí y en Mis sugerencias.</p>
+        }
+        @case ('Aprobada') {
+          <h2>Guía base actualizada a la versión {{ s.resultingVersion?.replace('v', '') }}</h2>
+          <p class="texto">{{ s.decidedBy?.name }} aprobó tu sugerencia el {{ fecha(s.decidedAt) }}. Todos los docentes del módulo ven la nueva versión.</p>
+        }
+        @default {
+          <h2>No se aplicó el cambio</h2>
+          <p class="texto">{{ s.decidedBy?.name }} rechazó la sugerencia el {{ fecha(s.decidedAt) }}. La guía base no cambió.</p>
+        }
+      }
+
+      <div class="ui-transfer__item ancho">
+        <span class="ui-tile ui-tile--warn"><app-icon name="message-square" [size]="18" /></span>
+        <div class="flex">
+          <strong>{{ s.code }} · {{ s.fieldLabel }}</strong>
+          <small>{{ s.guideCode }} · {{ s.summary }}</small>
+        </div>
+        <span class="ui-pill" [class]="pill[s.status]"><i></i> {{ s.status }}</span>
+      </div>
+
+      @if (s.status === 'Rechazada') {
+        <div class="ui-notice ui-notice--danger ancho izquierda">
+          <app-icon name="message-square" [size]="16" />
+          <div>
+            <strong>{{ s.rejectReason }}</strong>
+            <p>{{ s.feedback }}</p>
+          </div>
+        </div>
+      }
+
+      <p class="ui-flow">
+        @if (s.status === 'Pendiente') {
+          <strong>● Pendiente</strong><span>→</span>Aprobada / Rechazada
+        } @else {
+          Pendiente<span>→</span><strong [class.ok]="s.status === 'Aprobada'" [class.off]="s.status === 'Rechazada'">● {{ s.status }}</strong>
+        }
+      </p>
+
+      <div class="ui-actions ui-actions--center">
+        <a class="ui-btn ui-btn--outline ui-btn--md" [routerLink]="['/mis-modulos/guias', s.guideId]"><app-icon name="eye" [size]="15" /> Ver guía base</a>
+        <a class="ui-btn ui-btn--primary ui-btn--md" routerLink="/mis-sugerencias"><app-icon name="message-square" [size]="15" /> Ir a mis sugerencias</a>
+      </div>
+    </section>
+
+    <aside class="ui-success__side">
+      <section class="ui-side-card">
+        <small class="ui-label">Mis sugerencias</small>
+        <ul class="ui-options">
+          @for (r of recientes(); track r.id) {
+            <li [class]="'estado-' + r.status">
+              <app-icon [name]="icono[r.status]" [size]="15" />
+              <div>
+                <a [routerLink]="['/mis-sugerencias', r.id]"><strong>{{ r.code }} · {{ r.fieldLabel }}</strong></a>
+                <small>{{ estadoCorto(r) }}</small>
+              </div>
+            </li>
+          }
+        </ul>
+      </section>
+    </aside>
+  </div>
+  <p class="registro"><span class="ui-dot"></span> Registro {{ s.code }} · Enviada por {{ corto(s.teacherName) }} · {{ enviadaEl(s) }}</p>
+} @else if (noExiste()) {
+  <section class="ui-card">
+    <p class="ui-empty">Esta sugerencia no existe o pertenece a otro docente.</p>
+  </section>
+} @else {
+  <p class="ui-state">Cargando sugerencia…</p>
+}

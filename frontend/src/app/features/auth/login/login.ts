@@ -3,6 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Auth } from '../../../core/auth/auth';
+import { homeForRole } from '../../../core/auth/role-home';
 import { Icon } from '../../../shared/ui/icon/icon';
 
 @Component({
@@ -26,11 +27,32 @@ export class Login {
   credencialesInvalidas = signal(false);
   verContrasena = signal(false);
 
+  // Con Keycloak no hay formulario: la pantalla redirige al inicio de sesión institucional
+  externo = this.auth.loginExterno;
+  problema = this.auth.problemaLogin();
+
   constructor() {
     // Al volver a escribir, se quita el error de credenciales
     this.form.valueChanges
       .pipe(takeUntilDestroyed())
       .subscribe(() => this.credencialesInvalidas.set(false));
+
+    // Sin rol o sin servicio no se redirige sola: volvería a esta pantalla en bucle
+    if (this.externo && !this.problema) this.irAKeycloak();
+  }
+
+  irAKeycloak(): void {
+    this.cargando.set(true);
+    // Keycloak pide las credenciales en su propia pantalla; estos valores no se usan
+    this.auth.login({ correo: '', contrasena: '' }).subscribe();
+  }
+
+  cerrarSesion(): void {
+    this.auth.logout();
+  }
+
+  reintentar(): void {
+    window.location.reload();
   }
 
   mensajeCorreo(): string | null {
@@ -63,7 +85,7 @@ export class Login {
     this.cargando.set(true);
 
     this.auth.login({ correo, contrasena }, recordar).subscribe({
-      next: () => this.router.navigate(['/usuarios']),
+      next: (usuario) => this.router.navigateByUrl(homeForRole(usuario.rol)),
       error: () => {
         // Mensaje genérico a propósito: no revelar cuál dato falló (HU-05 CA-02)
         this.credencialesInvalidas.set(true);

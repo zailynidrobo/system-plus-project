@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 
 import { UserForm } from './user-form';
 
@@ -9,6 +10,7 @@ describe('UserForm', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [UserForm],
+      providers: [provideRouter([])],
     }).compileComponents();
 
     fixture = TestBed.createComponent(UserForm);

@@ -1,0 +1,154 @@
+@if (cargando()) {
+  <p class="ui-state">Cargando módulo...</p>
+} @else if (modulo(); as m) {
+  <header class="ui-page-head">
+    <div>
+      <h1>Detalle del módulo</h1>
+      <p>Consulta la información curricular y administra sus competencias.</p>
+    </div>
+    <div class="ui-page-head__actions">
+      @if (m.status === 'active') {
+        <a class="ui-btn ui-btn--primary" [routerLink]="['/modulos', m.id, 'competencias', 'nueva']">
+          <app-icon name="plus" [size]="16" /> Asociar competencia
+        </a>
+      }
+    </div>
+  </header>
+
+  <div class="ui-layout">
+    <div class="ui-side">
+      <a class="ui-back" routerLink="/modulos"><app-icon name="arrow-left" [size]="15" /> Volver al programa académico</a>
+
+      <section class="ui-card ui-card--compact">
+        <div class="ui-hero ui-hero--lg">
+          <span class="ui-circle ui-circle--gold ui-circle--lg"><app-icon [name]="icono(m.competencyPrefix)" [size]="23" /></span>
+          <div class="ui-hero__info">
+            <strong>{{ m.name }}</strong>
+            <small>{{ m.code }} · Técnico en Sistemas</small>
+          </div>
+          <span class="ui-pill" [class]="pill(m.status)"><i></i> {{ labels[m.status] }}</span>
+          <a class="ui-btn ui-btn--outline" [routerLink]="['/modulos', m.id, 'editar']">
+            <app-icon name="pencil" [size]="16" /> Editar módulo
+          </a>
+        </div>
+        @if (m.description) {
+          <p class="ui-help">{{ m.description }}</p>
+        }
+
+        @if (m.status === 'inactive') {
+          <div class="ui-notice ui-notice--danger">
+            <app-icon name="book-x" [size]="18" />
+            <div>
+              <strong>Módulo inhabilitado</strong>
+              <p>
+                No admite nuevas guías ni competencias. Las {{ m.guidesCount }} guías existentes se conservan.
+                @if (m.inactivationReason) { Motivo: {{ m.inactivationReason }}. }
+              </p>
+            </div>
+            <button type="button" class="ui-btn ui-btn--outline ui-btn--sm" (click)="accion.set('rehabilitar')">
+              <app-icon name="rotate-ccw" [size]="14" /> Rehabilitar
+            </button>
+          </div>
+        } @else if (m.status === 'draft') {
+          <div class="ui-notice">
+            <app-icon name="triangle-alert" [size]="18" />
+            <div>
+              <strong>Borrador</strong>
+              <p>Regístralo para asociar competencias y crear guías.</p>
+            </div>
+            <button type="button" class="ui-btn ui-btn--primary ui-btn--sm" (click)="accion.set('registrar')" [disabled]="!m.description">
+              <app-icon name="circle-check" [size]="14" /> Registrar módulo
+            </button>
+          </div>
+        }
+      </section>
+
+      <section class="ui-panel">
+        <header class="ui-toolbar">
+          <div class="ui-card__head">
+            <strong class="ui-section-title">Competencias asociadas</strong>
+            <p>Varias competencias pueden coexistir en el mismo módulo.</p>
+          </div>
+          <span class="ui-pill">{{ competencias().length }} visibles</span>
+        </header>
+
+        @for (c of competencias(); track c.id) {
+          <div class="ui-row">
+            <span class="ui-tile ui-tile--sm"><app-icon name="target" [size]="16" /></span>
+            <div class="ui-row__body">
+              <span class="ui-code">{{ c.code }}</span>
+              <p>{{ c.text }}</p>
+            </div>
+            <span class="ui-pill ui-pill--ok"><i></i> Activa</span>
+            <div class="ui-row__actions">
+              <a class="ui-icon-btn" [routerLink]="['/modulos', m.id, 'competencias', c.id, 'editar']" title="Editar" aria-label="Editar competencia">
+                <app-icon name="pencil" [size]="14" />
+              </a>
+              <a class="ui-icon-btn" [routerLink]="['/modulos', m.id, 'competencias', c.id, 'eliminar']" title="Eliminar" aria-label="Eliminar competencia">
+                <app-icon name="trash-2" [size]="14" />
+              </a>
+            </div>
+          </div>
+        } @empty {
+          <p class="ui-empty">
+            Este módulo aún no tiene competencias.
+            @if (m.status === 'active') {
+              <a [routerLink]="['/modulos', m.id, 'competencias', 'nueva']">Asociar la primera competencia</a>
+            }
+          </p>
+        }
+      </section>
+    </div>
+
+    <aside class="ui-side">
+      <section class="ui-side-card">
+        <h3 class="ui-side-title">Resumen curricular</h3>
+        <div class="ui-kv"><span>Competencias activas</span><strong>{{ m.competenciesCount }}</strong></div>
+        <div class="ui-kv"><span>Guías publicadas</span><strong>{{ m.publishedGuidesCount }}</strong></div>
+        <div class="ui-kv"><span>Última actualización</span><strong>{{ cuando(m.updatedAt) }}</strong></div>
+      </section>
+
+      <div class="ui-notice ui-notice--info">
+        <app-icon name="split" [size]="18" />
+        <div>
+          <strong>Edición independiente</strong>
+          <p>Cada competencia se puede modificar o eliminar sin cambiar las demás.</p>
+        </div>
+      </div>
+
+      <div class="ui-notice">
+        <app-icon name="history" [size]="18" />
+        <div>
+          <strong>Trazabilidad protegida</strong>
+          <p>Las guías publicadas conservan la versión de competencia usada en su publicación.</p>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  @if (accion() === 'rehabilitar') {
+    <app-confirm-modal
+      [titulo]="'¿Rehabilitar “' + m.name + '”?'"
+      mensaje="El módulo volverá a estar disponible para asociar competencias y crear nuevas guías."
+      icono="rotate-ccw"
+      tono="ok"
+      textoConfirmar="Sí, rehabilitar módulo"
+      [procesando]="procesando()"
+      (confirmar)="confirmarAccion()"
+      (cancelar)="accion.set(null)"
+    />
+  } @else if (accion() === 'registrar') {
+    <app-confirm-modal
+      [titulo]="'¿Registrar “' + m.name + '”?'"
+      mensaje="El borrador pasará a activo y quedará disponible para asociar competencias y crear nuevas guías."
+      icono="circle-check"
+      textoConfirmar="Registrar módulo"
+      [procesando]="procesando()"
+      (confirmar)="confirmarAccion()"
+      (cancelar)="accion.set(null)"
+    />
+  }
+} @else {
+  <p class="ui-state">El módulo que buscas no existe.</p>
+  <a class="ui-btn ui-btn--primary" routerLink="/modulos"><app-icon name="arrow-left" [size]="16" /> Volver al programa</a>
+}

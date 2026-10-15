@@ -20,15 +20,13 @@ export class KeycloakAuthProvider implements AuthProvider {
   private cerrandoSesion = false;
 
   /**
-   * Se ejecuta una vez antes de arrancar la app (ver provide-auth.ts). Termina un login que viene
-   * de vuelta de Keycloak o, en segundo plano, recupera la sesión que ya esté abierta allí.
-   * Nunca falla: si Keycloak no responde, la app arranca y el login explica el problema.
+   * Se ejecuta una vez antes de arrancar la app (ver provide-auth.ts). Procesa el retorno de un
+   * login de Keycloak. No hace check-sso en un iframe: la CSP de Keycloak puede bloquearlo y dejar
+   * pendiente el inicializador, impidiendo que Angular llegue a mostrar la pantalla de login.
    */
   async iniciar(): Promise<void> {
     try {
       await this.keycloak.init({
-        onLoad: 'check-sso',
-        silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
         pkceMethod: 'S256',
         checkLoginIframe: false,
       });

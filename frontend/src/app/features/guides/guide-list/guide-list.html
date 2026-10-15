@@ -4,31 +4,42 @@
     <p>Crea, ajusta y publica las guías oficiales de cada módulo del Técnico en Sistemas.</p>
   </div>
   <div class="ui-page-head__actions">
-    <a class="ui-btn ui-btn--outline" routerLink="/guias/estructura"><app-icon name="sliders" [size]="16" /> Configurar estructura</a>
-    <a class="ui-btn ui-btn--primary" routerLink="/guias/nueva"><app-icon name="plus" [size]="16" /> Nueva guía base</a>
+    <a class="ui-btn ui-btn--outline" routerLink="/guias/estructura"
+      ><app-icon name="sliders" [size]="16" /> Configurar estructura</a
+    >
+    <a class="ui-btn ui-btn--primary" routerLink="/guias/nueva"
+      ><app-icon name="plus" [size]="16" /> Nueva guía base</a
+    >
   </div>
 </header>
+
+@if (error(); as e) {
+  <p class="ui-help ui-help--error" role="alert">{{ e }}</p>
+}
 
 <section class="ui-stats">
   <article class="ui-stat">
     <span class="ui-tile"><app-icon name="file-text" [size]="18" /></span>
     <div>
       <small>Guías registradas</small>
-      <strong>{{ resumen()?.total ?? '–' }}</strong><em>en {{ resumen()?.modulos ?? 0 }} módulos</em>
+      <strong>{{ resumen()?.total ?? '–' }}</strong
+      ><em>en {{ resumen()?.modulos ?? 0 }} módulos</em>
     </div>
   </article>
   <article class="ui-stat">
     <span class="ui-tile ui-tile--ok"><app-icon name="circle-check" [size]="18" /></span>
     <div>
       <small>Publicadas</small>
-      <strong>{{ resumen()?.publicadas ?? '–' }}</strong><em>visibles para docentes</em>
+      <strong>{{ resumen()?.publicadas ?? '–' }}</strong
+      ><em>visibles para docentes</em>
     </div>
   </article>
   <article class="ui-stat">
     <span class="ui-tile ui-tile--warn"><app-icon name="pencil" [size]="18" /></span>
     <div>
       <small>En borrador</small>
-      <strong>{{ resumen()?.borradores ?? '–' }}</strong><em>pendientes por publicar</em>
+      <strong>{{ resumen()?.borradores ?? '–' }}</strong
+      ><em>pendientes por publicar</em>
     </div>
   </article>
 </section>
@@ -57,7 +68,14 @@
       </label>
       @if (filtro().moduleId) {
         <label class="ui-select">
-          <select aria-label="Filtrar por competencia" (change)="cambiar({ competencyId: $any($event.target).value ? +$any($event.target).value : null })">
+          <select
+            aria-label="Filtrar por competencia"
+            (change)="
+              cambiar({
+                competencyId: $any($event.target).value ? +$any($event.target).value : null,
+              })
+            "
+          >
             <option value="">Competencia: Todas</option>
             @for (c of competencias(); track c.id) {
               <option [value]="c.id">{{ c.code }}</option>
@@ -66,7 +84,10 @@
         </label>
       }
       <label class="ui-select">
-        <select aria-label="Filtrar por estado" (change)="cambiar({ estado: $any($event.target).value })">
+        <select
+          aria-label="Filtrar por estado"
+          (change)="cambiar({ estado: $any($event.target).value })"
+        >
           <option value="TODOS">Estado: Todos</option>
           @for (e of estados; track e) {
             <option [value]="e">Estado: {{ e }}</option>
@@ -123,17 +144,39 @@
             </td>
             <td class="ui-actions-cell">
               @if (g.status === 'Publicada') {
-                <a class="ui-icon-btn" [routerLink]="['/guias', g.id]" title="Ver guía" aria-label="Ver guía">
+                <a
+                  class="ui-icon-btn"
+                  [routerLink]="['/guias', g.id]"
+                  title="Ver guía"
+                  aria-label="Ver guía"
+                >
                   <app-icon name="eye" [size]="14" />
                 </a>
-                <a class="ui-icon-btn" [routerLink]="['/guias', g.id]" fragment="historial" title="Ver historial" aria-label="Ver historial">
+                <a
+                  class="ui-icon-btn"
+                  [routerLink]="['/guias', g.id]"
+                  fragment="historial"
+                  title="Ver historial"
+                  aria-label="Ver historial"
+                >
                   <app-icon name="history" [size]="14" />
                 </a>
               } @else {
-                <a class="ui-icon-btn" [routerLink]="['/guias', g.id, 'editar']" title="Editar" aria-label="Editar borrador">
+                <a
+                  class="ui-icon-btn"
+                  [routerLink]="['/guias', g.id, 'editar']"
+                  title="Editar"
+                  aria-label="Editar borrador"
+                >
                   <app-icon name="pencil" [size]="14" />
                 </a>
-                <a class="ui-icon-btn" [routerLink]="['/guias', g.id, 'editar']" [queryParams]="{ publicar: 1 }" title="Publicar" aria-label="Publicar guía">
+                <a
+                  class="ui-icon-btn"
+                  [routerLink]="['/guias', g.id, 'editar']"
+                  [queryParams]="{ publicar: 1 }"
+                  title="Publicar"
+                  aria-label="Publicar guía"
+                >
                   <app-icon name="send" [size]="14" />
                 </a>
               }
@@ -153,15 +196,33 @@
   <footer class="ui-pager">
     <span>Mostrando {{ desde() }}–{{ hasta() }} de {{ total() }} guías</span>
     <div class="ui-pager__buttons">
-      <button type="button" class="ui-icon-btn" (click)="irA(filtro().pagina - 1)" [disabled]="filtro().pagina === 1" aria-label="Página anterior">
+      <button
+        type="button"
+        class="ui-icon-btn"
+        (click)="irA(filtro().pagina - 1)"
+        [disabled]="filtro().pagina === 1"
+        aria-label="Página anterior"
+      >
         <app-icon name="chevron-left" [size]="14" />
       </button>
       @for (p of paginas(); track p) {
-        <button type="button" class="ui-icon-btn" [class.is-current]="p === filtro().pagina" (click)="irA(p)" [attr.aria-current]="p === filtro().pagina ? 'page' : null">
+        <button
+          type="button"
+          class="ui-icon-btn"
+          [class.is-current]="p === filtro().pagina"
+          (click)="irA(p)"
+          [attr.aria-current]="p === filtro().pagina ? 'page' : null"
+        >
           {{ p }}
         </button>
       }
-      <button type="button" class="ui-icon-btn" (click)="irA(filtro().pagina + 1)" [disabled]="filtro().pagina === totalPaginas()" aria-label="Página siguiente">
+      <button
+        type="button"
+        class="ui-icon-btn"
+        (click)="irA(filtro().pagina + 1)"
+        [disabled]="filtro().pagina === totalPaginas()"
+        aria-label="Página siguiente"
+      >
         <app-icon name="chevron-right" [size]="14" />
       </button>
     </div>

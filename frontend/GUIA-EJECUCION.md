@@ -1,6 +1,6 @@
 # Guía de ejecución del frontend (Windows)
 
-Frontend de la intranet AthenaDev · System Plus Piendamó. Usa Angular 21 con npm.
+Frontend de la intranet AthenaDev · System Plus Piendamó. Usa Angular 21 con pnpm.
 
 Incluye HE-01 a HE-05 con **datos simulados en memoria** (sin backend):
 - usuarios y roles;
@@ -14,7 +14,7 @@ Incluye HE-01 a HE-05 con **datos simulados en memoria** (sin backend):
 | Herramienta | Versión | Cómo comprobarla |
 |---|---|---|
 | Node.js | `^20.19.0`, `^22.12.0` o `>=24.0.0` (recomendado: 22 LTS o 24) | `node -v` |
-| npm | 11.x (el proyecto declara `npm@11.12.1`) | `npm -v` |
+| pnpm | 12.8.1 (declarado en `package.json`) | `pnpm -v` |
 | Git | Cualquier versión reciente | `git --version` |
 
 Si no tienes Node o tu versión es antigua, instala la LTS:
@@ -25,23 +25,23 @@ winget install OpenJS.NodeJS.LTS
 
 Después **cierra y vuelve a abrir** la terminal para que tome la nueva versión.
 
-> Usa **npm**, no pnpm ni yarn. El proyecto trae `package-lock.json`.
+> Usa **pnpm** para instalar dependencias y ejecutar los comandos del front.
 
 ## 2. Instalación
 
 ```powershell
 cd system-plus-project\frontend
-npm ci
+pnpm install --frozen-lockfile
 ```
 
-- `npm ci` instala exactamente lo que dice `package-lock.json`. Úsalo siempre la primera vez y después de cada `git pull`.
-- Puede salir el aviso `install-scripts ... not yet covered by allowScripts` (esbuild, lmdb…). Es normal con npm 11.19 y no impide compilar ni ejecutar.
-- También puede aparecer `5 vulnerabilities`. Son dependencias internas de la herramienta de compilación. No ejecutes `npm audit fix` sin consultarlo antes con el equipo, porque modifica el lock.
+- `pnpm install --frozen-lockfile` instala las versiones registradas en `pnpm-lock.yaml`. Úsalo la primera vez y después de cada `git pull`.
+- Si cambian las dependencias, ejecuta `pnpm install` y confirma los cambios de `package.json` y `pnpm-lock.yaml`.
 
 ## 3. Ejecutar
 
 ```powershell
-npx ng serve
+
+
 ```
 
 Abre <http://localhost:4200> y entra con uno de los usuarios de la sección 6. Para detener el servidor, pulsa `Ctrl + C`.
@@ -51,8 +51,8 @@ Abre <http://localhost:4200> y entra con uno de los usuarios de la sección 6. P
 ## 4. Compilar
 
 ```powershell
-npx ng build --configuration development   # compilación rápida para depurar
-npx ng build                               # producción (sale en dist\frontend)
+pnpm exec ng build --configuration development   # compilación rápida para depurar
+pnpm build                                       # producción (sale en dist\frontend)
 ```
 
 - La compilación de producción muestra 4 advertencias de *budget* en estilos de HE-01: `login`, `user-list`, `user-role` y `user-deactivate`. Pasan el aviso de 4 kB por pocos bytes, pero ninguno llega al límite de error de 8 kB.
@@ -61,11 +61,11 @@ npx ng build                               # producción (sale en dist\frontend)
 ## 5. Pruebas
 
 ```powershell
-npx ng test --watch=false   # una sola pasada
-npx ng test                 # modo observación
+pnpm exec ng test --watch=false   # una sola pasada
+pnpm test                        # modo observación
 ```
 
-Estado actual: **150 pruebas en 22 archivos, todas pasan.** Cubren:
+Estado actual: **199 pruebas en 28 archivos, todas pasan.** Cubren:
 - Servicios mock de todas las épicas:
   - módulos y competencias duplicados;
   - transiciones de estado;
@@ -80,7 +80,7 @@ Estado actual: **150 pruebas en 22 archivos, todas pasan.** Cubren:
 Para correr un solo archivo:
 
 ```powershell
-npx ng test --watch=false --include src/app/features/suggestions/suggestion-api.spec.ts
+pnpm exec ng test --watch=false --include src/app/features/suggestions/suggestion-api.spec.ts
 ```
 
 ## 6. Usuarios de prueba
@@ -216,8 +216,8 @@ Instala Node 22 LTS (sección 1) y abre una terminal nueva.
 Usa las versiones `.cmd`, que no dependen de la política de ejecución:
 
 ```powershell
-npm.cmd ci
-npx.cmd ng serve
+pnpm.cmd install --frozen-lockfile
+pnpm.cmd start
 ```
 
 También puedes usar la terminal *Command Prompt* o *Git Bash*. No hace falta cambiar la política de ejecución del sistema.
@@ -226,7 +226,7 @@ También puedes usar la terminal *Command Prompt* o *Git Bash*. No hace falta ca
 Puedes arrancar en otro puerto:
 
 ```powershell
-npx ng serve --port 4300
+pnpm exec ng serve --port 4300
 ```
 
 O puedes cerrar el proceso que ocupa el 4200:
@@ -236,8 +236,8 @@ netstat -ano | findstr :4200
 taskkill /PID <número_que_aparece_al_final> /F
 ```
 
-**`npm ci` falla diciendo que `package.json` y `package-lock.json` no coinciden**
-Avisa al equipo antes de usar `npm install`, porque ese comando reescribe el lock.
+**`pnpm install --frozen-lockfile` falla porque el lock no coincide**
+Ejecuta `pnpm install` después de confirmar que los cambios de dependencias son intencionales y registra el `pnpm-lock.yaml` actualizado.
 
 **Desaparecieron los módulos, guías o versiones que creé**
 Recargaste la página o escribiste una URL en la barra del navegador. Los datos simulados vuelven al estado inicial. Navega con el menú y usa «Cerrar sesión» para cambiar de usuario.
@@ -294,14 +294,11 @@ En `src/environments/environment.ts`:
 
 | `apiAcademico` | Qué hace |
 |---|---|
-| `'mock'` (por defecto) | Módulos y competencias simulados en memoria. Es lo que necesitan hoy las pantallas de **Guías** y **Espacio docente**. |
-| `'http'` | Las pantallas de **Programa académico** (módulos y competencias) leen y guardan en el backend (PostgreSQL). |
+| `'mock'` | Módulos y competencias simulados en memoria. Los datos de prueba se pierden al recargar. |
+| `'http'` (por defecto) | Programa académico, estructura y guías base usan el backend y PostgreSQL. |
 
 Para probar `'http'`: Keycloak + Postgres + backend encendidos (sección 12) y entrar con un usuario **Coordinador** (es el único rol que puede crear y editar; los demás solo consultan).
 
-Cosas a tener en cuenta:
-- **No mezcles pantallas.** Las guías (HE-03) siguen simuladas y buscan los módulos en los datos de prueba: con `'http'` activado, crear o ver guías falla hasta que las guías también pasen al backend. Por eso el valor por defecto es `'mock'`.
-- El backend no tiene guías todavía: «guías publicadas» sale en 0 y al eliminar una competencia no se listan guías afectadas.
-- Los ids de las rutas son un número derivado del UUID del backend. Si recargas una pantalla de detalle, el front vuelve a consultar el listado para saber a qué UUID corresponde.
-- En el listado de módulos «creado por / actualizado por» vienen vacíos; solo el detalle del módulo trae la auditoría.
-- El nombre de un módulo se busca en el backend sin ignorar tildes (en el mock sí).
+Las guías se crean como borradores en `POST /academic/guides` y aparecen en el listado desde `GET /academic/guides`. El listado envía los filtros `search`, `moduleId`, `competencyId` y `status`, además de `page` y `pageSize`; la API responde `{ items, total, page, pageSize }`. El resumen de tarjetas se consulta en `GET /academic/guides/summary` y devuelve `total`, `modulos`, `publicadas` y `borradores`. Cada guía incluye los nombres de `createdBy`, `updatedBy` y `publishedBy` cuando estén disponibles. La API asigna el código y guarda la guía, su estructura, autores e historial en PostgreSQL. Si un módulo aún no tiene una estructura configurada, se usa la estructura institucional por defecto.
+
+Los ids visibles en las rutas son números derivados de los UUID del backend. Al abrir directamente una pantalla de detalle después de recargar, el front vuelve a consultar la API para resolver el UUID.

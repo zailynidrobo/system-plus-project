@@ -30,13 +30,23 @@ function memoryRepository<T extends { id: string }>() {
   const matches = (record: T, where: FindOptionsWhere<T>) =>
     Object.entries(where).every(([key, condition]) => {
       const operator = condition as { _type?: string } | null;
-      const value = record[key as keyof T];
-      if (operator?._type === 'isNull') return value === null;
+      const databaseValue = record[key as keyof T];
+      if (operator?._type === 'isNull') return databaseValue === null;
       if (operator?._type === 'in') {
         const values = (operator as { _value?: unknown[] })._value ?? [];
-        return values.includes(value);
+        return values.includes(databaseValue);
       }
-      return value === condition;
+      if (operator?._type === 'ilike') {
+        const patternValue = (operator as { _value?: unknown })._value;
+        const pattern =
+          typeof patternValue === 'string'
+            ? patternValue.replace(/^%|%$/g, '').replace(/\\/g, '')
+            : '';
+        return String(databaseValue ?? '')
+          .toLocaleLowerCase()
+          .includes(pattern.toLocaleLowerCase());
+      }
+      return databaseValue === condition;
     });
 
   const repository = {
@@ -51,6 +61,31 @@ function memoryRepository<T extends { id: string }>() {
     },
     findBy: async (where: FindOptionsWhere<T>) =>
       live().filter((record) => matches(record, where)),
+    findAndCount: async (options: {
+      where?: FindOptionsWhere<T> | FindOptionsWhere<T>[];
+      order?: Record<string, 'ASC' | 'DESC'>;
+      skip?: number;
+      take?: number;
+    }) => {
+      const filtered = live()
+        .filter((record) =>
+          Array.isArray(options.where)
+            ? options.where.some((where) => matches(record, where))
+            : options.where
+              ? matches(record, options.where)
+              : true,
+        )
+        .sort((left, right) => {
+          const direction = options.order?.['updatedAt'];
+          if (!direction) return 0;
+          const a = String(left['updatedAt'] ?? '');
+          const b = String(right['updatedAt'] ?? '');
+          return direction === 'DESC' ? b.localeCompare(a) : a.localeCompare(b);
+        });
+      const total = filtered.length;
+      const start = options.skip ?? 0;
+      return [filtered.slice(start, start + (options.take ?? total)), total] as const;
+    },
     findOne: async (options: {
       where: FindOptionsWhere<T>;
       withDeleted?: boolean;
@@ -247,6 +282,35 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
     expect(module.guideSequence).toBe(1);
   });
 
+  it('assigns codes to legacy guides whose module was deleted', async () => {
+    const orphanedGuide = await (
+      repositories[3] as Repository<AcademicGuideRecord>
+    ).save({
+      id: randomUUID(),
+      code: null,
+      moduleId: randomUUID(),
+      moduleName: 'Programación Orientada a Objetos',
+      competencyId: null,
+      competencyName: 'COMP-POO-04 · Diseño orientado a objetos',
+      title: 'Guía huérfana',
+      content: {},
+      fields: [],
+      structureVersion: 1,
+      version: 'v0',
+      status: 'draft',
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      publishedAt: null,
+    });
+
+    await expect(service.onModuleInit()).resolves.toBeUndefined();
+
+    expect(await service.findGuide(orphanedGuide.id)).toMatchObject({
+      code: 'GB-POO-01',
+      title: 'Guía huérfana',
+    });
+  });
+
   it('requires an existing active HE-02 module to create a guide', async () => {
     const draftModule = await seedModule(
       'Borrador',
@@ -316,6 +380,73 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
     await expect(create(own.id)).rejects.toThrow(NotFoundException);
   });
 
+  it('uses the institutional default fields for API-created guides when no structure exists', async () => {
+    const module = await seedModule('Programación');
+    const competency = await (
+      repositories[1] as Repository<Competency>
+    ).findOneBy({ moduleId: module.id });
+    if (!competency) throw new Error('Test module must have a competency');
+
+    const config = await service.getBaseGuideFields(module.id, competency.id);
+    const draft = await service.createGuide({
+      moduleId: module.id,
+      competencyId: competency.id,
+      content: {
+        intensidad: '40 horas · 10 semanas',
+        evaluacion: 'Por proyecto',
+        objetivos: 'Diseñar soluciones.',
+        metodologia: 'Aula invertida',
+        criterios: 'Proyecto final.',
+      },
+    });
+
+    expect(config).toMatchObject({
+      moduleId: module.id,
+      version: 1,
+      origin: 'predeterminada',
+    });
+    expect(config.fields.map((field) => field.key)).toEqual([
+      'intensidad',
+      'evaluacion',
+      'objetivos',
+      'metodologia',
+      'criterios',
+      'recursos',
+    ]);
+    expect(draft).toMatchObject({
+      status: 'draft',
+      structureVersion: 1,
+      fields: config.fields,
+    });
+  });
+
+  it('enforces configured maximum lengths when saving guide content', async () => {
+    const module = await seedModule('Programación');
+    const competency = await (
+      repositories[1] as Repository<Competency>
+    ).findOneBy({ moduleId: module.id });
+    if (!competency) throw new Error('Test module must have a competency');
+    await service.configureModuleGuideFields(module.id, {
+      fields: [
+        {
+          key: 'summary',
+          label: 'Resumen',
+          type: 'text',
+          required: false,
+          maxLength: 3,
+        },
+      ],
+    });
+
+    await expect(
+      service.createGuide({
+        moduleId: module.id,
+        competencyId: competency.id,
+        content: { summary: 'largo' },
+      }),
+    ).rejects.toThrow('no puede superar 3 caracteres');
+  });
+
   it('creates, edits, and publishes a guide with competency-specific fields', async () => {
     const module = await seedModule('Historia');
     const competency = await seedCompetency(
@@ -352,7 +483,7 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
     expect(draft).toMatchObject({
       code: 'GB-MOD-01',
       title: 'Guía base · Historia',
-      structureVersion: 1,
+      structureVersion: 3,
       version: 'v0',
     });
     expect(await service.previewNextGuideCode(module.id)).toEqual({
@@ -376,7 +507,7 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
     expect(published).toMatchObject({
       title: 'Guía base · Historia',
       code: 'GB-MOD-01',
-      structureVersion: 1,
+      structureVersion: 3,
       version: 'v1.0',
       competencyDeleted: false,
       status: 'published',
@@ -408,7 +539,13 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
 
   it('preserves published guide snapshots when a module is deactivated', async () => {
     const module = await seedModule('Literatura');
-    const draft = await createGuide(module);
+    const draft = await createGuide(module, {
+      intensidad: '40 horas · 10 semanas',
+      evaluacion: 'Por proyecto',
+      objetivos: 'Analizar textos.',
+      metodologia: 'Aula invertida',
+      criterios: 'Ensayo final.',
+    });
     await service.publishGuide(draft.id);
     module.status = CurricularModuleStatus.INACTIVE;
 
@@ -511,10 +648,11 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
       status: 'published',
     });
     expect(
-      await restartedService.findGuidesForUser(undefined, 'teacher-1', [
-        'docente',
-      ]),
-    ).toHaveLength(1);
+      await restartedService.findGuidesForUser({}, 'teacher-1', ['docente']),
+    ).toMatchObject({
+      total: 1,
+      items: [{ id: draft.id, status: 'published' }],
+    });
     expect(
       await restartedService.findPersonalizedVersionsForTeacher('teacher-1'),
     ).toMatchObject([
@@ -525,9 +663,92 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
     ]);
   });
 
+  it('filters and paginates guides, reports summary and preserves author names', async () => {
+    const module = await seedModule('Autores');
+    await service.configureModuleGuideFields(module.id, {
+      fields: [
+        { key: 'detalle', label: 'Detalle', type: 'text', required: false },
+      ],
+    });
+    const created = await service.createGuide(
+      {
+        moduleId: module.id,
+        competencyId: (await repositories[1].findOneBy({ moduleId: module.id }))!.id,
+        content: {},
+      },
+      { id: 'creator-1', name: 'Juliana Díaz' },
+    );
+    const draft = await createGuide(module, {});
+    await service.publishGuide(created.id, {
+      id: 'publisher-1',
+      name: 'Sofía Gómez',
+    });
+
+    const page = await service.findGuidesForUser(
+      { search: 'Autores', status: 'published', page: '1', pageSize: '1' },
+      'coordinator-1',
+      ['coordinador'],
+    );
+    expect(page).toMatchObject({
+      total: 1,
+      page: 1,
+      pageSize: 1,
+      items: [
+        {
+          id: created.id,
+          createdBy: { id: 'creator-1', name: 'Juliana Díaz' },
+          updatedBy: { id: 'publisher-1', name: 'Sofía Gómez' },
+          publishedBy: { id: 'publisher-1', name: 'Sofía Gómez' },
+        },
+      ],
+    });
+
+    await expect(
+      service.getGuidesSummaryForUser('coordinator-1', ['coordinador']),
+    ).resolves.toEqual({
+      total: 2,
+      modulos: 1,
+      publicadas: 1,
+      borradores: 1,
+    });
+    expect(draft.status).toBe('draft');
+  });
+
+  it('keeps a teacher module filter within the assigned-module access scope', async () => {
+    const firstModule = await seedModule('Primer módulo');
+    const secondModule = await seedModule('Segundo módulo');
+    for (const module of [firstModule, secondModule]) {
+      await service.configureModuleGuideFields(module.id, {
+        fields: [
+          { key: 'detalle', label: 'Detalle', type: 'text', required: false },
+        ],
+      });
+      const guide = await createGuide(module);
+      await service.publishGuide(guide.id);
+      await service.assignTeacherToModule(module.id, 'teacher-filter');
+    }
+
+    const result = await service.findGuidesForUser(
+      { moduleId: firstModule.id },
+      'teacher-filter',
+      ['docente'],
+    );
+
+    expect(result).toMatchObject({
+      total: 1,
+      items: [{ moduleId: firstModule.id, status: 'published' }],
+    });
+  });
+
   it('stores PDF and DOCX support materials and limits teacher downloads to assigned published guides', async () => {
     const module = await seedModule('Materiales');
-    const guide = await createGuide(module);
+    const guide = await createGuide(module, {
+      intensidad: '40 horas · 10 semanas',
+      evaluacion: 'Por proyecto',
+      objetivos: 'Desarrollar materiales.',
+      metodologia: 'Taller práctico guiado',
+      criterios: 'Entrega del material.',
+    });
     const pdf = Buffer.from('%PDF-1.7\ncontenido de prueba');
     const uploadedPdf = await service.addGuideSupportMaterial(guide.id, {
       originalname: 'lectura.pdf',

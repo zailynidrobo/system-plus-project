@@ -2,10 +2,12 @@ import {
   ArrayMinSize,
   IsArray,
   IsBoolean,
+  IsInt,
   IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
+  Min,
   Matches,
   ValidateIf,
 } from 'class-validator';
@@ -40,4 +42,17 @@ export class GuideFieldDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsString()
+  help?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  maxLength?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  teacherEditable?: boolean;
 }

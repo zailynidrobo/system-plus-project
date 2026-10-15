@@ -46,6 +46,24 @@ export class AcademicGuideRecord {
   @Column({ type: 'varchar', length: 20, default: 'draft' })
   status: GuideStatus;
 
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  createdById: string | null;
+
+  @Column({ type: 'varchar', length: 150, nullable: true })
+  createdByName: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  updatedById: string | null;
+
+  @Column({ type: 'varchar', length: 150, nullable: true })
+  updatedByName: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  publishedById: string | null;
+
+  @Column({ type: 'varchar', length: 150, nullable: true })
+  publishedByName: string | null;
+
   @Column({ type: 'timestamptz' })
   createdAt: Date;
 

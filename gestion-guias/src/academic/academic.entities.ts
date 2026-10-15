@@ -8,6 +8,9 @@ export interface GuideField {
   options?: string[];
   section?: string;
   description?: string;
+  help?: string;
+  maxLength?: number;
+  teacherEditable?: boolean;
 }
 
 export interface AcademicModule {
@@ -51,6 +54,9 @@ export interface AcademicGuide {
   structureVersion: number;
   version: string;
   status: GuideStatus;
+  createdBy?: GuideActor;
+  updatedBy?: GuideActor;
+  publishedBy?: GuideActor;
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;

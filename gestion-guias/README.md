@@ -127,7 +127,7 @@ Implementado en [src/academic-program](src/academic-program) (componente "Progra
 
 1. Copia `.env.example` como `.env` y ajusta Keycloak y las credenciales de tu PostgreSQL local. Crea la base vacía (`gestion_guias`); con `DB_SYNCHRONIZE=true` las tablas se crean solas al arrancar.
 2. Para las pruebas e2e copia `.env.example` como `.env.test` con una base distinta cuyo nombre termine en `_test` (las pruebas la reinician).
-3. Al arrancar se crea el programa **Técnico en Sistemas · Sede Piendamó** (código `TS`).
+3. Al arrancar se crea el programa **Técnico en Sistemas · Sede Piendamó** (código `TS`) y se cargan, si faltan, los seis módulos iniciales y sus competencias del plan. La carga es idempotente: conserva los módulos y competencias existentes y no duplica los registros.
 
 ```powershell
 pnpm.cmd install
@@ -190,34 +190,45 @@ Keycloak `sub`; coordinators manage assignments using the routes below.
 1. Create the module and its competencies with the HE-02 routes described above
    (`POST /programs/:programId/modules` and `POST /modules/:moduleId/competencies`).
 2. Assign a teacher with `PUT /academic/modules/:moduleId/teachers/:teacherId`.
-3. Configure module form fields with `PUT /academic/modules/:moduleId/guide-fields`, or use
-   `PUT /academic/modules/:moduleId/competencies/:competencyId/guide-fields`.
+3. Read the effective base-guide form with `GET /academic/modules/:moduleId/guide-fields`
+   (optionally `?competencyId=:competencyId`), then configure module fields with
+   `PUT /academic/modules/:moduleId/guide-fields`, or competency-specific fields with
+   `PUT /academic/modules/:moduleId/competencies/:competencyId/guide-fields`. Modules without
+   a saved form use the institutional default fields.
 4. As coordinator, preview the next code with
    `GET /academic/modules/:moduleId/guides/next-code`, then create a draft using
    `POST /academic/guides` with `{ "moduleId", "competencyId", "content" }`. The API requires
    a competency from that module and generates the title (`Guía base · <module>`), code,
    structure version, and initial content version. Edit it with `PATCH /academic/guides/:id`
    and publish it with `PATCH /academic/guides/:id/publish`.
-5. Read a guide's audit history with `GET /academic/guides/:id/events`. Events include the
+5. List guides with `GET /academic/guides`, using optional `search`, `moduleId`,
+   `competencyId`, `status` (`draft` or `published`), `page` (default `1`) and `pageSize`
+   (default `20`, maximum `100`). The response contains `items`, `total`, `page` and `pageSize`.
+   Get the unfiltered summary for the signed-in user's visible guides from
+   `GET /academic/guides/summary`; it returns `total`, `modulos`, `publicadas` and `borradores`.
+   Guide responses include the `createdBy`, `updatedBy` and `publishedBy` actor names when
+   available. For teachers, both endpoints are scoped to published guides in assigned modules.
+6. Read a guide's audit history with `GET /academic/guides/:id/events`. Events include the
    action, actor, and timestamp; their visibility follows the same coordinator/assigned-teacher
    access rules as the guide.
-6. As an assigned teacher, list published guides with `GET /academic/guides?moduleId=:moduleId`,
+7. As an assigned teacher, list published guides with `GET /academic/guides?moduleId=:moduleId`,
    then create a personal copy with `POST /academic/guides/:guideId/personalized-versions`.
-7. Read and progressively edit only your copies with
+8. Read and progressively edit only your copies with
    `GET /academic/personalized-versions`, `GET /academic/personalized-versions/:id`, and
    `PATCH /academic/personalized-versions/:id` using `{ "content": { "fieldKey": "value" } }`.
-8. Configure the teacher-form fields independently with
-   `PUT /academic/modules/:moduleId/teacher-guide-fields`. Form fields accept `section` and
-   `description` so exports remain grouped into the configurable document sections.
-9. As coordinator, upload one supporting PDF or DOCX per request to
+9. Configure the teacher-form fields independently with
+   `PUT /academic/modules/:moduleId/teacher-guide-fields`. Form fields accept `section`,
+   `description`, `help`, `maxLength`, and `teacherEditable`; maximum lengths are validated by
+   the API as well as the frontend.
+10. As coordinator, upload one supporting PDF or DOCX per request to
    `POST /academic/guides/:guideId/support-materials` as multipart form data with the file in
    the `file` field (maximum 10 MB). The original file is stored in PostgreSQL and is not
    editable by the API.
-10. Coordinators and assigned teachers can list materials with
+11. Coordinators and assigned teachers can list materials with
    `GET /academic/guides/:guideId/support-materials`; teachers can only access materials for
    published guides in their assigned modules. Download an original file with
    `GET /academic/guides/:guideId/support-materials/:materialId/download`.
-11. Download the current guide or teacher version in either format:
+12. Download the current guide or teacher version in either format:
     `GET /academic/guides/:id/export?format=docx|pdf` and
     `GET /academic/personalized-versions/:id/export?format=docx|pdf`.
 
@@ -229,6 +240,8 @@ published), so later form changes do not alter existing guides. Field configurat
 their version each time they are changed. A guide reports `competencyDeleted` when its linked
 competency is later soft-deleted, while retaining its copied competency name. Personalized versions similarly snapshot
 the published guide's fields and content; editing a copy never writes to its base guide.
+At startup, legacy guides missing a code are backfilled even when their original module has
+since been removed, using the stored competency code or module name to derive the prefix.
 Guide and personalized-version snapshots, content, and configured fields are stored as JSONB;
 module/competency metadata, field configurations, teacher assignments, and supporting file
 contents (PostgreSQL `bytea`) are also persisted in dedicated tables. During local development,

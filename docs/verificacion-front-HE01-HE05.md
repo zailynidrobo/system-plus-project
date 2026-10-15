@@ -43,8 +43,8 @@
 
 | Paso | Resultado |
 |---|---|
-| Node / npm | `v24.21.0` / `11.19.0` |
-| `npm ci` | ✅ Sin cambios en `package.json` ni en `package-lock.json`. No se agregaron dependencias. |
+| Node / pnpm | `v24.21.0` / `12.8.1` |
+| `pnpm install --frozen-lockfile` | ✅ Lock reproducible generado al migrar el frontend a pnpm; no se agregaron dependencias. |
 | `ng build --configuration development` | ✅ OK |
 | `ng build` (producción) | ✅ OK. *Bundle* inicial de **423 kB** (111 kB transferidos), por debajo de los 500 kB del presupuesto. Todas las pantallas se cargan solo al abrirlas (`loadComponent`). Quedan las mismas 4 advertencias `anyComponentStyle` de HE-01, entre 4.14 y 4.31 kB, por debajo del límite de error de 8 kB. Ningún `.scss` nuevo supera 4 kB. |
 | `ng test --watch=false` | ✅ **150 pruebas en 22 archivos, todas pasan.** |

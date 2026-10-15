@@ -12,11 +12,18 @@ import { HttpCompetencyApi } from './features/academic-program/http-competency-a
 import { HttpModuleApi } from './features/academic-program/http-module-api';
 import { ModuleApi } from './features/academic-program/module-api';
 import { UserApi } from './features/users/user-api';
+import { FieldConfigApi } from './features/guides/field-config-api';
+import { HttpFieldConfigApi } from './features/guides/http-field-config-api';
+import { GuideApi } from './features/guides/guide-api';
+import { HttpGuideApi } from './features/guides/http-guide-api';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideRouter(routes, withInMemoryScrolling({ anchorScrolling: 'enabled', scrollPositionRestoration: 'top' })),
+    provideRouter(
+      routes,
+      withInMemoryScrolling({ anchorScrolling: 'enabled', scrollPositionRestoration: 'top' }),
+    ),
     provideHttpClient(withInterceptors([authInterceptor])),
     provideAuth(),
     // HE-01: con api = 'http' las pantallas de usuarios hablan con el backend; si no, con el mock.
@@ -26,6 +33,8 @@ export const appConfig: ApplicationConfig = {
       ? [
           { provide: ModuleApi, useClass: HttpModuleApi },
           { provide: CompetencyApi, useClass: HttpCompetencyApi },
+          { provide: GuideApi, useClass: HttpGuideApi },
+          { provide: FieldConfigApi, useClass: HttpFieldConfigApi },
         ]
       : []),
   ],

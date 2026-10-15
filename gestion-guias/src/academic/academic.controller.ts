@@ -24,6 +24,8 @@ import { CreateGuideDto } from './dto/create-guide.dto.js';
 import { UpdateGuideDto } from './dto/update-guide.dto.js';
 import { UpdatePersonalizedGuideVersionDto } from './dto/update-personalized-guide-version.dto.js';
 import { GuideDocumentExportService } from './guide-document-export.service.js';
+import { GuideFieldsImpactDto } from './dto/guide-fields-impact.dto.js';
+import { ListGuidesQuery } from './dto/list-guides.query.js';
 
 @Controller('academic')
 export class AcademicController {
@@ -39,6 +41,27 @@ export class AcademicController {
     @Body() dto: ConfigureGuideFieldsDto,
   ) {
     return this.academicService.configureModuleGuideFields(moduleId, dto);
+  }
+
+  @Get('modules/:moduleId/guide-fields')
+  @Roles('coordinador')
+  getBaseGuideFields(
+    @Param('moduleId') moduleId: string,
+    @Query('competencyId') competencyId: string | undefined,
+  ) {
+    return this.academicService.getBaseGuideFields(moduleId, competencyId);
+  }
+
+  @Post('modules/:moduleId/guide-fields/impact')
+  @Roles('coordinador')
+  getBaseGuideFieldsImpact(
+    @Param('moduleId') moduleId: string,
+    @Body() dto: GuideFieldsImpactDto,
+  ) {
+    return this.academicService.getBaseGuideFieldsImpact(
+      moduleId,
+      dto.competencyId,
+    );
   }
 
   @Get('modules/:moduleId/guides/next-code')
@@ -82,11 +105,20 @@ export class AcademicController {
   @Get('guides')
   @Roles('coordinador', 'docente')
   findAllGuides(
-    @Query('moduleId') moduleId: string | undefined,
+    @Query() query: ListGuidesQuery,
     @Req() request: { user: KeycloakJwtPayload },
   ) {
     return this.academicService.findGuidesForUser(
-      moduleId,
+      query,
+      request.user.sub,
+      request.user.realm_access?.roles ?? [],
+    );
+  }
+
+  @Get('guides/summary')
+  @Roles('coordinador', 'docente')
+  getGuidesSummary(@Req() request: { user: KeycloakJwtPayload }) {
+    return this.academicService.getGuidesSummaryForUser(
       request.user.sub,
       request.user.realm_access?.roles ?? [],
     );
@@ -225,6 +257,12 @@ export class AcademicController {
     @Param('teacherId') teacherId: string,
   ) {
     return this.academicService.assignTeacherToModule(moduleId, teacherId);
+  }
+
+  @Get('modules/:moduleId/teachers')
+  @Roles('coordinador')
+  findAssignedTeacherIds(@Param('moduleId') moduleId: string) {
+    return this.academicService.findAssignedTeacherIds(moduleId);
   }
 
   @Delete('modules/:moduleId/teachers/:teacherId')

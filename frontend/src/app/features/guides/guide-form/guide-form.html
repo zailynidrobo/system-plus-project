@@ -34,39 +34,59 @@
         <app-icon name="lock" [size]="16" />
         <div>
           <strong>Solo visible para coordinación</strong>
-          <p>Puedes seguir editando la guía mientras esté en borrador. Publícala cuando esté lista para ser referencia oficial.</p>
+          <p>
+            Puedes seguir editando la guía mientras esté en borrador. Publícala cuando esté lista
+            para ser referencia oficial.
+          </p>
         </div>
       </div>
 
       <div class="ui-actions ui-actions--center">
-        <a class="ui-btn ui-btn--outline" [routerLink]="['/guias', g.id, 'editar']"><app-icon name="pencil" [size]="15" /> Seguir editando</a>
-        <a class="ui-btn ui-btn--primary" routerLink="/guias"><app-icon name="arrow-left" [size]="15" /> Volver a guías base</a>
+        <a class="ui-btn ui-btn--outline" [routerLink]="['/guias', g.id, 'editar']"
+          ><app-icon name="pencil" [size]="15" /> Seguir editando</a
+        >
+        <a class="ui-btn ui-btn--primary" routerLink="/guias"
+          ><app-icon name="arrow-left" [size]="15" /> Volver a guías base</a
+        >
       </div>
     </section>
 
     <p class="ui-success__trace">
-      <i class="ui-dot"></i> Registro HE-03-{{ g.code }} · Creado por {{ g.createdBy?.name }} · Hoy, {{ hora(g.createdAt) }}
+      <i class="ui-dot"></i> Registro HE-03-{{ g.code }} · Creado por {{ g.createdBy?.name }} · Hoy,
+      {{ hora(g.createdAt) }}
     </p>
   </div>
 } @else {
   <header class="ui-page-head">
     <div>
       <h1>Registrar guía base</h1>
-      <p>Diligencia la estructura institucional definida para el módulo. Todos los campos son controlados.</p>
+      <p>
+        Diligencia la estructura institucional definida para el módulo. Todos los campos son
+        controlados.
+      </p>
     </div>
   </header>
 
   @if (cargando()) {
     <p class="ui-state">Cargando módulos disponibles...</p>
+  } @else if (errorCarga() && modulos().length === 0) {
+    <p class="ui-help ui-help--error" role="alert">{{ errorCarga() }}</p>
   } @else if (modulos().length === 0) {
     <div class="ui-notice ui-notice--info">
       <app-icon name="info" [size]="18" />
       <div>
         <strong>No hay módulos disponibles para nuevas guías</strong>
-        <p>Un módulo debe estar activo y tener al menos una competencia. Revisa el <a routerLink="/modulos">programa académico</a>.</p>
+        <p>
+          Un módulo debe estar activo y tener al menos una competencia. Revisa el
+          <a routerLink="/modulos">programa académico</a>.
+        </p>
       </div>
     </div>
   } @else {
+    @if (errorCarga(); as e) {
+      <p class="ui-help ui-help--error" role="alert">{{ e }}</p>
+    }
+
     <ol class="ui-stepper ui-stepper--spaced">
       <li class="is-active"><span>1</span> Estructura de la guía</li>
       <li class="ui-stepper__line" aria-hidden="true"></li>
@@ -77,7 +97,10 @@
       <form class="ui-card" (ngSubmit)="guardar()" novalidate>
         <div class="ui-card__head">
           <h2>Información de la guía</h2>
-          <p>Los campos marcados con <span class="ui-required">*</span> son obligatorios. La estructura proviene de “Configurar estructura”.</p>
+          <p>
+            Los campos marcados con <span class="ui-required">*</span> son obligatorios. La
+            estructura proviene de “Configurar estructura”.
+          </p>
         </div>
 
         <p class="ui-section-label">Datos de identificación</p>
@@ -85,7 +108,11 @@
           <div class="ui-field">
             <label for="modulo">Módulo académico <span class="ui-required">*</span></label>
             <div class="ui-control">
-              <select id="modulo" [value]="moduloId()" (change)="elegirModulo(+$any($event.target).value)">
+              <select
+                id="modulo"
+                [value]="moduloId()"
+                (change)="elegirModulo(+$any($event.target).value)"
+              >
                 @for (m of modulos(); track m.id) {
                   <option [value]="m.id">{{ m.name }}</option>
                 }
@@ -98,7 +125,9 @@
               <select id="competencia" (change)="elegirCompetencia($any($event.target).value)">
                 <option value="" [selected]="!competenciaId()">Selecciona una competencia</option>
                 @for (c of competencias(); track c.id) {
-                  <option [value]="c.id" [selected]="c.id === competenciaId()">{{ c.code }} · {{ c.text }}</option>
+                  <option [value]="c.id" [selected]="c.id === competenciaId()">
+                    {{ c.code }} · {{ c.text }}
+                  </option>
                 }
               </select>
             </div>
@@ -129,7 +158,9 @@
           <app-icon name="triangle-alert" [size]="16" />
           <div>
             <strong>Se guardará como borrador</strong>
-            <p>La guía no será visible para los docentes hasta que la publiques de forma explícita.</p>
+            <p>
+              La guía no será visible para los docentes hasta que la publiques de forma explícita.
+            </p>
           </div>
         </div>
 
@@ -140,7 +171,8 @@
         <div class="ui-actions">
           <a class="ui-btn" routerLink="/guias">Cancelar</a>
           <button type="submit" class="ui-btn ui-btn--primary" [disabled]="guardando()">
-            <app-icon name="save" [size]="15" /> {{ guardando() ? 'Guardando…' : 'Guardar borrador' }}
+            <app-icon name="save" [size]="15" />
+            {{ guardando() ? 'Guardando…' : 'Guardar borrador' }}
           </button>
         </div>
       </form>

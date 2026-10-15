@@ -4,10 +4,9 @@ import { Program } from './entities/program.entity.js';
 import { CurricularModule } from './entities/curricular-module.entity.js';
 import { Competency } from './entities/competency.entity.js';
 import { CompetencyRevision } from './entities/competency-revision.entity.js';
-import {
-  EmptyGuideStatsProvider,
-  GuideStatsProvider,
-} from './guide-stats.provider.js';
+import { GuideStatsProvider } from './guide-stats.provider.js';
+import { AcademicModule } from '../academic/academic.module.js';
+import { TypeOrmGuideStatsProvider } from '../academic/typeorm-guide-stats.provider.js';
 import { CurricularModulesService } from './services/curricular-modules.service.js';
 import { CompetenciesService } from './services/competencies.service.js';
 import { ProgramsService } from './services/programs.service.js';
@@ -24,13 +23,14 @@ import { CompetenciesController } from './controllers/competencies.controller.js
       Competency,
       CompetencyRevision,
     ]),
+    // Aporta el conteo real de guías (HE-03) para el resumen de módulos y competencias.
+    AcademicModule,
   ],
   providers: [
     ProgramsService,
     CurricularModulesService,
     CompetenciesService,
-    // Reemplazar por la implementación real cuando el componente de guías (HE-03) persista sus datos.
-    { provide: GuideStatsProvider, useClass: EmptyGuideStatsProvider },
+    { provide: GuideStatsProvider, useExisting: TypeOrmGuideStatsProvider },
   ],
   controllers: [
     ProgramsController,

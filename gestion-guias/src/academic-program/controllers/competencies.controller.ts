@@ -9,7 +9,7 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
-import { Role } from '../../users/entities/user.entity.js';
+import { Role } from '../../users/role.js';
 import {
   CurrentUser,
   type AuthenticatedUser,

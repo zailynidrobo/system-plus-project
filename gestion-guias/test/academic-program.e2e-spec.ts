@@ -6,7 +6,7 @@ import { App } from 'supertest/types.js';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../src/app.module.js';
 import { ProgramsService } from '../src/academic-program/services/programs.service.js';
-import { Role } from '../src/users/role.js';
+import { Role } from '../src/users/entities/user.entity.js';
 import { startKeycloakTestServer } from './keycloak-test-server.js';
 
 describe('HE-02 Gestión del programa académico (e2e)', () => {

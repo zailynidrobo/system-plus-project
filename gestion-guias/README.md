@@ -146,10 +146,9 @@ pnpm.cmd run test        # unitarias
 pnpm.cmd run test:e2e    # requiere .env.test
 ```
 
-`DB_SYNCHRONIZE=true` crea las tablas de persistencia académica al iniciar en desarrollo. Los
-usuarios y sus roles se administran directamente en Keycloak; no se crea una tabla local de
-usuarios. Las pruebas e2e reinician la base configurada, por lo que `DB_NAME` en `.env.test`
-debe terminar en `_test` y apuntar a una base distinta de la de desarrollo.
+`DB_SYNCHRONIZE=true` crea las tablas de persistencia de guías al iniciar en desarrollo. Las
+pruebas e2e reinician la base configurada, por lo que `DB_NAME` en `.env.test` debe terminar
+en `_test` y apuntar a una base distinta de la de desarrollo.
 
 ### Autenticación
 
@@ -227,10 +226,10 @@ so later form changes do not alter existing guides. Personalized versions simila
 the published guide's fields and content; editing a copy never writes to its base guide.
 Guide and personalized-version snapshots, content, and configured fields are stored as JSONB;
 module/competency metadata, field configurations, teacher assignments, and supporting file
-contents (PostgreSQL `bytea`) are also persisted in dedicated tables. Users and their roles live
-in Keycloak and are not stored in a local user table. During local development, `DB_SYNCHRONIZE=true`
-creates or updates the academic tables from the TypeORM entities on startup. For environments
-where synchronization is disabled, apply equivalent database migrations before starting the API.
+contents (PostgreSQL `bytea`) are also persisted in dedicated tables. During local development,
+`DB_SYNCHRONIZE=true` creates or updates the tables from the TypeORM entities on startup. For
+environments where synchronization is disabled, apply equivalent database migrations before
+starting the API.
 DOCX and PDF exports use the institutional Word templates in
 `src/academic/templates/guia-base-modulo.docx` (Plantilla A) and
 `src/academic/templates/guia-docente.docx` (Plantilla B), fill supported module, competency,

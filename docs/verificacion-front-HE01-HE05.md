@@ -267,7 +267,7 @@ El backend (`gestion-guias`) valida JWT de Keycloak (`src/auth/keycloak.strategy
    - roles de realm `admin`, `coordinador`, `docente`, `docente_autorizado`, asignados a cada usuario.
 2. **Librería.** Instalar `keycloak-angular` (usa `keycloak-js`). Una alternativa es `keycloak-js` sola con un servicio propio. Es un cambio de `package.json` que debe aprobar el equipo.
 3. **Implementación.** Crear `core/auth/providers/keycloak-auth-provider.ts` que implemente `AuthProvider`:
-   - `restaurarSesion()`: `keycloak.init({ onLoad: 'check-sso', pkceMethod: 'S256', silentCheckSsoRedirectUri: origin + '/silent-check-sso.html' })`.
+   - `iniciar()`: `keycloak.init({ onLoad: 'check-sso', pkceMethod: 'S256', silentCheckSsoRedirectUri: origin + '/silent-check-sso.html' })`; el callback silencioso está en `public/silent-check-sso.html`.
    - `login()`: `keycloak.login({ redirectUri })`. El formulario lo muestra Keycloak (ver el paso 7).
    - `refrescar()`: `keycloak.updateToken(30)` y luego `GET /users/me`, para obtener nombre, estado y rol actualizados. Esto mantiene HE-01-HU-03 y HU-04: desactivación y cambio de rol sin cerrar sesión.
    - `token()`: `keycloak.token`.

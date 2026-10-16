@@ -5,6 +5,8 @@ import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { DataSource } from 'typeorm';
 import { AcademicModule } from '../src/academic/academic.module.js';
+import { AcademicProgramModule } from '../src/academic-program/academic-program.module.js';
+import { ProgramsService } from '../src/academic-program/services/programs.service.js';
 import { DatabaseModule } from '../src/database/database.module.js';
 
 const parseBinaryResponse = (
@@ -37,6 +39,8 @@ describe('Academic API (e2e)', () => {
         }),
         DatabaseModule,
         AcademicModule,
+        // Los módulos y competencias son los de HE-02: las guías se crean sobre ellos.
+        AcademicProgramModule,
       ],
     }).compile();
 
@@ -67,35 +71,30 @@ describe('Academic API (e2e)', () => {
     await app.close();
   });
 
-  it('supports academic structure and the guide draft-to-publication workflow', async () => {
+  it('supports the guide draft-to-publication workflow on HE-02 modules and competencies', async () => {
+    // `synchronize(true)` vació las tablas: se vuelve a crear el programa por defecto.
+    const programId = (await app.get(ProgramsService).ensureDefaultProgram())
+      .id;
     const moduleResponse = await request(app.getHttpServer())
-      .post('/academic/modules')
-      .send({ name: 'Matemáticas' })
+      .post(`/programs/${programId}/modules`)
+      .send({ name: 'Matemáticas', description: 'Programa académico' })
       .expect(201);
     const moduleId = moduleResponse.body.id as string;
 
+    // Sin competencias, HE-02 no habilita el módulo para crear guías.
     await request(app.getHttpServer())
-      .patch(`/academic/modules/${moduleId}`)
-      .send({ name: null })
-      .expect(400);
-    await request(app.getHttpServer())
-      .patch(`/academic/modules/${moduleId}`)
-      .send({ description: 'Programa académico' })
-      .expect(200);
+      .post('/academic/guides')
+      .send({ moduleId, title: 'Guía sin competencias', content: {} })
+      .expect(400)
+      .expect(({ body }) => {
+        expect(body.code).toBe('MODULE_WITHOUT_COMPETENCIES');
+      });
 
     const competencyResponse = await request(app.getHttpServer())
-      .post('/academic/competencies')
-      .send({ name: 'Álgebra' })
+      .post(`/modules/${moduleId}/competencies`)
+      .send({ text: 'Resuelve ecuaciones algebraicas' })
       .expect(201);
     const competencyId = competencyResponse.body.id as string;
-
-    await request(app.getHttpServer())
-      .post(`/academic/modules/${moduleId}/competencies/${competencyId}`)
-      .expect(201);
-    await request(app.getHttpServer())
-      .patch(`/academic/competencies/${competencyId}`)
-      .send({ description: 'Expresiones algebraicas' })
-      .expect(200);
 
     await request(app.getHttpServer())
       .put(
@@ -160,6 +159,19 @@ describe('Academic API (e2e)', () => {
       .expect(({ body }) => {
         expect(body.status).toBe('published');
         expect(body.publishedAt).toBeDefined();
+      });
+    await request(app.getHttpServer())
+      .get(`/modules/${moduleId}`)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.guidesCount).toBe(1);
+        expect(body.publishedGuidesCount).toBe(1);
+      });
+    await request(app.getHttpServer())
+      .get(`/competencies/${competencyId}`)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.publishedGuidesCount).toBe(1);
       });
     await request(app.getHttpServer())
       .get(`/academic/guides/${guideId}/export?format=docx`)
@@ -262,24 +274,28 @@ describe('Academic API (e2e)', () => {
       .expect(409);
 
     await request(app.getHttpServer())
-      .delete(`/academic/competencies/${competencyId}`)
-      .expect(200);
+      .delete(`/competencies/${competencyId}`)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.publishedGuidesPreserved).toBe(1);
+      });
     await request(app.getHttpServer())
       .get(`/academic/guides/${guideId}`)
       .expect(200)
       .expect(({ body }) => {
-        expect(body.competencyName).toBe('Álgebra');
+        expect(body.competencyName).toContain('Resuelve ecuaciones algebraicas');
       });
 
     await request(app.getHttpServer())
-      .patch(`/academic/modules/${moduleId}/deactivate`)
-      .expect(200)
-      .expect(({ body }) => {
-        expect(body.isActive).toBe(false);
-      });
+      .patch(`/modules/${moduleId}/deactivate`)
+      .send({ reason: 'Fin del periodo' })
+      .expect(200);
     await request(app.getHttpServer())
       .post('/academic/guides')
       .send({ moduleId, title: 'Otra guía', content: {} })
-      .expect(400);
+      .expect(400)
+      .expect(({ body }) => {
+        expect(body.code).toBe('MODULE_NOT_ACTIVE');
+      });
   });
 });

@@ -10,11 +10,9 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import JSZip from 'jszip';
 import { randomUUID } from 'node:crypto';
-import { In, IsNull, Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import {
   AcademicGuide,
-  AcademicModule,
-  Competency,
   GuideContent,
   GuideField,
   GuideFieldConfig,
@@ -22,17 +20,17 @@ import {
   PersonalizedGuideVersion,
 } from './academic.entities.js';
 import { AcademicGuideRecord } from './entities/academic-guide-record.entity.js';
-import { AcademicModuleRecord } from './entities/academic-module-record.entity.js';
-import { AcademicCompetencyRecord } from './entities/academic-competency-record.entity.js';
 import { GuideFieldConfigRecord } from './entities/guide-field-config-record.entity.js';
 import { ModuleTeacherAssignmentRecord } from './entities/module-teacher-assignment-record.entity.js';
 import { PersonalizedGuideVersionRecord } from './entities/personalized-guide-version-record.entity.js';
 import { GuideSupportMaterialRecord } from './entities/guide-support-material-record.entity.js';
 import { GuideDocumentData } from './guide-document-export.service.js';
-import { CreateAcademicModuleDto } from './dto/create-academic-module.dto.js';
-import { UpdateAcademicModuleDto } from './dto/update-academic-module.dto.js';
-import { CreateCompetencyDto } from './dto/create-competency.dto.js';
-import { UpdateCompetencyDto } from './dto/update-competency.dto.js';
+import {
+  CurricularModule,
+  CurricularModuleStatus,
+} from '../academic-program/entities/curricular-module.entity.js';
+import { Competency } from '../academic-program/entities/competency.entity.js';
+import { badRequest } from '../academic-program/api-errors.js';
 import { ConfigureGuideFieldsDto } from './dto/configure-guide-fields.dto.js';
 import { CreateGuideDto } from './dto/create-guide.dto.js';
 import { UpdateGuideDto } from './dto/update-guide.dto.js';
@@ -43,10 +41,10 @@ export class AcademicService {
   private static readonly maxSupportMaterialSize = 10 * 1024 * 1024;
 
   constructor(
-    @InjectRepository(AcademicModuleRecord)
-    private readonly modules: Repository<AcademicModuleRecord>,
-    @InjectRepository(AcademicCompetencyRecord)
-    private readonly competencies: Repository<AcademicCompetencyRecord>,
+    @InjectRepository(CurricularModule)
+    private readonly modules: Repository<CurricularModule>,
+    @InjectRepository(Competency)
+    private readonly competencies: Repository<Competency>,
     @InjectRepository(GuideFieldConfigRecord)
     private readonly fieldConfigs: Repository<GuideFieldConfigRecord>,
     @InjectRepository(AcademicGuideRecord)
@@ -58,128 +56,6 @@ export class AcademicService {
     @InjectRepository(GuideSupportMaterialRecord)
     private readonly guideSupportMaterials: Repository<GuideSupportMaterialRecord>,
   ) {}
-
-  async createModule(dto: CreateAcademicModuleDto) {
-    const normalizedName = dto.name.trim().toLowerCase();
-    if (await this.modules.findOneBy({ normalizedName })) {
-      throw new ConflictException('Ya existe un módulo con ese nombre');
-    }
-    const module = await this.modules.save({
-      id: randomUUID(),
-      name: dto.name,
-      normalizedName,
-      description: dto.description ?? null,
-      isActive: true,
-      competencyIds: [],
-    });
-    return this.withCompetencies(module);
-  }
-
-  async findAllModules() {
-    const modules = await this.modules.find();
-    return Promise.all(modules.map((module) => this.withCompetencies(module)));
-  }
-
-  async findModule(id: string) {
-    return this.withCompetencies(await this.getModuleOrFail(id));
-  }
-
-  async updateModule(id: string, dto: UpdateAcademicModuleDto) {
-    const module = await this.getModuleOrFail(id);
-    if (dto.name !== undefined) {
-      const normalizedName = dto.name.trim().toLowerCase();
-      const duplicate = await this.modules.findOneBy({ normalizedName });
-      if (duplicate && duplicate.id !== id) {
-        throw new ConflictException('Ya existe un módulo con ese nombre');
-      }
-      module.name = dto.name;
-      module.normalizedName = normalizedName;
-    }
-    if (dto.name === undefined && dto.description === undefined) {
-      throw new BadRequestException(
-        'Debe proporcionar al menos un dato para actualizar',
-      );
-    }
-    if (dto.description !== undefined) module.description = dto.description;
-    return this.withCompetencies(await this.modules.save(module));
-  }
-
-  async deactivateModule(id: string) {
-    const module = await this.getModuleOrFail(id);
-    module.isActive = false;
-    return this.withCompetencies(await this.modules.save(module));
-  }
-
-  async createCompetency(dto: CreateCompetencyDto) {
-    const competency = await this.competencies.save({
-      id: randomUUID(),
-      name: dto.name,
-      description: dto.description ?? null,
-    });
-    return this.toCompetency(competency);
-  }
-
-  async findAllCompetencies() {
-    const records = await this.competencies.find();
-    return records.map((competency) => this.toCompetency(competency));
-  }
-
-  async findCompetency(id: string) {
-    return this.toCompetency(await this.getCompetencyRecordOrFail(id));
-  }
-
-  async updateCompetency(id: string, dto: UpdateCompetencyDto) {
-    const competency = await this.getCompetencyRecordOrFail(id);
-    if (dto.name === undefined && dto.description === undefined) {
-      throw new BadRequestException(
-        'Debe proporcionar al menos un dato para actualizar',
-      );
-    }
-    if (dto.name !== undefined) competency.name = dto.name;
-    if (dto.description !== undefined) competency.description = dto.description;
-    return this.toCompetency(await this.competencies.save(competency));
-  }
-
-  async deleteCompetency(id: string) {
-    await this.getCompetencyRecordOrFail(id);
-    const modules = await this.modules.find();
-    for (const module of modules) {
-      if (module.competencyIds.includes(id)) {
-        module.competencyIds = module.competencyIds.filter(
-          (competencyId) => competencyId !== id,
-        );
-        await this.modules.save(module);
-      }
-    }
-    await this.fieldConfigs.delete({ competencyId: id });
-    await this.competencies.delete(id);
-    return { deleted: true };
-  }
-
-  async associateCompetency(moduleId: string, competencyId: string) {
-    const module = await this.getModuleOrFail(moduleId);
-    await this.getCompetencyRecordOrFail(competencyId);
-    if (module.competencyIds.includes(competencyId)) {
-      throw new ConflictException(
-        'La competencia ya está asociada a este módulo',
-      );
-    }
-    module.competencyIds.push(competencyId);
-    return this.withCompetencies(await this.modules.save(module));
-  }
-
-  async disassociateCompetency(moduleId: string, competencyId: string) {
-    const module = await this.getModuleOrFail(moduleId);
-    if (!module.competencyIds.includes(competencyId)) {
-      throw new NotFoundException(
-        'La competencia no está asociada a este módulo',
-      );
-    }
-    module.competencyIds = module.competencyIds.filter(
-      (id) => id !== competencyId,
-    );
-    return this.withCompetencies(await this.modules.save(module));
-  }
 
   async configureModuleGuideFields(
     moduleId: string,
@@ -213,12 +89,8 @@ export class AcademicService {
     dto: ConfigureGuideFieldsDto,
   ) {
     const module = await this.getModuleOrFail(moduleId);
-    await this.getCompetencyRecordOrFail(competencyId);
-    if (!module.competencyIds.includes(competencyId)) {
-      throw new BadRequestException(
-        'La competencia no está asociada a este módulo',
-      );
-    }
+    const competency = await this.getCompetencyOrFail(competencyId);
+    this.assertCompetencyBelongsToModule(competency, module);
     this.validateFieldDefinitions(dto.fields);
     return this.saveFieldConfig({
       moduleId,
@@ -230,15 +102,11 @@ export class AcademicService {
 
   async createGuide(dto: CreateGuideDto) {
     const module = await this.getActiveModuleOrFail(dto.moduleId);
-    let competency: Competency | undefined;
-    if (dto.competencyId !== undefined) {
-      competency = await this.findCompetency(dto.competencyId);
-      if (!module.competencyIds.includes(competency.id)) {
-        throw new BadRequestException(
-          'La competencia no está asociada a este módulo',
-        );
-      }
-    }
+    const competency =
+      dto.competencyId === undefined
+        ? undefined
+        : await this.getCompetencyOrFail(dto.competencyId);
+    if (competency) this.assertCompetencyBelongsToModule(competency, module);
 
     const fields = await this.resolveGuideFields(
       module.id,
@@ -252,7 +120,9 @@ export class AcademicService {
       moduleId: module.id,
       moduleName: module.name,
       competencyId: competency?.id ?? null,
-      competencyName: competency?.name ?? null,
+      competencyName: competency
+        ? `${competency.code} · ${competency.text}`
+        : null,
       title: dto.title,
       content: { ...dto.content },
       fields,
@@ -570,25 +440,52 @@ export class AcademicService {
   }
 
   private async getModuleOrFail(id: string) {
-    const module = await this.modules.findOneBy({ id });
+    // Un id que no es UUID no puede existir; evita que PostgreSQL responda con un error de tipo.
+    const module = isUuid(id) ? await this.modules.findOneBy({ id }) : null;
     if (!module) throw new NotFoundException('Módulo no encontrado');
     return module;
   }
 
+  /**
+   * Regla de HE-02 para crear guías nuevas: módulo activo con al menos una competencia
+   * activa (misma regla y mismos códigos que `CurricularModulesService.assertAvailableForGuides`).
+   */
   private async getActiveModuleOrFail(id: string) {
     const module = await this.getModuleOrFail(id);
-    if (!module.isActive) {
-      throw new BadRequestException(
-        'No se pueden crear guías para un módulo inactivo',
+    if (module.status !== CurricularModuleStatus.ACTIVE) {
+      throw badRequest(
+        'MODULE_NOT_ACTIVE',
+        'El módulo no está disponible para crear nuevas guías',
+      );
+    }
+    if ((await this.competencies.countBy({ moduleId: id })) === 0) {
+      throw badRequest(
+        'MODULE_WITHOUT_COMPETENCIES',
+        'El módulo debe tener al menos una competencia activa para crear guías',
       );
     }
     return module;
   }
 
-  private async getCompetencyRecordOrFail(id: string) {
-    const competency = await this.competencies.findOneBy({ id });
+  /** Las competencias eliminadas (borrado lógico) no se resuelven: `findOneBy` las excluye. */
+  private async getCompetencyOrFail(id: string) {
+    const competency = isUuid(id)
+      ? await this.competencies.findOneBy({ id })
+      : null;
     if (!competency) throw new NotFoundException('Competencia no encontrada');
     return competency;
+  }
+
+  /** En HE-02 cada competencia pertenece a un solo módulo (relación 1:N). */
+  private assertCompetencyBelongsToModule(
+    competency: Competency,
+    module: CurricularModule,
+  ) {
+    if (competency.moduleId !== module.id) {
+      throw new BadRequestException(
+        'La competencia no está asociada a este módulo',
+      );
+    }
   }
 
   private async getGuideOrFail(id: string) {
@@ -616,21 +513,6 @@ export class AcademicService {
     if (!assignment) {
       throw new ForbiddenException('No tienes asignado este módulo');
     }
-  }
-
-  private async withCompetencies(module: AcademicModuleRecord) {
-    const competencies =
-      module.competencyIds.length === 0
-        ? []
-        : (
-            await this.competencies.findBy({
-              id: In(module.competencyIds),
-            })
-          ).map((competency) => this.toCompetency(competency));
-    return {
-      ...this.toModule(module),
-      competencies,
-    };
   }
 
   private async saveFieldConfig(config: GuideFieldConfig) {
@@ -669,24 +551,6 @@ export class AcademicService {
       formType,
     });
     return moduleConfig?.fields ?? [];
-  }
-
-  private toModule(record: AcademicModuleRecord): AcademicModule {
-    return {
-      id: record.id,
-      name: record.name,
-      description: record.description ?? undefined,
-      isActive: record.isActive,
-      competencyIds: record.competencyIds,
-    };
-  }
-
-  private toCompetency(record: AcademicCompetencyRecord): Competency {
-    return {
-      id: record.id,
-      name: record.name,
-      description: record.description ?? undefined,
-    };
   }
 
   private toFieldConfig(record: GuideFieldConfigRecord): GuideFieldConfig {
@@ -884,4 +748,11 @@ export class AcademicService {
       }
     }
   }
+}
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isUuid(value: string): boolean {
+  return UUID_PATTERN.test(value);
 }

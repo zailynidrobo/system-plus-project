@@ -170,20 +170,25 @@ Usa la autenticación con Keycloak descrita arriba. Lecturas: cualquier usuario 
 - Solo los módulos **activos** admiten competencias; los borradores e inhabilitados responden 409.
 - Un módulo está disponible para nuevas guías (`availableForGuides`) si está activo y tiene al menos una competencia activa. `CurricularModulesService.assertAvailableForGuides()` está exportado para HE-03.
 - Las guías publicadas deben guardar `competencyId` + `version`; `CompetenciesService.findVersion()` devuelve esa redacción aunque la competencia se haya editado o eliminado después.
-- Los conteos de guías vienen de `GuideStatsProvider`. Hasta que HE-03 persista sus guías se usa `EmptyGuideStatsProvider` (todo en 0); basta con registrar la implementación real en `AcademicProgramModule`.
+- Los conteos de guías vienen de `GuideStatsProvider`, implementado por `TypeOrmGuideStatsProvider` (módulo de guías): cuenta las guías reales por módulo y las publicadas por competencia.
 
-## Academic API (legacy)
+## Guías, formularios y versiones docentes (HE-03 / HE-04)
 
-> Las rutas `/academic/modules` y `/academic/competencies` son la API preliminar que se mantiene
-> por compatibilidad con `/academic/guides`; sus registros y los documentos de guía ahora se
-> persisten en PostgreSQL. HE-02 (arriba) es el modelo curricular vigente.
+> Los módulos y competencias son los de **HE-02** (tablas `curricular_modules` y `competencies`).
+> Las guías guardan su `moduleId` y `competencyId` (UUID de HE-02); no existen rutas
+> `/academic/modules` ni `/academic/competencies`: se administran con las rutas de HE-02 (arriba).
+> Una guía nueva solo se crea sobre un módulo **activo con al menos una competencia activa**
+> (`MODULE_NOT_ACTIVE` / `MODULE_WITHOUT_COMPETENCIES`), y la competencia debe pertenecer a ese módulo.
+> Al crear la guía se guarda una copia del nombre del módulo y del código y texto de la competencia
+> (`COMP-POO-01 · …`), de modo que las guías existentes no cambian si luego se edita o elimina.
 
 The academic endpoints are available under `/academic`. HE-03 guide administration and
 configurable forms require the Keycloak realm role `coordinador`. HE-04 consultation and
 personalized versions require `docente`. A teacher's module assignments are keyed by their
 Keycloak `sub`; coordinators manage assignments using the routes below.
 
-1. Create module and competency records, then associate them as described above.
+1. Create the module and its competencies with the HE-02 routes described above
+   (`POST /programs/:programId/modules` and `POST /modules/:moduleId/competencies`).
 2. Assign a teacher with `PUT /academic/modules/:moduleId/teachers/:teacherId`.
 3. Configure module form fields with `PUT /academic/modules/:moduleId/guide-fields`, or use
    `PUT /academic/modules/:moduleId/competencies/:competencyId/guide-fields`.
@@ -209,7 +214,7 @@ Keycloak `sub`; coordinators manage assignments using the routes below.
     `GET /academic/guides/:id/export?format=docx|pdf` and
     `GET /academic/personalized-versions/:id/export?format=docx|pdf`.
 
-Additional module and competency read/update/deactivation/deletion operations are available under `/academic/modules` and `/academic/competencies`. Module deactivation retains its competencies and existing guide snapshots. Competency deletion removes its module associations and field configuration, while existing guides retain their copied names and form definitions. Published guides cannot be edited. These records and teacher assignments persist in PostgreSQL and survive API restarts.
+Module and competency read/update/deactivation/deletion operations belong to HE-02 (`/modules/...` and `/competencies/...`). Deactivating a module retains its competencies and existing guide snapshots. Deleting a competency is a soft delete in HE-02, while existing guides retain their copied names and form definitions. Published guides cannot be edited. These records and teacher assignments persist in PostgreSQL and survive API restarts.
 
 Guide definitions keep a snapshot of their configured field definitions and entered values,
 so later form changes do not alter existing guides. Personalized versions similarly snapshot

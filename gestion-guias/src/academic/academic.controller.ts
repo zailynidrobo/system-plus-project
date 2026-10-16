@@ -19,10 +19,6 @@ import type { Response } from 'express';
 import { Roles } from '../auth/roles.decorator.js';
 import { KeycloakJwtPayload } from '../auth/keycloak.strategy.js';
 import { AcademicService } from './academic.service.js';
-import { CreateAcademicModuleDto } from './dto/create-academic-module.dto.js';
-import { UpdateAcademicModuleDto } from './dto/update-academic-module.dto.js';
-import { CreateCompetencyDto } from './dto/create-competency.dto.js';
-import { UpdateCompetencyDto } from './dto/update-competency.dto.js';
 import { ConfigureGuideFieldsDto } from './dto/configure-guide-fields.dto.js';
 import { CreateGuideDto } from './dto/create-guide.dto.js';
 import { UpdateGuideDto } from './dto/update-guide.dto.js';
@@ -35,72 +31,6 @@ export class AcademicController {
     private readonly academicService: AcademicService,
     private readonly documentExportService: GuideDocumentExportService,
   ) {}
-
-  @Post('modules')
-  createModule(@Body() dto: CreateAcademicModuleDto) {
-    return this.academicService.createModule(dto);
-  }
-
-  @Get('modules')
-  findAllModules() {
-    return this.academicService.findAllModules();
-  }
-
-  @Get('modules/:id')
-  findModule(@Param('id') id: string) {
-    return this.academicService.findModule(id);
-  }
-
-  @Patch('modules/:id')
-  updateModule(@Param('id') id: string, @Body() dto: UpdateAcademicModuleDto) {
-    return this.academicService.updateModule(id, dto);
-  }
-
-  @Patch('modules/:id/deactivate')
-  deactivateModule(@Param('id') id: string) {
-    return this.academicService.deactivateModule(id);
-  }
-
-  @Post('competencies')
-  createCompetency(@Body() dto: CreateCompetencyDto) {
-    return this.academicService.createCompetency(dto);
-  }
-
-  @Get('competencies')
-  findAllCompetencies() {
-    return this.academicService.findAllCompetencies();
-  }
-
-  @Get('competencies/:id')
-  findCompetency(@Param('id') id: string) {
-    return this.academicService.findCompetency(id);
-  }
-
-  @Patch('competencies/:id')
-  updateCompetency(@Param('id') id: string, @Body() dto: UpdateCompetencyDto) {
-    return this.academicService.updateCompetency(id, dto);
-  }
-
-  @Delete('competencies/:id')
-  deleteCompetency(@Param('id') id: string) {
-    return this.academicService.deleteCompetency(id);
-  }
-
-  @Post('modules/:moduleId/competencies/:competencyId')
-  associateCompetency(
-    @Param('moduleId') moduleId: string,
-    @Param('competencyId') competencyId: string,
-  ) {
-    return this.academicService.associateCompetency(moduleId, competencyId);
-  }
-
-  @Delete('modules/:moduleId/competencies/:competencyId')
-  disassociateCompetency(
-    @Param('moduleId') moduleId: string,
-    @Param('competencyId') competencyId: string,
-  ) {
-    return this.academicService.disassociateCompetency(moduleId, competencyId);
-  }
 
   @Put('modules/:moduleId/guide-fields')
   @Roles('coordinador')

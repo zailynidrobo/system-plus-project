@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "b898f13d-8f80-40a1-81c1-4dad96536a3b",
     "name": "Gestión de Guías - Usuarios, sesiones y edición",
-    "description": "Colección unificada: autenticación Keycloak (coordinador y docente), ciclo de vida de guías base y versiones personalizadas por docente, materiales de apoyo PDF/DOCX y operaciones del módulo /users. Los datos académicos y materiales de apoyo se guardan en PostgreSQL. Los usuarios de /users se sincronizan con Keycloak mediante un cliente administrativo de servicio.",
+    "description": "Colección unificada: autenticación Keycloak (coordinador y docente), ciclo de vida de guías base y versiones personalizadas por docente, materiales de apoyo PDF/DOCX y operaciones del módulo /users. Los módulos y competencias son los de HE-02 (/programs, /modules, /competencies). Los datos académicos y materiales de apoyo se guardan en PostgreSQL. Los usuarios de /users se sincronizan con Keycloak mediante un cliente administrativo de servicio.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -40,6 +40,14 @@
     },
     {
       "key": "teacherToken",
+      "value": ""
+    },
+    {
+      "key": "programId",
+      "value": ""
+    },
+    {
+      "key": "competencyId",
       "value": ""
     },
     {
@@ -222,7 +230,37 @@
       "description": "Ejecutar en orden. Crea un módulo de prueba, configura los campos de guía base y docente, genera una guía borrador, la edita y la publica, y asigna el módulo al usuario docente.",
       "item": [
         {
-          "name": "Crear módulo de prueba",
+          "name": "Obtener programa académico (HE-02)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Programa disponible', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  const programs = Array.isArray(body) ? body : (body.items || []);",
+                  "  pm.expect(programs.length).to.be.above(0);",
+                  "  pm.collectionVariables.set('programId', programs[0].id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/programs"
+          }
+        },
+        {
+          "name": "Crear módulo de prueba (HE-02)",
           "event": [
             {
               "listen": "test",
@@ -260,7 +298,49 @@
                 }
               }
             },
-            "url": "{{baseUrl}}/academic/modules"
+            "url": "{{baseUrl}}/programs/{{programId}}/modules"
+          }
+        },
+        {
+          "name": "Asociar competencia al módulo (HE-02)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Competencia creada', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.id).to.be.a('string').and.not.empty;",
+                  "  pm.collectionVariables.set('competencyId', body.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Aplica el tema mediante una actividad práctica\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/modules/{{moduleId}}/competencies"
           }
         },
         {

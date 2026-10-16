@@ -22,13 +22,21 @@ export class GuideList {
   private moduleApi = inject(ModuleApi);
   private competencyApi = inject(CompetencyApi);
 
-  filtro = signal<FiltroGuias>({ busqueda: '', moduleId: null, competencyId: null, estado: 'TODOS', pagina: 1, porPagina: POR_PAGINA });
+  filtro = signal<FiltroGuias>({
+    busqueda: '',
+    moduleId: null,
+    competencyId: null,
+    estado: 'TODOS',
+    pagina: 1,
+    porPagina: POR_PAGINA,
+  });
   guias = signal<GuideView[]>([]);
   total = signal(0);
   resumen = signal<ResumenGuias | null>(null);
   modulos = signal<ModuleView[]>([]);
   competencias = signal<CompetencyView[]>([]);
   cargando = signal(true);
+  error = signal<string | null>(null);
 
   estados: GuideStatus[] = ['Publicada', 'Borrador'];
   cuando = cuando;
@@ -41,7 +49,9 @@ export class GuideList {
   constructor() {
     this.cargar();
     this.api.resumen().subscribe((r) => this.resumen.set(r));
-    this.moduleApi.listar({ busqueda: '', estado: 'TODOS', orden: 'codigo' }).subscribe((m) => this.modulos.set(m));
+    this.moduleApi
+      .listar({ busqueda: '', estado: 'TODOS', orden: 'codigo' })
+      .subscribe((m) => this.modulos.set(m));
   }
 
   cambiar(cambios: Partial<FiltroGuias>): void {
@@ -64,10 +74,19 @@ export class GuideList {
 
   private cargar(): void {
     this.cargando.set(true);
-    this.api.listar(this.filtro()).subscribe((p) => {
-      this.guias.set(p.items);
-      this.total.set(p.total);
-      this.cargando.set(false);
+    this.error.set(null);
+    this.api.listar(this.filtro()).subscribe({
+      next: (p) => {
+        this.guias.set(p.items);
+        this.total.set(p.total);
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.cargando.set(false);
+        this.error.set(
+          'No pudimos cargar las guías. Verifica que la API esté disponible e inténtalo de nuevo.',
+        );
+      },
     });
   }
 }

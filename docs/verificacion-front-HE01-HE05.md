@@ -43,8 +43,8 @@
 
 | Paso | Resultado |
 |---|---|
-| Node / npm | `v24.21.0` / `11.19.0` |
-| `npm ci` | ✅ Sin cambios en `package.json` ni en `package-lock.json`. No se agregaron dependencias. |
+| Node / pnpm | `v24.21.0` / `12.8.1` |
+| `pnpm install --frozen-lockfile` | ✅ Lock reproducible generado al migrar el frontend a pnpm; no se agregaron dependencias. |
 | `ng build --configuration development` | ✅ OK |
 | `ng build` (producción) | ✅ OK. *Bundle* inicial de **423 kB** (111 kB transferidos), por debajo de los 500 kB del presupuesto. Todas las pantallas se cargan solo al abrirlas (`loadComponent`). Quedan las mismas 4 advertencias `anyComponentStyle` de HE-01, entre 4.14 y 4.31 kB, por debajo del límite de error de 8 kB. Ningún `.scss` nuevo supera 4 kB. |
 | `ng test --watch=false` | ✅ **150 pruebas en 22 archivos, todas pasan.** |
@@ -267,7 +267,7 @@ El backend (`gestion-guias`) valida JWT de Keycloak (`src/auth/keycloak.strategy
    - roles de realm `admin`, `coordinador`, `docente`, `docente_autorizado`, asignados a cada usuario.
 2. **Librería.** Instalar `keycloak-angular` (usa `keycloak-js`). Una alternativa es `keycloak-js` sola con un servicio propio. Es un cambio de `package.json` que debe aprobar el equipo.
 3. **Implementación.** Crear `core/auth/providers/keycloak-auth-provider.ts` que implemente `AuthProvider`:
-   - `restaurarSesion()`: `keycloak.init({ onLoad: 'check-sso', pkceMethod: 'S256', silentCheckSsoRedirectUri: origin + '/silent-check-sso.html' })`.
+   - `iniciar()`: `keycloak.init({ onLoad: 'check-sso', pkceMethod: 'S256', silentCheckSsoRedirectUri: origin + '/silent-check-sso.html' })`; el callback silencioso está en `public/silent-check-sso.html`.
    - `login()`: `keycloak.login({ redirectUri })`. El formulario lo muestra Keycloak (ver el paso 7).
    - `refrescar()`: `keycloak.updateToken(30)` y luego `GET /users/me`, para obtener nombre, estado y rol actualizados. Esto mantiene HE-01-HU-03 y HU-04: desactivación y cambio de rol sin cerrar sesión.
    - `token()`: `keycloak.token`.

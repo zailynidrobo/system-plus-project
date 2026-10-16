@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  OnModuleInit,
   NotFoundException,
   PayloadTooLargeException,
   UnsupportedMediaTypeException,
@@ -10,16 +11,27 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import JSZip from 'jszip';
 import { randomUUID } from 'node:crypto';
-import { IsNull, Repository } from 'typeorm';
+import {
+  DataSource,
+  EntityManager,
+  FindOptionsWhere,
+  ILike,
+  In,
+  IsNull,
+  Repository,
+} from 'typeorm';
 import {
   AcademicGuide,
   GuideContent,
+  GuideActor,
   GuideField,
   GuideFieldConfig,
   GuideFormType,
+  GuideEvent,
   PersonalizedGuideVersion,
 } from './academic.entities.js';
 import { AcademicGuideRecord } from './entities/academic-guide-record.entity.js';
+import { GuideEventRecord } from './entities/guide-event-record.entity.js';
 import { GuideFieldConfigRecord } from './entities/guide-field-config-record.entity.js';
 import { ModuleTeacherAssignmentRecord } from './entities/module-teacher-assignment-record.entity.js';
 import { PersonalizedGuideVersionRecord } from './entities/personalized-guide-version-record.entity.js';
@@ -29,15 +41,18 @@ import {
   CurricularModule,
   CurricularModuleStatus,
 } from '../academic-program/entities/curricular-module.entity.js';
+import { buildCompetencyPrefix } from '../academic-program/curricular-codes.js';
 import { Competency } from '../academic-program/entities/competency.entity.js';
 import { badRequest } from '../academic-program/api-errors.js';
 import { ConfigureGuideFieldsDto } from './dto/configure-guide-fields.dto.js';
 import { CreateGuideDto } from './dto/create-guide.dto.js';
 import { UpdateGuideDto } from './dto/update-guide.dto.js';
 import { UpdatePersonalizedGuideVersionDto } from './dto/update-personalized-guide-version.dto.js';
+import { DEFAULT_GUIDE_FIELDS } from './default-guide-fields.js';
+import { ListGuidesQuery } from './dto/list-guides.query.js';
 
 @Injectable()
-export class AcademicService {
+export class AcademicService implements OnModuleInit {
   private static readonly maxSupportMaterialSize = 10 * 1024 * 1024;
 
   constructor(
@@ -55,7 +70,46 @@ export class AcademicService {
     private readonly moduleTeacherAssignments: Repository<ModuleTeacherAssignmentRecord>,
     @InjectRepository(GuideSupportMaterialRecord)
     private readonly guideSupportMaterials: Repository<GuideSupportMaterialRecord>,
+    @InjectRepository(GuideEventRecord)
+    private readonly guideEvents: Repository<GuideEventRecord>,
+    private readonly dataSource: DataSource,
   ) {}
+
+  async onModuleInit() {
+    const legacyGuides = await this.guides.find({
+      where: { code: IsNull() },
+    });
+    const moduleIds = [...new Set(legacyGuides.map((guide) => guide.moduleId))];
+
+    for (const moduleId of moduleIds) {
+      await this.dataSource.transaction(async (manager) => {
+        const module = await manager.findOne(CurricularModule, {
+          where: { id: moduleId },
+        });
+        const guides = await manager.find(AcademicGuideRecord, {
+          where: { moduleId },
+          order: { createdAt: 'ASC' },
+        });
+        const allGuides = await manager.find(AcademicGuideRecord, {});
+        const prefix =
+          module?.competencyPrefix ?? this.legacyGuidePrefix(guides[0]);
+        let sequence = Math.max(
+          module?.guideSequence ?? 0,
+          ...allGuides.map((guide) => this.guideSequence(prefix, guide.code)),
+        );
+        for (const guide of guides) {
+          if (guide.code !== null) continue;
+          sequence += 1;
+          guide.code = this.formatGuideCode(prefix, sequence);
+          await manager.save(AcademicGuideRecord, guide);
+        }
+        if (module && sequence !== (module.guideSequence ?? 0)) {
+          module.guideSequence = sequence;
+          await manager.save(CurricularModule, module);
+        }
+      });
+    }
+  }
 
   async configureModuleGuideFields(
     moduleId: string,
@@ -68,6 +122,74 @@ export class AcademicService {
       formType: 'base',
       fields: dto.fields,
     });
+  }
+
+  async getBaseGuideFields(moduleId: string, competencyId?: string) {
+    const module = await this.getModuleOrFail(moduleId);
+    let competencyConfig: GuideFieldConfigRecord | null = null;
+    if (competencyId !== undefined) {
+      const competency = await this.getCompetencyOrFail(competencyId);
+      this.assertCompetencyBelongsToModule(competency, module);
+      competencyConfig = await this.fieldConfigs.findOneBy({
+        moduleId,
+        competencyId,
+        formType: 'base',
+      });
+    }
+    const moduleConfig = await this.fieldConfigs.findOneBy({
+      moduleId,
+      competencyId: IsNull(),
+      formType: 'base',
+    });
+    const config = competencyConfig ?? moduleConfig;
+    return {
+      moduleId,
+      ...(competencyConfig ? { competencyId } : {}),
+      formType: 'base' as const,
+      fields: config?.fields ?? DEFAULT_GUIDE_FIELDS,
+      version: config?.version ?? 1,
+      updatedAt: config?.updatedAt?.toISOString() ?? new Date().toISOString(),
+      origin: competencyConfig
+        ? ('competencia' as const)
+        : moduleConfig
+          ? ('modulo' as const)
+          : ('predeterminada' as const),
+    };
+  }
+
+  async getBaseGuideFieldsImpact(moduleId: string, competencyId?: string) {
+    const module = await this.getModuleOrFail(moduleId);
+    if (competencyId !== undefined) {
+      const competency = await this.getCompetencyOrFail(competencyId);
+      this.assertCompetencyBelongsToModule(competency, module);
+    }
+    const configuredCompetencies = await this.fieldConfigs.find({
+      where: { moduleId, formType: 'base' },
+    });
+    const competencyConfigs = new Set(
+      configuredCompetencies
+        .filter((config) => config.competencyId !== null)
+        .map((config) => config.competencyId),
+    );
+    const guides = (await this.guides.findBy({ moduleId })).filter((guide) =>
+      competencyId !== undefined
+        ? guide.competencyId === competencyId
+        : !competencyConfigs.has(guide.competencyId),
+    );
+    const versions = guides.length
+      ? await this.personalizedVersions.findBy({
+          baseGuideId: In(guides.map((guide) => guide.id)),
+        })
+      : [];
+    const config = await this.getBaseGuideFields(moduleId, competencyId);
+    return {
+      publishedGuides: guides.filter((guide) => guide.status === 'published')
+        .length,
+      draftGuides: guides.filter((guide) => guide.status === 'draft').length,
+      teacherVersions: versions.length,
+      currentVersion: config.version,
+      nextVersion: config.version + 1,
+    };
   }
 
   async configureTeacherGuideFields(
@@ -100,81 +222,252 @@ export class AcademicService {
     });
   }
 
-  async createGuide(dto: CreateGuideDto) {
-    const module = await this.getActiveModuleOrFail(dto.moduleId);
-    const competency =
-      dto.competencyId === undefined
-        ? undefined
-        : await this.getCompetencyOrFail(dto.competencyId);
-    if (competency) this.assertCompetencyBelongsToModule(competency, module);
+  async createGuide(
+    dto: CreateGuideDto,
+    actor: GuideActor = { id: 'system', name: 'Sistema' },
+  ) {
+    const guide = await this.dataSource.transaction(async (manager) => {
+      if (!isUuid(dto.moduleId)) {
+        throw new NotFoundException('Módulo no encontrado');
+      }
+      const module = await manager.findOne(CurricularModule, {
+        where: { id: dto.moduleId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!module) throw new NotFoundException('Módulo no encontrado');
+      if (module.status !== CurricularModuleStatus.ACTIVE) {
+        throw badRequest(
+          'MODULE_NOT_ACTIVE',
+          'El módulo no está disponible para crear nuevas guías',
+        );
+      }
+      if ((await manager.countBy(Competency, { moduleId: module.id })) === 0) {
+        throw badRequest(
+          'MODULE_WITHOUT_COMPETENCIES',
+          'El módulo debe tener al menos una competencia activa para crear guías',
+        );
+      }
 
-    const fields = await this.resolveGuideFields(
-      module.id,
-      competency?.id,
-      'base',
-    );
-    this.validateGuideContent(dto.content, fields, false);
-    const now = new Date();
-    const guide = await this.guides.save({
-      id: randomUUID(),
-      moduleId: module.id,
-      moduleName: module.name,
-      competencyId: competency?.id ?? null,
-      competencyName: competency
-        ? `${competency.code} · ${competency.text}`
-        : null,
-      title: dto.title,
-      content: { ...dto.content },
-      fields,
-      status: 'draft',
-      createdAt: now,
-      updatedAt: now,
-      publishedAt: null,
+      const competency = isUuid(dto.competencyId)
+        ? await manager.findOneBy(Competency, { id: dto.competencyId })
+        : null;
+      if (!competency) throw new NotFoundException('Competencia no encontrada');
+      this.assertCompetencyBelongsToModule(competency, module);
+
+      const competencyConfig = await manager.findOneBy(GuideFieldConfigRecord, {
+        moduleId: module.id,
+        competencyId: competency.id,
+        formType: 'base',
+      });
+      const moduleConfig =
+        competencyConfig ??
+        (await manager.findOneBy(GuideFieldConfigRecord, {
+          moduleId: module.id,
+          competencyId: IsNull(),
+          formType: 'base',
+        }));
+      const fields = moduleConfig?.fields ?? DEFAULT_GUIDE_FIELDS;
+      this.validateGuideContent(dto.content, fields, false);
+
+      const existingGuides = await manager.find(AcademicGuideRecord, {});
+      const nextSequence =
+        Math.max(
+          module.guideSequence ?? 0,
+          ...existingGuides.map((existing) =>
+            this.guideSequence(module.competencyPrefix, existing.code),
+          ),
+        ) + 1;
+      const code = this.formatGuideCode(module.competencyPrefix, nextSequence);
+      const now = new Date();
+      module.guideSequence = nextSequence;
+      await manager.save(CurricularModule, module);
+
+      const guide = await manager.save(AcademicGuideRecord, {
+        id: randomUUID(),
+        code,
+        moduleId: module.id,
+        moduleName: module.name,
+        competencyId: competency.id,
+        competencyName: `${competency.code} · ${competency.text}`,
+        title: `Guía base · ${module.name}`,
+        content: { ...dto.content },
+        fields,
+        structureVersion: moduleConfig?.version ?? 1,
+        version: 'v0',
+        status: 'draft',
+        createdById: actor.id,
+        createdByName: actor.name,
+        updatedById: actor.id,
+        updatedByName: actor.name,
+        publishedById: null,
+        publishedByName: null,
+        createdAt: now,
+        updatedAt: now,
+        publishedAt: null,
+      });
+      await manager.save(GuideEventRecord, {
+        id: randomUUID(),
+        guideId: guide.id,
+        title: 'Guía creada como borrador',
+        authorId: actor.id,
+        authorName: actor.name,
+        createdAt: now,
+      });
+      return guide;
     });
-    return this.toGuide(guide);
+    return this.mapGuide(guide, false);
   }
 
-  async findAllGuides(moduleId?: string) {
-    if (moduleId !== undefined) await this.getModuleOrFail(moduleId);
-    const records =
-      moduleId === undefined
-        ? await this.guides.find()
-        : await this.guides.findBy({ moduleId });
-    return records.map((guide) => this.toGuide(guide));
+  async previewNextGuideCode(moduleId: string) {
+    const module = await this.getActiveModuleOrFail(moduleId);
+    const guides = await this.guides.find();
+    const nextSequence =
+      Math.max(
+        module.guideSequence ?? 0,
+        ...guides.map((guide) =>
+          this.guideSequence(module.competencyPrefix, guide.code),
+        ),
+      ) + 1;
+    return {
+      code: this.formatGuideCode(module.competencyPrefix, nextSequence),
+    };
+  }
+
+  async findAllGuides(query: ListGuidesQuery = {}) {
+    return this.listGuides(query);
   }
 
   async findGuide(id: string) {
     return this.toGuide(await this.getGuideOrFail(id));
   }
 
-  async updateGuide(id: string, dto: UpdateGuideDto) {
-    const guide = await this.getGuideOrFail(id);
-    if (guide.status !== 'draft') {
-      throw new ConflictException('Una guía publicada no se puede editar');
-    }
-    if (dto.title === undefined && dto.content === undefined) {
-      throw new BadRequestException(
-        'Debe proporcionar al menos un dato para actualizar',
+  async updateGuide(
+    id: string,
+    dto: UpdateGuideDto,
+    actor: GuideActor = { id: 'system', name: 'Sistema' },
+  ) {
+    const guide = await this.dataSource.transaction(async (manager) => {
+      const guide = await manager.findOne(AcademicGuideRecord, {
+        where: { id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!guide) throw new NotFoundException('Guía no encontrada');
+      if (guide.status !== 'draft') {
+        throw new ConflictException('Una guía publicada no se puede editar');
+      }
+      if (
+        dto.title === undefined &&
+        dto.content === undefined &&
+        dto.competencyId === undefined
+      ) {
+        throw new BadRequestException(
+          'Debe proporcionar al menos un dato para actualizar',
+        );
+      }
+      const content = dto.content ?? guide.content;
+      this.validateGuideContent(content, guide.fields, false);
+      const events: string[] = [];
+      if (
+        dto.competencyId !== undefined &&
+        dto.competencyId !== guide.competencyId
+      ) {
+        const competency = await manager.findOneBy(Competency, {
+          id: dto.competencyId,
+        });
+        if (!competency)
+          throw new NotFoundException('Competencia no encontrada');
+        const module = await manager.findOneBy(CurricularModule, {
+          id: guide.moduleId,
+        });
+        if (!module) throw new NotFoundException('Módulo no encontrado');
+        this.assertCompetencyBelongsToModule(competency, module);
+        guide.competencyId = competency.id;
+        guide.competencyName = `${competency.code} · ${competency.text}`;
+        events.push('Competencia actualizada');
+      }
+      if (dto.title !== undefined && dto.title !== guide.title) {
+        guide.title = dto.title;
+        events.push('Título editado');
+      }
+      if (dto.content !== undefined) {
+        for (const field of guide.fields) {
+          if (
+            JSON.stringify(dto.content[field.key] ?? null) !==
+            JSON.stringify(guide.content[field.key] ?? null)
+          ) {
+            events.push(`${field.label} editado`);
+          }
+        }
+        guide.content = { ...dto.content };
+      }
+      guide.updatedAt = new Date();
+      guide.updatedById = actor.id;
+      guide.updatedByName = actor.name;
+      const saved = await manager.save(AcademicGuideRecord, guide);
+      await this.saveGuideEvents(
+        manager,
+        saved.id,
+        events,
+        actor,
+        guide.updatedAt,
       );
-    }
-    const content = dto.content ?? guide.content;
-    this.validateGuideContent(content, guide.fields, false);
-    if (dto.title !== undefined) guide.title = dto.title;
-    if (dto.content !== undefined) guide.content = { ...dto.content };
-    guide.updatedAt = new Date();
-    return this.toGuide(await this.guides.save(guide));
+      return saved;
+    });
+    return this.toGuide(guide);
   }
 
-  async publishGuide(id: string) {
-    const guide = await this.getGuideOrFail(id);
-    if (guide.status === 'published') {
-      throw new ConflictException('La guía ya está publicada');
-    }
-    this.validateGuideContent(guide.content, guide.fields, true);
-    guide.status = 'published';
-    guide.publishedAt = new Date();
-    guide.updatedAt = guide.publishedAt;
-    return this.toGuide(await this.guides.save(guide));
+  async publishGuide(
+    id: string,
+    actor: GuideActor = { id: 'system', name: 'Sistema' },
+  ) {
+    const guide = await this.dataSource.transaction(async (manager) => {
+      const guide = await manager.findOne(AcademicGuideRecord, {
+        where: { id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!guide) throw new NotFoundException('Guía no encontrada');
+      if (guide.status === 'published') {
+        throw new ConflictException('La guía ya está publicada');
+      }
+      this.validateGuideContent(guide.content, guide.fields, true);
+      guide.status = 'published';
+      guide.version = 'v1.0';
+      guide.publishedAt = new Date();
+      guide.updatedAt = guide.publishedAt;
+      guide.publishedById = actor.id;
+      guide.publishedByName = actor.name;
+      guide.updatedById = actor.id;
+      guide.updatedByName = actor.name;
+      const saved = await manager.save(AcademicGuideRecord, guide);
+      await this.saveGuideEvents(
+        manager,
+        saved.id,
+        ['Guía publicada'],
+        actor,
+        guide.publishedAt,
+      );
+      return saved;
+    });
+    return this.toGuide(guide);
+  }
+
+  async findGuideEventsForUser(
+    id: string,
+    userId: string,
+    roles: string[],
+  ): Promise<GuideEvent[]> {
+    await this.findGuideForUser(id, userId, roles);
+    const events = await this.guideEvents.find({
+      where: { guideId: id },
+      order: { createdAt: 'DESC' },
+    });
+    return events.map((event) => ({
+      id: event.id,
+      guideId: event.guideId,
+      title: event.title,
+      author: { id: event.authorId, name: event.authorName },
+      createdAt: event.createdAt.toISOString(),
+    }));
   }
 
   async assignTeacherToModule(moduleId: string, teacherId: string) {
@@ -193,6 +486,14 @@ export class AcademicService {
     return { moduleId, teacherId, assigned: true };
   }
 
+  async findAssignedTeacherIds(moduleId: string) {
+    await this.getModuleOrFail(moduleId);
+    const assignments = await this.moduleTeacherAssignments.findBy({
+      moduleId,
+    });
+    return assignments.map((assignment) => assignment.teacherId);
+  }
+
   async unassignTeacherFromModule(moduleId: string, teacherId: string) {
     await this.getModuleOrFail(moduleId);
     const existing = await this.moduleTeacherAssignments.findOneBy({
@@ -207,12 +508,12 @@ export class AcademicService {
   }
 
   async findGuidesForUser(
-    moduleId: string | undefined,
+    query: ListGuidesQuery,
     userId: string,
     roles: string[],
   ) {
-    if (moduleId !== undefined) await this.getModuleOrFail(moduleId);
-    if (roles.includes('coordinador')) return this.findAllGuides(moduleId);
+    if (query.moduleId !== undefined) await this.getModuleOrFail(query.moduleId);
+    if (roles.includes('coordinador')) return this.listGuides(query);
     if (!roles.includes('docente')) {
       throw new ForbiddenException('No tienes permiso para consultar guías');
     }
@@ -222,19 +523,93 @@ export class AcademicService {
     const assignedModuleIds = new Set(
       assignments.map((assignment) => assignment.moduleId),
     );
-    if (moduleId !== undefined && !assignedModuleIds.has(moduleId)) {
+    if (query.moduleId !== undefined && !assignedModuleIds.has(query.moduleId)) {
       throw new ForbiddenException('No tienes asignado este módulo');
     }
-    const guides =
-      moduleId === undefined
-        ? await this.guides.find()
-        : await this.guides.findBy({ moduleId });
-    return guides
-      .filter(
-        (guide) =>
-          guide.status === 'published' && assignedModuleIds.has(guide.moduleId),
-      )
-      .map((guide) => this.toGuide(guide));
+    if (assignedModuleIds.size === 0) {
+      const { page, pageSize } = this.pagination(query);
+      return { items: [], total: 0, page, pageSize };
+    }
+    return this.listGuides(query, {
+      ...(query.moduleId ? {} : { moduleId: In([...assignedModuleIds]) }),
+      status: 'published',
+    });
+  }
+
+  async getGuidesSummaryForUser(userId: string, roles: string[]) {
+    let visibleGuides: AcademicGuideRecord[];
+    if (roles.includes('coordinador')) {
+      visibleGuides = await this.guides.find();
+    } else if (roles.includes('docente')) {
+      const assignments = await this.moduleTeacherAssignments.findBy({
+        teacherId: userId,
+      });
+      const assignedModuleIds = assignments.map((assignment) => assignment.moduleId);
+      visibleGuides = assignedModuleIds.length
+        ? (await this.guides.findBy({
+            moduleId: In(assignedModuleIds),
+            status: 'published',
+          }))
+        : [];
+    } else {
+      throw new ForbiddenException('No tienes permiso para consultar guías');
+    }
+    return {
+      total: visibleGuides.length,
+      modulos: new Set(visibleGuides.map((guide) => guide.moduleId)).size,
+      publicadas: visibleGuides.filter((guide) => guide.status === 'published').length,
+      borradores: visibleGuides.filter((guide) => guide.status === 'draft').length,
+    };
+  }
+
+  private async listGuides(
+    query: ListGuidesQuery,
+    access: FindOptionsWhere<AcademicGuideRecord> = {},
+  ) {
+    const { page, pageSize } = this.pagination(query);
+    const filters: FindOptionsWhere<AcademicGuideRecord> = {
+      ...(query.moduleId ? { moduleId: query.moduleId } : {}),
+      ...(query.competencyId ? { competencyId: query.competencyId } : {}),
+      ...(query.status ? { status: query.status } : {}),
+      ...access,
+    };
+    const search = query.search?.trim();
+    const where = search
+      ? (['title', 'code', 'moduleName', 'competencyName'] as const).map(
+          (field) => ({
+            ...filters,
+            [field]: ILike(`%${search.replace(/[\\%_]/g, '\\$&')}%`),
+          }),
+        )
+      : filters;
+    const [records, total] = await this.guides.findAndCount({
+      where,
+      order: { updatedAt: 'DESC' },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    });
+    return { items: await this.toGuides(records), total, page, pageSize };
+  }
+
+  private pagination(query: ListGuidesQuery) {
+    const page = this.parsePositiveInteger(query.page, 1, 'page');
+    const pageSize = this.parsePositiveInteger(query.pageSize, 20, 'pageSize');
+    if (pageSize > 100) {
+      throw new BadRequestException('pageSize no puede ser mayor que 100');
+    }
+    return { page, pageSize };
+  }
+
+  private parsePositiveInteger(value: string | undefined, fallback: number, name: string) {
+    if (value === undefined) return fallback;
+    if (!/^[1-9]\d*$/.test(value)) {
+      throw new BadRequestException(`${name} debe ser un entero positivo`);
+    }
+    const parsed = Number(value);
+    if (!Number.isSafeInteger(parsed)) {
+      throw new BadRequestException(`${name} debe ser un entero positivo`);
+    }
+    return parsed;
   }
 
   async findGuideForUser(id: string, userId: string, roles: string[]) {
@@ -515,19 +890,37 @@ export class AcademicService {
     }
   }
 
-  private async saveFieldConfig(config: GuideFieldConfig) {
+  private async saveFieldConfig(
+    config: Pick<
+      GuideFieldConfig,
+      'moduleId' | 'competencyId' | 'formType' | 'fields'
+    >,
+  ) {
     const current = await this.fieldConfigs.findOneBy({
       moduleId: config.moduleId,
       competencyId:
         config.competencyId === undefined ? IsNull() : config.competencyId,
       formType: config.formType,
     });
+    const inherited =
+      !current && config.formType === 'base'
+        ? await this.fieldConfigs.findOneBy({
+            moduleId: config.moduleId,
+            competencyId: IsNull(),
+            formType: 'base',
+          })
+        : null;
     const saved = await this.fieldConfigs.save({
       ...(current ? { id: current.id } : { id: randomUUID() }),
       moduleId: config.moduleId,
       competencyId: config.competencyId ?? null,
       formType: config.formType,
       fields: config.fields.map((field) => ({ ...field })),
+      version:
+        (current?.version ??
+          inherited?.version ??
+          (config.formType === 'base' ? 1 : 0)) + 1,
+      updatedAt: new Date(),
     });
     return this.toFieldConfig(saved);
   }
@@ -559,24 +952,127 @@ export class AcademicService {
       competencyId: record.competencyId ?? undefined,
       formType: record.formType,
       fields: record.fields,
+      version: record.version,
+      updatedAt: record.updatedAt?.toISOString(),
     };
   }
 
-  private toGuide(record: AcademicGuideRecord): AcademicGuide {
+  private async toGuide(record: AcademicGuideRecord): Promise<AcademicGuide> {
+    const competency = record.competencyId
+      ? await this.competencies.findOne({
+          where: { id: record.competencyId },
+          withDeleted: true,
+        })
+      : null;
+    return this.mapGuide(record, Boolean(competency?.deletedAt));
+  }
+
+  private async toGuides(
+    records: AcademicGuideRecord[],
+  ): Promise<AcademicGuide[]> {
+    const competencyIds = [
+      ...new Set(
+        records
+          .map((record) => record.competencyId)
+          .filter((id): id is string => id !== null),
+      ),
+    ];
+    const competencies = competencyIds.length
+      ? await this.competencies.find({
+          where: { id: In(competencyIds) },
+          withDeleted: true,
+        })
+      : [];
+    const deletedCompetencyIds = new Set(
+      competencies
+        .filter((competency) => Boolean(competency.deletedAt))
+        .map((competency) => competency.id),
+    );
+    return records.map((record) =>
+      this.mapGuide(
+        record,
+        record.competencyId
+          ? deletedCompetencyIds.has(record.competencyId)
+          : false,
+      ),
+    );
+  }
+
+  private mapGuide(
+    record: AcademicGuideRecord,
+    competencyDeleted: boolean,
+  ): AcademicGuide {
+    if (record.code === null) {
+      throw new Error(`La guía ${record.id} no tiene código asignado`);
+    }
     return {
       id: record.id,
+      code: record.code,
       moduleId: record.moduleId,
       moduleName: record.moduleName,
       competencyId: record.competencyId ?? undefined,
       competencyName: record.competencyName ?? undefined,
+      competencyDeleted,
       title: record.title,
       content: record.content,
       fields: record.fields,
+      structureVersion: record.structureVersion,
+      version: record.version,
       status: record.status,
+      createdBy: record.createdById && record.createdByName
+        ? { id: record.createdById, name: record.createdByName }
+        : undefined,
+      updatedBy: record.updatedById && record.updatedByName
+        ? { id: record.updatedById, name: record.updatedByName }
+        : undefined,
+      publishedBy: record.publishedById && record.publishedByName
+        ? { id: record.publishedById, name: record.publishedByName }
+        : undefined,
       createdAt: record.createdAt.toISOString(),
       updatedAt: record.updatedAt.toISOString(),
       publishedAt: record.publishedAt?.toISOString(),
     };
+  }
+
+  private async saveGuideEvents(
+    manager: EntityManager,
+    guideId: string,
+    titles: string[],
+    actor: GuideActor,
+    createdAt: Date,
+  ) {
+    if (titles.length === 0) return;
+    await manager.save(
+      GuideEventRecord,
+      titles.map((title) => ({
+        id: randomUUID(),
+        guideId,
+        title,
+        authorId: actor.id,
+        authorName: actor.name,
+        createdAt,
+      })),
+    );
+  }
+
+  private guideSequence(prefix: string, code: string | null): number {
+    if (code === null) return 0;
+    const codePrefix = `GB-${prefix}-`;
+    if (!code.startsWith(codePrefix)) return 0;
+    const sequence = code.slice(codePrefix.length);
+    return /^\d+$/.test(sequence) ? Number(sequence) : 0;
+  }
+
+  private legacyGuidePrefix(guide: AcademicGuideRecord | undefined): string {
+    if (!guide) return 'LEG';
+    const competencyPrefix = /^COMP-([A-Z0-9]+)-\d+\s*·/.exec(
+      guide.competencyName ?? '',
+    )?.[1];
+    return competencyPrefix ?? buildCompetencyPrefix(guide.moduleName);
+  }
+
+  private formatGuideCode(prefix: string, sequence: number): string {
+    return `GB-${prefix}-${String(sequence).padStart(2, '0')}`;
   }
 
   private toGuideSupportMaterial(record: GuideSupportMaterialRecord) {
@@ -736,6 +1232,13 @@ export class AcademicService {
       } else if (typeof value !== 'string') {
         throw new BadRequestException(
           `El campo '${field.label}' debe ser texto`,
+        );
+      } else if (
+        field.maxLength !== undefined &&
+        value.length > field.maxLength
+      ) {
+        throw new BadRequestException(
+          `El campo '${field.label}' no puede superar ${field.maxLength} caracteres`,
         );
       } else if (field.type === 'date' && Number.isNaN(Date.parse(value))) {
         throw new BadRequestException(

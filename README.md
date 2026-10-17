@@ -34,13 +34,32 @@ El proyecto se organiza en cinco épicas (HE). Cada una tiene sus historias de u
 
 | Épica | Rol | Qué permite | Frontend | Backend |
 |---|---|---|---|---|
-| **HE-01** Usuarios, roles y permisos | Administrador | Registrar, editar y desactivar usuarios; asignar roles | ✅ Conectado al backend | ✅ Sobre Keycloak |
-| **HE-02** Programa académico | Coordinador Académico | Módulos curriculares y competencias, con historial de versiones | ✅ Con datos simulados | ✅ PostgreSQL |
-| **HE-03** Guías de aprendizaje | Coordinador Académico | Guías base, estructura de campos y publicación | ✅ Con datos simulados | 🟡 Versión preliminar en memoria |
-| **HE-04** Espacio docente | Docente / Docente Autorizado | Consultar guías asignadas y crear versiones propias | ✅ Con datos simulados | ❌ Pendiente |
-| **HE-05** Sugerencias | Docente → Coordinador | Proponer cambios a una guía y aprobarlos o rechazarlos | ✅ Con datos simulados | ❌ Pendiente |
+| **HE-01** Usuarios, roles y permisos | Administrador | Registrar, editar y desactivar usuarios; asignar roles | Conectado al backend | Keycloak |
+| **HE-02** Programa académico | Coordinador Académico | Módulos curriculares y competencias, con historial de versiones | Conectado al backend | PostgreSQL |
+| **HE-03** Guías de aprendizaje | Coordinador Académico | Guías base, estructura de campos, publicación, material de apoyo y descarga en Word o PDF | Conectado al backend | PostgreSQL |
+| **HE-04** Espacio docente | Docente / Docente Autorizado | Consultar guías asignadas y crear versiones propias | Con datos simulados | PostgreSQL |
+| **HE-05** Sugerencias | Docente y Coordinador | Proponer cambios a una guía y aprobarlos o rechazarlos | Con datos simulados | Pendiente |
 
-«Con datos simulados» significa que la pantalla funciona completa, pero con datos de prueba en memoria que se pierden al recargar la página. El detalle de cada HU está en [`docs/verificacion-front-HE01-HE05.md`](docs/verificacion-front-HE01-HE05.md).
+«Con datos simulados» significa que la pantalla funciona completa, pero con datos de prueba en memoria que se pierden al recargar la página. El detalle de cada HU del frontend está en [`docs/verificacion-front-HE01-HE05.md`](docs/verificacion-front-HE01-HE05.md).
+
+### Backend de HE-03 y HE-04
+
+Las guías, sus formularios y las versiones docentes **se guardan en PostgreSQL** y sobreviven a los reinicios de la API. Todas las rutas están bajo `/academic`.
+
+- **Guía base (HE-03, rol `coordinador`):**
+  - Se crea sobre un módulo activo de HE-02 y una de sus competencias. La API genera el título, el código y la versión.
+  - Pasa de borrador (`v0`) a publicada (`v1.0`). Una guía publicada ya no se edita.
+  - Guarda una copia del módulo, la competencia y los campos del formulario. Así, cambios posteriores en HE-02 o en el formulario no alteran las guías existentes.
+  - Registra quién la creó, la editó y la publicó, con su historial de eventos.
+  - Admite material de apoyo (un PDF o DOCX por carga, máximo 10 MB) y se descarga en **Word o PDF** con las plantillas institucionales.
+- **Formularios configurables (HE-03):** el coordinador define los campos de la guía base y los de la guía docente por módulo o por competencia: sección, ayuda, longitud máxima y si el docente puede editarlos. Si un módulo no tiene formulario propio, se usan los campos institucionales por defecto.
+- **Espacio docente (HE-04, rol `docente`):**
+  - El coordinador asigna docentes a cada módulo.
+  - El docente ve solo las guías publicadas de sus módulos.
+  - Crea su propia copia y la edita por partes, sin modificar nunca la guía base.
+  - También puede descargarla en Word o PDF.
+
+Las rutas completas están en [`gestion-guias/README.md`](gestion-guias/README.md), y hay una colección de Postman en [`gestion-guias/postman/`](gestion-guias/postman/).
 
 ## 2. Arquitectura
 
@@ -48,7 +67,7 @@ El sistema tiene tres piezas propias y un proveedor de identidad externo:
 
 ```mermaid
 flowchart LR
-    usuarios(["👤 Administrador · Coordinador · Docente"])
+    usuarios(["Administrador · Coordinador · Docente"])
     subgraph sistema["System Plus · Intranet de guías académicas"]
         spa["<b>Aplicación web</b><br/>Angular · navegador"]
         api["<b>API gestion-guias</b><br/>NestJS"]
@@ -80,7 +99,7 @@ flowchart LR
 | Base de datos | PostgreSQL |
 | Autenticación | Keycloak 26 (OpenID Connect, Authorization Code + PKCE, tokens JWT) |
 | Pruebas | Vitest (frontend y backend) |
-| Gestores de paquetes | npm (frontend), pnpm (backend) |
+| Gestor de paquetes | pnpm (frontend y backend) |
 
 ## 4. Estructura del repositorio
 
@@ -95,11 +114,12 @@ system-plus-project/
 ├── gestion-guias/     API REST en NestJS
 │   ├── src/users/             HE-01 · puente hacia la administración de Keycloak
 │   ├── src/academic-program/  HE-02 · programas, módulos y competencias
-│   ├── src/academic/          Versión preliminar en memoria (guías)
+│   ├── src/academic/          HE-03 y HE-04 · guías, formularios, versiones docentes y exportación
+│   ├── postman/               Colección de Postman para probar la API
 │   ├── src/auth/              Validación de tokens y roles de Keycloak
 │   └── .env.example           Plantilla de configuración
 ├── keycloak/          Realm "system-plus" listo para importar en desarrollo
-└── docs/              Estrategia de ramas, verificación del front y diagramas
+└── docs/              Estrategia de ramas y verificación del frontend
 ```
 
 **Puertos en desarrollo**
@@ -117,11 +137,12 @@ system-plus-project/
 |---|---|---|---|
 | Git | Reciente | Clonar el repositorio | `git --version` |
 | Node.js | 22 LTS o 24 | Frontend y backend | `node -v` |
-| pnpm | 9 o superior | Backend | `pnpm -v` |
+| pnpm | 12 (se instala con `npm install -g pnpm`) | Frontend y backend | `pnpm -v` |
 | PostgreSQL | 15 o superior | Base de datos del backend | `psql --version` |
 | Keycloak | 26.3 | Inicio de sesión | Con Docker o con Java 21 (ver sección 7.1) |
+| LibreOffice | Reciente | Solo para descargar guías en PDF | `soffice --version` |
 
-Para trabajar **solo en el frontend con datos simulados** basta con Git y Node.js.
+Para trabajar **solo en el frontend con datos simulados** basta con Git, Node.js y pnpm.
 
 ## 6. Puesta en marcha rápida (solo frontend)
 
@@ -131,22 +152,23 @@ Este modo no necesita backend ni Keycloak. Sirve para revisar pantallas o trabaj
 
    ```powershell
    cd frontend
-   npm ci
+   pnpm install --frozen-lockfile
    ```
 
-2. En `frontend/src/environments/environment.ts` cambia `auth` y `api` a `'mock'`:
+2. En `frontend/src/environments/environment.ts` cambia `auth`, `api` y `apiAcademico` a `'mock'`:
 
    ```ts
    auth: 'mock' as 'keycloak' | 'mock',
    api: 'mock' as 'http' | 'mock',
+   apiAcademico: 'mock' as 'http' | 'mock',
    ```
 
-   >**Este cambio es solo para tu computador.** El archivo del repositorio debe seguir con `'keycloak'` y `'http'`, porque es la configuración que usa el resto del equipo. Si haces este cambio, no lo incluyas en tus commits: en GitHub Desktop, haz clic derecho sobre `environment.ts` y elige *Discard changes* antes de hacer commit.
+   > **Importante:** este cambio es solo para tu computador. El archivo del repositorio debe seguir con `'keycloak'` y `'http'`, porque es la configuración que usa el resto del equipo. Si haces este cambio, no lo incluyas en tus commits: en GitHub Desktop, haz clic derecho sobre `environment.ts` y elige *Discard changes* antes de hacer commit.
 
 3. Arranca el servidor:
 
    ```powershell
-   npm start
+   pnpm start
    ```
 
 4. Abre http://localhost:4200 y entra con un usuario simulado (sección 8).
@@ -168,7 +190,7 @@ En ambos casos se importa el realm `system-plus`, que ya trae los roles, los cli
 
 ### 7.2 PostgreSQL
 
-Crea una base de datos vacía llamada `gestion_guias`. Las tablas se crean solas cuando arranca el backend.
+Crea una base de datos vacía llamada `gestion_guias`. Las tablas se crean solas cuando arranca el backend (con `DB_SYNCHRONIZE=true`), y la primera vez se carga el programa **Técnico en Sistemas** con sus módulos y competencias de ejemplo.
 
 ```sql
 CREATE DATABASE gestion_guias;
@@ -185,13 +207,14 @@ Abre `.env` y completa:
 
 - `DB_USER` y `DB_PASSWORD` con los de tu PostgreSQL.
 - `KEYCLOAK_ADMIN_CLIENT_SECRET` con el secreto de desarrollo indicado en [`keycloak/README.md`](keycloak/README.md).
+- `LIBREOFFICE_PATH`, solo si LibreOffice no está en el PATH. En Windows apunta a `soffice.com`; por ejemplo, `C:\Program Files\LibreOffice\program\soffice.com`.
 
 `.env` nunca se sube al repositorio (está en `.gitignore`).
 
 Instala y arranca:
 
 ```powershell
-pnpm install
+pnpm install --frozen-lockfile
 pnpm start:dev
 ```
 
@@ -199,12 +222,12 @@ La API queda en http://localhost:3000. Los endpoints están documentados en [`ge
 
 ### 7.4 Frontend
 
-Con `environment.ts` tal como está en el repositorio (`auth: 'keycloak'`, `api: 'http'`):
+Con `environment.ts` tal como está en el repositorio (`auth: 'keycloak'`, `api` y `apiAcademico` en `'http'`):
 
 ```powershell
 cd frontend
-npm ci
-npm start
+pnpm install --frozen-lockfile
+pnpm start
 ```
 
 Abre http://localhost:4200. La aplicación te lleva a la pantalla de inicio de sesión de Keycloak. Entra con un usuario de Keycloak (sección 8).
@@ -232,7 +255,7 @@ Las contraseñas dependen del modo:
 ```powershell
 # Frontend
 cd frontend
-npx ng test --watch=false
+pnpm exec ng test --watch=false
 
 # Backend
 cd gestion-guias

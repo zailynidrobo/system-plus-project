@@ -2,12 +2,12 @@
 
 Frontend de la intranet AthenaDev · System Plus Piendamó. Usa Angular 21 con pnpm.
 
-Incluye HE-01 a HE-05 con **datos simulados en memoria** (sin backend):
-- usuarios y roles;
-- programa académico;
-- guías base;
-- espacio docente;
-- sugerencias.
+Esta guía explica cómo ejecutar el frontend y cómo probarlo. Tiene dos modos:
+
+- **Modo completo (configuración por defecto del repositorio):** `auth: 'keycloak'`, `api: 'http'` y `apiAcademico: 'http'`. Usa Keycloak, el backend y PostgreSQL. Los pasos están en las secciones 11, 12 y 13, y en el [README principal](../README.md#7-puesta-en-marcha-completa-frontend--backend--keycloak).
+- **Modo simulado:** sin backend ni Keycloak, con datos en memoria. Hay que cambiar `auth`, `api` y `apiAcademico` a `'mock'` en `src/environments/environment.ts` (solo en tu computador, sin hacer commit). Las secciones 3 a 8 describen este modo.
+
+Estado de las épicas: HE-01, HE-02 y HE-03 usan el backend. HE-04 (espacio docente) y HE-05 (sugerencias) siguen con datos simulados.
 
 ## 1. Requisitos
 
@@ -40,8 +40,7 @@ pnpm install --frozen-lockfile
 ## 3. Ejecutar
 
 ```powershell
-
-
+pnpm start
 ```
 
 Abre <http://localhost:4200> y entra con uno de los usuarios de la sección 6. Para detener el servidor, pulsa `Ctrl + C`.
@@ -193,19 +192,16 @@ Hazlo en una sola pestaña y sin recargar (ver la nota de la sección 3).
   - No se puede enviar otra sugerencia sobre un campo que ya tiene una pendiente propia.
   - El rechazo exige motivo y 30 caracteres de retroalimentación.
 
-## 9. Conectar el backend real
+## 9. Qué falta por conectar al backend
 
-No basta con cambiar un interruptor. La lista completa de pendientes está en `docs/verificacion-front-HE01-HE05.md`, sección 8. Lo principal:
+Ya están conectados HE-01 (usuarios y roles, con Keycloak), HE-02 (programa académico) y HE-03 (guías base y estructura). Ver las secciones 11 a 13.
 
-1. **Autenticación:** decidir entre Keycloak y un login propio. El front ya está preparado:
-   - `core/auth/provide-auth.ts` es el único punto donde se elige la implementación (`AuthProvider`);
-   - `core/auth/role-mapping.ts` traduce los roles de Keycloak.
-2. **Adaptador de datos:** el backend usa `name`, `email`, `role` en minúscula (`admin`…) e `isActive`.
-3. **Prefijo `/api` y CORS** en el backend, o un `proxy.conf.json` en Angular.
-4. **Servicios `*-api.ts`:** hoy todos leen `MockDb`. Hay que reescribirlos con `HttpClient`, conservando los nombres de métodos y los códigos de error.
-5. **Endpoints que faltan:** en el backend no existen las sugerencias (HE-05) ni varios datos que usan HE-03 y HE-04. Algunos ejemplos:
-   - las propiedades de campo `help`, `maxLength` y `teacherEditable`;
-   - el nombre de la versión docente.
+Siguen con datos simulados:
+
+1. **HE-04, espacio docente:** `teacher-api.ts` lee `MockDb`. Hay que reescribirlo con `HttpClient` sobre las rutas `/academic/...` del backend, conservando los nombres de métodos y los códigos de error.
+2. **HE-05, sugerencias:** el backend aún no tiene esas rutas.
+
+El detalle de pendientes está en `docs/verificacion-front-HE01-HE05.md`.
 
 ## 10. Problemas comunes
 

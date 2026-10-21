@@ -177,6 +177,13 @@ Para detener el servidor, pulsa `Ctrl + C` en la terminal.
 
 ## 7. Puesta en marcha completa (frontend + backend + Keycloak)
 
+Para obtener el código basta con la rama estable, no hace falta bajar las demás:
+
+```bash
+git clone https://github.com/zailynidrobo/system-plus-project.git
+cd system-plus-project
+```
+
 Hay que encender cuatro servicios **en este orden**. Usa una terminal distinta para cada uno.
 
 ### 7.1 Keycloak
@@ -190,7 +197,13 @@ En ambos casos se importa el realm `system-plus`, que ya trae los roles, los cli
 
 ### 7.2 PostgreSQL
 
-Crea una base de datos vacía llamada `gestion_guias`. Las tablas se crean solas cuando arranca el backend (con `DB_SYNCHRONIZE=true`), y la primera vez se carga el programa **Técnico en Sistemas** con sus módulos y competencias de ejemplo.
+Con Docker (en Git Bash):
+
+```bash
+docker run --name pg-guias -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=gestion_guias -p 5432:5432 -d postgres:16
+```
+
+Si ya tienes un PostgreSQL instalado, solo crea una base de datos vacía llamada `gestion_guias`. Las tablas se crean solas cuando arranca el backend (con `DB_SYNCHRONIZE=true`), y la primera vez se carga el programa **Técnico en Sistemas** con sus módulos y competencias de ejemplo.
 
 ```sql
 CREATE DATABASE gestion_guias;

@@ -1,60 +1,49 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, delay, of, tap, throwError } from 'rxjs';
-import { LoginRequest, LoginResponse, Role, User } from '../../shared/models/user';
-import { TokenStorage } from './token-storage';
+import { Observable, tap } from 'rxjs';
+import { LoginRequest, Role, User } from '../../shared/models/user';
+import { ProblemaLogin } from './auth-provider';
+import { AUTH_PROVIDER } from './provide-auth';
 
-// Cuando el backend esté listo: USE_MOCK = false y ajustar API_URL
-const USE_MOCK = true;
-const API_URL = 'http://localhost:3000/api';
-
-const MOCK_USERS: (User & { contrasena: string })[] = [
-  { id: 1, nombre: 'Admin Prueba', correo: 'admin@systemplus.edu.co', contrasena: '123456', rol: 'ADMINISTRADOR', activo: true },
-  { id: 2, nombre: 'Coordinadora Prueba', correo: 'coordinador@systemplus.edu.co', contrasena: '123456', rol: 'COORDINADOR', activo: true },
-  { id: 3, nombre: 'Docente Prueba', correo: 'docente@systemplus.edu.co', contrasena: '123456', rol: 'DOCENTE', activo: true },
-  { id: 4, nombre: 'Docente Inactivo', correo: 'inactivo@systemplus.edu.co', contrasena: '123456', rol: 'DOCENTE', activo: false },
-];
-
+/**
+ * Fachada de autenticación que usan pantallas, guards, menú e interceptor.
+ * No sabe si la sesión viene del mock o de Keycloak: eso lo decide AUTH_PROVIDER.
+ */
 @Injectable({ providedIn: 'root' })
 export class Auth {
-  private http = inject(HttpClient);
-  private storage = inject(TokenStorage);
+  private provider = inject(AUTH_PROVIDER);
 
-  private _user = signal<User | null>(this.storage.getUser());
+  private _user = signal<User | null>(this.provider.restaurarSesion());
   readonly user = this._user.asReadonly();
   readonly isLoggedIn = computed(() => this._user() !== null);
 
-  login(credenciales: LoginRequest, recordar = false): Observable<LoginResponse> {
-    const peticion = USE_MOCK
-      ? this.mockLogin(credenciales)
-      : this.http.post<LoginResponse>(`${API_URL}/auth/login`, credenciales);
+  /** true si el login es externo (Keycloak): la pantalla de login redirige en vez de pedir datos. */
+  readonly loginExterno = this.provider.loginExterno ?? false;
 
-    return peticion.pipe(
-      tap((res) => {
-        this.storage.saveSession(res.token, res.usuario, recordar);
-        this._user.set(res.usuario);
-      }),
-    );
+  /** Con login externo: por qué no se puede redirigir automáticamente, o null. */
+  problemaLogin(): ProblemaLogin | null {
+    return this.provider.problemaLogin?.() ?? null;
+  }
+
+  login(credenciales: LoginRequest, recordar = false): Observable<User> {
+    return this.provider.login(credenciales, recordar).pipe(tap((u) => this._user.set(u)));
+  }
+
+  /** Relee al usuario: aplica un cambio de rol o cierra la sesión si fue desactivado. */
+  refrescar(): Observable<User | null> {
+    return this.provider.refrescar().pipe(tap((u) => this._user.set(u)));
+  }
+
+  token(): string | null {
+    return this.provider.token();
   }
 
   logout(): void {
-    this.storage.clear();
+    this.provider.logout();
     this._user.set(null);
   }
 
   hasRole(roles: Role[]): boolean {
     const user = this._user();
     return !!user && roles.includes(user.rol);
-  }
-
-  private mockLogin(c: LoginRequest): Observable<LoginResponse> {
-    const encontrado = MOCK_USERS.find(
-      (u) => u.correo === c.correo && u.contrasena === c.contrasena && u.activo,
-    );
-    if (!encontrado) {
-      return throwError(() => new Error('Credenciales inválidas')).pipe(delay(500));
-    }
-    const { contrasena, ...usuario } = encontrado;
-    return of({ token: 'token-falso-' + usuario.id, usuario }).pipe(delay(500));
   }
 }

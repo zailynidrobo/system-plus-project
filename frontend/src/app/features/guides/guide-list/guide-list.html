@@ -1,0 +1,230 @@
+<header class="ui-page-head">
+  <div>
+    <h1>Guías base institucionales</h1>
+    <p>Crea, ajusta y publica las guías oficiales de cada módulo del Técnico en Sistemas.</p>
+  </div>
+  <div class="ui-page-head__actions">
+    <a class="ui-btn ui-btn--outline" routerLink="/guias/estructura"
+      ><app-icon name="sliders" [size]="16" /> Configurar estructura</a
+    >
+    <a class="ui-btn ui-btn--primary" routerLink="/guias/nueva"
+      ><app-icon name="plus" [size]="16" /> Nueva guía base</a
+    >
+  </div>
+</header>
+
+@if (error(); as e) {
+  <p class="ui-help ui-help--error" role="alert">{{ e }}</p>
+}
+
+<section class="ui-stats">
+  <article class="ui-stat">
+    <span class="ui-tile"><app-icon name="file-text" [size]="18" /></span>
+    <div>
+      <small>Guías registradas</small>
+      <strong>{{ resumen()?.total ?? '–' }}</strong
+      ><em>en {{ resumen()?.modulos ?? 0 }} módulos</em>
+    </div>
+  </article>
+  <article class="ui-stat">
+    <span class="ui-tile ui-tile--ok"><app-icon name="circle-check" [size]="18" /></span>
+    <div>
+      <small>Publicadas</small>
+      <strong>{{ resumen()?.publicadas ?? '–' }}</strong
+      ><em>visibles para docentes</em>
+    </div>
+  </article>
+  <article class="ui-stat">
+    <span class="ui-tile ui-tile--warn"><app-icon name="pencil" [size]="18" /></span>
+    <div>
+      <small>En borrador</small>
+      <strong>{{ resumen()?.borradores ?? '–' }}</strong
+      ><em>pendientes por publicar</em>
+    </div>
+  </article>
+</section>
+
+<section class="ui-panel">
+  <div class="ui-toolbar">
+    <label class="ui-search">
+      <app-icon name="search" [size]="16" />
+      <input
+        type="search"
+        placeholder="Buscar guía, código o módulo…"
+        aria-label="Buscar guía, código o módulo"
+        [value]="filtro().busqueda"
+        (input)="cambiar({ busqueda: $any($event.target).value })"
+      />
+    </label>
+    <div class="ui-filters">
+      <label class="ui-select">
+        <app-icon name="list-filter" [size]="15" />
+        <select aria-label="Filtrar por módulo" (change)="filtrarModulo($any($event.target).value)">
+          <option value="">Módulo: Todos</option>
+          @for (m of modulos(); track m.id) {
+            <option [value]="m.id">{{ m.name }}</option>
+          }
+        </select>
+      </label>
+      @if (filtro().moduleId) {
+        <label class="ui-select">
+          <select
+            aria-label="Filtrar por competencia"
+            (change)="
+              cambiar({
+                competencyId: $any($event.target).value ? +$any($event.target).value : null,
+              })
+            "
+          >
+            <option value="">Competencia: Todas</option>
+            @for (c of competencias(); track c.id) {
+              <option [value]="c.id">{{ c.code }}</option>
+            }
+          </select>
+        </label>
+      }
+      <label class="ui-select">
+        <select
+          aria-label="Filtrar por estado"
+          (change)="cambiar({ estado: $any($event.target).value })"
+        >
+          <option value="TODOS">Estado: Todos</option>
+          @for (e of estados; track e) {
+            <option [value]="e">Estado: {{ e }}</option>
+          }
+        </select>
+      </label>
+    </div>
+  </div>
+
+  <div class="ui-table-wrap">
+    <table class="ui-table">
+      <thead>
+        <tr>
+          <th>Guía</th>
+          <th>Módulo</th>
+          <th>Competencia</th>
+          <th>Estado</th>
+          <th>Última modificación</th>
+          <th class="ui-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (g of guias(); track g.id) {
+          <tr>
+            <td>
+              <div class="ui-cell">
+                <span class="ui-tile ui-tile--sm"><app-icon name="file-text" [size]="15" /></span>
+                <div>
+                  <strong>{{ g.title }}</strong>
+                  <small>{{ g.code }}</small>
+                </div>
+              </div>
+            </td>
+            <td>{{ g.moduleName }}</td>
+            <td>
+              @if (g.competencyCode) {
+                <span class="ui-pill">{{ g.competencyCode }}</span>
+              }
+            </td>
+            <td>
+              @if (g.status === 'Publicada') {
+                <span class="ui-pill ui-pill--ok"><i></i> Publicada</span>
+              } @else {
+                <span class="ui-pill ui-pill--warn"><i></i> Borrador</span>
+              }
+            </td>
+            <td>
+              <div class="ui-cell">
+                <div>
+                  <strong>{{ cuando(g.updatedAt) }}</strong>
+                  <small>{{ g.updatedBy?.name }}</small>
+                </div>
+              </div>
+            </td>
+            <td class="ui-actions-cell">
+              @if (g.status === 'Publicada') {
+                <a
+                  class="ui-icon-btn"
+                  [routerLink]="['/guias', g.id]"
+                  title="Ver guía"
+                  aria-label="Ver guía"
+                >
+                  <app-icon name="eye" [size]="14" />
+                </a>
+                <a
+                  class="ui-icon-btn"
+                  [routerLink]="['/guias', g.id]"
+                  fragment="historial"
+                  title="Ver historial"
+                  aria-label="Ver historial"
+                >
+                  <app-icon name="history" [size]="14" />
+                </a>
+              } @else {
+                <a
+                  class="ui-icon-btn"
+                  [routerLink]="['/guias', g.id, 'editar']"
+                  title="Editar"
+                  aria-label="Editar borrador"
+                >
+                  <app-icon name="pencil" [size]="14" />
+                </a>
+                <a
+                  class="ui-icon-btn"
+                  [routerLink]="['/guias', g.id, 'editar']"
+                  [queryParams]="{ publicar: 1 }"
+                  title="Publicar"
+                  aria-label="Publicar guía"
+                >
+                  <app-icon name="send" [size]="14" />
+                </a>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="ui-empty">
+              {{ cargando() ? 'Cargando guías...' : 'No hay guías que coincidan con los filtros.' }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <footer class="ui-pager">
+    <span>Mostrando {{ desde() }}–{{ hasta() }} de {{ total() }} guías</span>
+    <div class="ui-pager__buttons">
+      <button
+        type="button"
+        class="ui-icon-btn"
+        (click)="irA(filtro().pagina - 1)"
+        [disabled]="filtro().pagina === 1"
+        aria-label="Página anterior"
+      >
+        <app-icon name="chevron-left" [size]="14" />
+      </button>
+      @for (p of paginas(); track p) {
+        <button
+          type="button"
+          class="ui-icon-btn"
+          [class.is-current]="p === filtro().pagina"
+          (click)="irA(p)"
+          [attr.aria-current]="p === filtro().pagina ? 'page' : null"
+        >
+          {{ p }}
+        </button>
+      }
+      <button
+        type="button"
+        class="ui-icon-btn"
+        (click)="irA(filtro().pagina + 1)"
+        [disabled]="filtro().pagina === totalPaginas()"
+        aria-label="Página siguiente"
+      >
+        <app-icon name="chevron-right" [size]="14" />
+      </button>
+    </div>
+  </footer>
+</section>

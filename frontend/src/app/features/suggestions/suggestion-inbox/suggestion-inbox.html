@@ -1,0 +1,128 @@
+<header class="ui-page-head">
+  <div>
+    <h1>Sugerencias de docentes</h1>
+    <p>Revisa las propuestas de cambio sobre las guías base institucionales.</p>
+  </div>
+</header>
+
+@if (rechazada; as r) {
+  <div class="ui-notice ui-notice--info ui-mb" role="status">
+    <app-icon name="send" [size]="16" />
+    <div>
+      <strong>Sugerencia {{ r.code }} rechazada</strong>
+      <p>{{ r.teacherName }} verá el motivo y tu retroalimentación en Mis sugerencias. La guía base no cambió.</p>
+    </div>
+  </div>
+}
+
+<section class="ui-stats">
+  <article class="ui-stat">
+    <span class="ui-tile ui-tile--warn"><app-icon name="clock" [size]="18" /></span>
+    <div><small>Pendientes</small><strong>{{ resumen()?.pendientes ?? '–' }}</strong><em>por revisar</em></div>
+  </article>
+  <article class="ui-stat">
+    <span class="ui-tile ui-tile--ok"><app-icon name="circle-check" [size]="18" /></span>
+    <div><small>Aprobadas</small><strong>{{ resumen()?.aprobadas ?? '–' }}</strong><em>este semestre</em></div>
+  </article>
+  <article class="ui-stat">
+    <span class="ui-tile ui-tile--danger"><app-icon name="circle-x" [size]="18" /></span>
+    <div><small>Rechazadas</small><strong>{{ resumen()?.rechazadas ?? '–' }}</strong><em>con retroalimentación</em></div>
+  </article>
+</section>
+
+<section class="ui-panel">
+  <div class="ui-toolbar">
+    <div class="pestanas" role="tablist">
+      @for (p of pestanas; track p.estado) {
+        <button
+          type="button"
+          role="tab"
+          class="pestana"
+          [class.is-active]="filtro().estado === p.estado"
+          [attr.aria-selected]="filtro().estado === p.estado"
+          (click)="cambiar({ estado: p.estado })"
+        >
+          {{ p.texto }}@if (p.estado === 'Pendiente') { ({{ resumen()?.pendientes ?? 0 }}) }
+        </button>
+      }
+    </div>
+    <div class="ui-filters">
+      <label class="ui-select">
+        <app-icon name="list-filter" [size]="15" />
+        <select aria-label="Filtrar por guía" (change)="cambiar({ guideId: $any($event.target).value ? +$any($event.target).value : null })">
+          <option value="">Guía: Todas</option>
+          @for (g of guias(); track g.id) {
+            <option [value]="g.id">{{ g.code }} · {{ g.moduleName }}</option>
+          }
+        </select>
+      </label>
+      <label class="ui-select">
+        <select aria-label="Ordenar" (change)="cambiar({ orden: $any($event.target).value })">
+          <option value="antiguas">Más antiguas primero</option>
+          <option value="recientes">Más recientes primero</option>
+        </select>
+      </label>
+    </div>
+  </div>
+
+  <div class="ui-table-wrap">
+    <table class="ui-table">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Docente</th>
+          <th>Guía · Campo</th>
+          <th>Propuesta</th>
+          <th>Recibida</th>
+          <th>Estado</th>
+          <th class="ui-right">Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (s of sugerencias(); track s.id) {
+          <tr>
+            <td><strong class="codigo">{{ s.code }}</strong></td>
+            <td>
+              <div class="ui-cell">
+                <span class="ui-avatar avatar">{{ iniciales(s.teacherName) }}</span>
+                <strong>{{ s.teacherName }}</strong>
+              </div>
+            </td>
+            <td>
+              <div class="ui-cell">
+                <div><strong>{{ s.guideCode }}</strong><small>{{ s.fieldLabel }}</small></div>
+              </div>
+            </td>
+            <td class="propuesta">{{ s.summary }}</td>
+            <td>
+              <div class="ui-cell">
+                <div>
+                  <strong>{{ recibida(s.createdAt) }}</strong>
+                  @if (s.status === 'Pendiente') {
+                    @let p = plazo(s.dueAt);
+                    <small [class.vencida]="p.vencida">{{ p.texto }}</small>
+                  }
+                </div>
+              </div>
+            </td>
+            <td><span class="ui-pill ui-pill--sm" [class]="pill[s.status]"><i></i> {{ s.status }}</span></td>
+            <td class="ui-actions-cell">
+              @if (s.status === 'Pendiente') {
+                <a class="ui-btn ui-btn--primary ui-btn--xs" [routerLink]="['/sugerencias', s.id]">Revisar</a>
+              } @else {
+                <a class="ui-btn ui-btn--outline ui-btn--xs" [routerLink]="['/sugerencias', s.id]">Ver</a>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="7" class="ui-empty">
+              {{ cargando() ? 'Cargando sugerencias…' : 'No hay sugerencias con estos filtros.' }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <div class="ui-table-foot">{{ pie() }}</div>
+</section>

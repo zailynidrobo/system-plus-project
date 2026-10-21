@@ -36,6 +36,47 @@
     </header>
 
     <main class="panel__main">
+      @if (externo) {
+        <div class="card">
+          <h1>Inicia sesión</h1>
+
+          @switch (problema) {
+            @case ('SIN_ROL') {
+              <div class="alert" role="alert">
+                <app-icon name="circle-alert" [size]="18" />
+                <div>
+                  <strong>Tu cuenta no tiene un rol asignado</strong>
+                  <p>Pídele al administrador que te asigne un rol y vuelve a ingresar.</p>
+                </div>
+              </div>
+              <button type="button" class="submit" (click)="cerrarSesion()">
+                <app-icon name="log-in" [size]="18" />
+                Cerrar sesión
+              </button>
+            }
+            @case ('SERVICIO_NO_DISPONIBLE') {
+              <div class="alert" role="alert">
+                <app-icon name="circle-alert" [size]="18" />
+                <div>
+                  <strong>No pudimos conectar con el servicio de acceso</strong>
+                  <p>Inténtalo de nuevo en unos minutos. Si el problema continúa, avisa al administrador.</p>
+                </div>
+              </div>
+              <button type="button" class="submit" (click)="reintentar()">
+                <app-icon name="log-in" [size]="18" />
+                Reintentar
+              </button>
+            }
+            @default {
+              <p class="card__subtitle">Te estamos llevando al inicio de sesión institucional…</p>
+              <button type="button" class="submit" [disabled]="cargando()" (click)="irAKeycloak()">
+                <app-icon name="log-in" [size]="18" />
+                Ir al inicio de sesión
+              </button>
+            }
+          }
+        </div>
+      } @else {
       <form class="card" [formGroup]="form" (ngSubmit)="enviar()" novalidate>
         <h1>Inicia sesión</h1>
         <p class="card__subtitle">Ingresa con tu correo institucional para continuar.</p>
@@ -57,7 +98,7 @@
             id="correo"
             type="email"
             formControlName="correo"
-            placeholder="nombre@systemplus.edu.co"
+            placeholder="nombre@dominio.com"
             autocomplete="username"
           />
         </div>
@@ -105,6 +146,7 @@
           Conexión segura · La contraseña nunca se muestra en texto plano
         </p>
       </form>
+      }
     </main>
 
     <footer class="panel__footer">

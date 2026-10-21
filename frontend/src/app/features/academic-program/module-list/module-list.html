@@ -1,0 +1,174 @@
+<header class="ui-page-head">
+  <div>
+    <h1>Programa académico</h1>
+    <p>Administra los módulos y competencias del programa Técnico en Sistemas.</p>
+  </div>
+  <a class="ui-btn ui-btn--primary" routerLink="/modulos/nuevo">
+    <app-icon name="plus" [size]="16" /> Registrar módulo
+  </a>
+</header>
+
+<section class="ui-stats">
+  <article class="ui-stat">
+    <span class="ui-tile"><app-icon name="graduation-cap" [size]="18" /></span>
+    <div>
+      <small>Plan curricular</small>
+      <strong>Vigente</strong><em>Cohorte 2026</em>
+    </div>
+  </article>
+  <article class="ui-stat">
+    <span class="ui-tile"><app-icon name="book-check" [size]="18" /></span>
+    <div>
+      <small>Módulos activos</small>
+      <strong>{{ resumen()?.disponiblesParaGuias ?? '–' }}</strong><em>Disponibles para nuevas guías</em>
+    </div>
+  </article>
+  <article class="ui-stat">
+    <span class="ui-tile"><app-icon name="files" [size]="18" /></span>
+    <div>
+      <small>Guías publicadas</small>
+      <strong>{{ resumen()?.guiasPublicadas ?? '–' }}</strong><em>Historial protegido</em>
+    </div>
+  </article>
+</section>
+
+<section class="ui-panel">
+  <div class="ui-toolbar">
+    <label class="ui-search">
+      <app-icon name="search" [size]="16" />
+      <input
+        #busquedaInput
+        type="search"
+        placeholder="Buscar por nombre o código"
+        aria-label="Buscar por nombre o código"
+        [value]="filtro().busqueda"
+        (input)="cambiar({ busqueda: $any($event.target).value })"
+      />
+      <span class="ui-kbd">⌘ K</span>
+    </label>
+    <div class="ui-filters">
+      <label class="ui-select">
+        <select aria-label="Filtrar por estado" [value]="filtro().estado" (change)="cambiar({ estado: $any($event.target).value })">
+          <option value="TODOS">Estado: Todos</option>
+          @for (e of estados; track e) {
+            <option [value]="e">Estado: {{ labels[e] }} ({{ resumen()?.porEstado?.[e] ?? 0 }})</option>
+          }
+        </select>
+      </label>
+      <label class="ui-select">
+        <select aria-label="Ordenar" [value]="filtro().orden" (change)="cambiar({ orden: $any($event.target).value })">
+          <option value="nombre">Orden: Nombre</option>
+          <option value="codigo">Orden: Código</option>
+        </select>
+      </label>
+    </div>
+  </div>
+
+  <p class="ui-hint-row"><app-icon name="list-filter" [size]="14" /> Módulos visibles del plan curricular vigente</p>
+
+  <div class="ui-table-wrap">
+    <table class="ui-table">
+      <thead>
+        <tr>
+          <th>Módulo</th>
+          <th>Competencias</th>
+          <th>Guías</th>
+          <th>Estado</th>
+          <th class="ui-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (m of modulos(); track m.id) {
+          <tr>
+            <td>
+              <div class="ui-cell">
+                <span class="ui-tile ui-tile--sm"><app-icon name="book-open" [size]="16" /></span>
+                <div>
+                  <strong>{{ m.name }}</strong>
+                  <small>{{ m.code }}</small>
+                </div>
+              </div>
+            </td>
+            <td>{{ m.competenciesCount }} {{ m.competenciesCount === 1 ? 'competencia' : 'competencias' }}</td>
+            <td>{{ m.guidesCount }} {{ m.guidesCount === 1 ? 'guía' : 'guías' }}</td>
+            <td><span class="ui-pill" [class]="pill(m.status)"><i></i> {{ labels[m.status] }}</span></td>
+            <td class="ui-actions-cell">
+              <a class="ui-icon-btn" [routerLink]="['/modulos', m.id]" title="Ver detalle" aria-label="Ver detalle">
+                <app-icon name="eye" [size]="14" />
+              </a>
+              <a class="ui-icon-btn" [routerLink]="['/modulos', m.id, 'editar']" title="Editar" aria-label="Editar módulo">
+                <app-icon name="pencil" [size]="14" />
+              </a>
+              @switch (m.status) {
+                @case ('active') {
+                  <a class="ui-icon-btn ui-icon-btn--danger" [routerLink]="['/modulos', m.id, 'inhabilitar']" title="Inhabilitar" aria-label="Inhabilitar módulo">
+                    <app-icon name="power" [size]="14" />
+                  </a>
+                }
+                @case ('inactive') {
+                  <button type="button" class="ui-icon-btn ui-icon-btn--ok" title="Rehabilitar" aria-label="Rehabilitar módulo" (click)="accion.set({ tipo: 'rehabilitar', modulo: m })">
+                    <app-icon name="rotate-ccw" [size]="14" />
+                  </button>
+                }
+                @case ('draft') {
+                  <button type="button" class="ui-icon-btn ui-icon-btn--ok" title="Registrar" aria-label="Registrar módulo" (click)="accion.set({ tipo: 'registrar', modulo: m })">
+                    <app-icon name="circle-check" [size]="14" />
+                  </button>
+                }
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5" class="ui-empty">
+              @if (error()) {
+                No se pudieron cargar los módulos.
+                <button type="button" class="ui-btn ui-btn--outline ui-btn--sm retry" (click)="cargar()">Reintentar</button>
+              } @else {
+                {{ cargando() ? 'Cargando módulos...' : 'No hay módulos que coincidan con la búsqueda.' }}
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <footer class="ui-table-foot">
+    <span class="ui-cell"><i class="ui-dot"></i> El número total del plan se confirmará con el cliente.</span>
+    <button type="button" class="ui-btn ui-btn--sm" (click)="verTodo()">Ver plan curricular completo →</button>
+  </footer>
+</section>
+
+@if (accion(); as a) {
+  @if (a.tipo === 'rehabilitar') {
+    <app-confirm-modal
+      [titulo]="'¿Rehabilitar “' + a.modulo.name + '”?'"
+      mensaje="El módulo volverá a estar disponible para asociar competencias y crear nuevas guías."
+      icono="rotate-ccw"
+      tono="ok"
+      textoConfirmar="Sí, rehabilitar módulo"
+      [procesando]="procesando()"
+      (confirmar)="confirmarAccion()"
+      (cancelar)="accion.set(null)"
+    />
+  } @else {
+    <app-confirm-modal
+      [titulo]="'¿Registrar “' + a.modulo.name + '”?'"
+      mensaje="El borrador pasará a activo y quedará disponible para asociar competencias y crear nuevas guías."
+      icono="circle-check"
+      textoConfirmar="Registrar módulo"
+      [procesando]="procesando()"
+      [deshabilitado]="!a.modulo.description"
+      (confirmar)="confirmarAccion()"
+      (cancelar)="accion.set(null)"
+    >
+      @if (!a.modulo.description) {
+        <div class="ui-notice ui-notice--danger">
+          <app-icon name="circle-alert" [size]="18" />
+          <div><strong>Falta la descripción</strong><p>Edita el módulo y agrega su descripción antes de registrarlo.</p></div>
+        </div>
+      }
+    </app-confirm-modal>
+  }
+}

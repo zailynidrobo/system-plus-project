@@ -1,0 +1,218 @@
+@if (creado(); as m) {
+  <!-- Registro completado (HE-02-HU-01 "posible CA-03") -->
+  <header class="ui-page-head">
+    <div>
+      @if (m.status === 'draft') {
+        <h1>Borrador guardado</h1>
+        <p>El módulo quedó guardado como borrador en el programa Técnico en Sistemas.</p>
+      } @else {
+        <h1>Registro completado</h1>
+        <p>El módulo fue incorporado correctamente al programa Técnico en Sistemas.</p>
+      }
+    </div>
+  </header>
+
+  <div class="ui-success">
+    <ol class="ui-stepper">
+      <li class="is-active"><span>1</span> Datos del módulo</li>
+      <li class="ui-stepper__line" aria-hidden="true"></li>
+      <li class="is-active"><span>2</span> Confirmación</li>
+    </ol>
+
+    <section class="ui-success__card">
+      <span class="ui-circle ui-circle--ok ui-circle--xl"><app-icon name="circle-check-big" [size]="32" /></span>
+      @if (m.status === 'draft') {
+        <h2>Borrador guardado</h2>
+        <p>“{{ m.name }}” quedó como borrador. Regístralo cuando esté listo para asociar competencias.</p>
+      } @else {
+        <h2>Módulo registrado exitosamente</h2>
+        <p>“{{ m.name }}” ya forma parte del plan curricular vigente.</p>
+      }
+
+      <div class="ui-entity">
+        <span class="ui-circle ui-circle--gold ui-circle--md"><app-icon [name]="icono(m.competencyPrefix)" [size]="21" /></span>
+        <div class="ui-entity__info">
+          <strong>{{ m.name }}</strong>
+          <span>{{ m.code }} · Técnico en Sistemas</span>
+        </div>
+        @if (m.status === 'draft') {
+          <span class="ui-pill ui-pill--warn"><i></i> Borrador</span>
+        } @else {
+          <span class="ui-pill ui-pill--ok"><i></i> Activo</span>
+        }
+      </div>
+
+      <div class="ui-notice ui-notice--info">
+        <app-icon name="info" [size]="18" />
+        <div>
+          <strong>{{ m.status === 'draft' ? 'Pendiente de registro' : 'Listo para configurar' }}</strong>
+          @if (m.status === 'draft') {
+            <p>Mientras sea borrador no admite competencias ni guías. Puedes registrarlo desde su detalle.</p>
+          } @else {
+            <p>El módulo está disponible para asociar competencias. Las nuevas guías solo podrán crearse cuando tenga al menos una competencia activa.</p>
+          }
+        </div>
+      </div>
+
+      <div class="ui-actions ui-actions--center">
+        <a class="ui-btn ui-btn--outline" [routerLink]="['/modulos', m.id]"><app-icon name="eye" [size]="16" /> Ver módulo</a>
+        <a class="ui-btn ui-btn--primary" routerLink="/modulos"><app-icon name="arrow-left" [size]="16" /> Volver al programa</a>
+      </div>
+    </section>
+
+    <p class="ui-success__trace">
+      <i class="ui-dot"></i> Registro HE-02-MOD · Creado por {{ m.createdBy?.name }} · Hoy, {{ hora(m.createdAt) }}
+    </p>
+  </div>
+} @else {
+  <header class="ui-page-head">
+    <div>
+      <h1>Registrar nuevo módulo</h1>
+      @if (duplicado()) {
+        <p>Valida la información antes de incorporarla al plan curricular.</p>
+      } @else {
+        <p>Incorpora un módulo al plan curricular del programa Técnico en Sistemas.</p>
+      }
+    </div>
+  </header>
+
+  <div class="ui-layout">
+    <div class="ui-side">
+      @if (!duplicado()) {
+        <ol class="ui-stepper">
+          <li class="is-active"><span>1</span> Datos del módulo</li>
+          <li class="ui-stepper__line" aria-hidden="true"></li>
+          <li><span>2</span> Confirmación</li>
+        </ol>
+      }
+
+      <form class="ui-card" [formGroup]="form" (ngSubmit)="registrar()" novalidate>
+        <div class="ui-card__head">
+          <h2>Información del módulo</h2>
+          <p>
+            {{ duplicado()
+              ? 'El registro no puede continuar mientras exista un módulo con el mismo nombre.'
+              : 'Los campos marcados con * son obligatorios. El nombre debe ser único dentro del programa.' }}
+          </p>
+        </div>
+
+        @if (duplicado(); as d) {
+          <div class="ui-notice ui-notice--danger" role="alert">
+            <app-icon name="circle-alert" [size]="18" />
+            <div>
+              <strong>No se pudo registrar el módulo</strong>
+              <p>Ya existe “{{ d.name }}” en el programa Técnico en Sistemas. Los nombres de módulo deben ser únicos.</p>
+            </div>
+          </div>
+        }
+
+        <div class="ui-fields">
+          <div class="ui-field">
+            <label for="nombre">Nombre del módulo *</label>
+            <div class="ui-control" [class.ui-control--dup]="duplicado()" [class.ui-control--error]="form.controls.name.touched && form.controls.name.invalid">
+              <input #nombreInput id="nombre" type="text" formControlName="name" autocomplete="off" />
+            </div>
+            @if (duplicado()) {
+              <p class="ui-help ui-help--error">Nombre duplicado. Usa un nombre diferente o edita el módulo existente.</p>
+            } @else if (form.controls.name.touched && form.controls.name.invalid) {
+              <p class="ui-help ui-help--error">Ingresa el nombre del módulo.</p>
+            } @else if (nombreDisponible()) {
+              <p class="ui-help ui-help--ok">Nombre disponible. Usa un nombre breve y reconocible para docentes y estudiantes.</p>
+            } @else {
+              <p class="ui-help">Usa un nombre breve y reconocible para docentes y estudiantes.</p>
+            }
+          </div>
+
+          <div class="ui-field">
+            <label for="descripcion">Descripción *</label>
+            <div class="ui-control" [class.ui-control--error]="faltaDescripcion()">
+              <textarea id="descripcion" formControlName="description" rows="3"></textarea>
+            </div>
+            @if (faltaDescripcion()) {
+              <p class="ui-help ui-help--error">Describe el alcance formativo para registrar el módulo.</p>
+            } @else if (!duplicado()) {
+              <p class="ui-help">Describe el alcance formativo y su aplicación en el programa.</p>
+            }
+          </div>
+        </div>
+
+        @if (duplicado(); as d) {
+          <div class="ui-entity ui-entity--bordered">
+            <span class="ui-tile"><app-icon [name]="icono(d.competencyPrefix)" [size]="18" /></span>
+            <div class="ui-entity__info">
+              <strong>{{ d.name }}</strong>
+              <span>{{ d.code }} · {{ d.competenciesCount }} competencias · {{ d.guidesCount }} guías existentes</span>
+            </div>
+            <span class="ui-pill ui-pill--ok"><i></i> Activo</span>
+            <a class="ui-btn ui-btn--outline" [routerLink]="['/modulos', d.id]">Ver módulo</a>
+          </div>
+        } @else {
+          <div class="ui-notice">
+            <app-icon name="triangle-alert" [size]="18" />
+            <div>
+              <strong>Disponibilidad inmediata</strong>
+              <p>Una vez registrado, el módulo quedará activo y disponible para asociar competencias y crear nuevas guías.</p>
+            </div>
+          </div>
+        }
+
+        @if (errorGeneral()) {
+          <p class="ui-help ui-help--error" role="alert">No pudimos guardar el módulo. Inténtalo de nuevo en unos minutos.</p>
+        }
+
+        <div class="ui-actions">
+          <a class="ui-btn" routerLink="/modulos">Cancelar</a>
+          <div class="ui-actions__right">
+            @if (duplicado()) {
+              <button type="button" class="ui-btn ui-btn--outline" (click)="corregirNombre()">
+                <app-icon name="pencil" [size]="16" /> Corregir nombre
+              </button>
+            } @else {
+              <button type="button" class="ui-btn ui-btn--outline" (click)="guardarBorrador()" [disabled]="guardando()">
+                {{ guardando() === 'borrador' ? 'Guardando…' : 'Guardar borrador' }}
+              </button>
+            }
+            <button type="submit" class="ui-btn ui-btn--primary" [disabled]="guardando() || duplicado()">
+              <app-icon name="plus" [size]="16" /> {{ guardando() === 'registrar' ? 'Registrando…' : 'Registrar módulo' }}
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <aside class="ui-side">
+      @if (duplicado()) {
+        <section class="ui-blocked">
+          <span class="ui-circle ui-circle--white"><app-icon name="ban" [size]="24" /></span>
+          <strong>Registro bloqueado por duplicado</strong>
+          <p>AthenaDev compara el nombre sin distinguir mayúsculas, minúsculas ni espacios finales.</p>
+        </section>
+        <div class="ui-notice">
+          <app-icon name="lightbulb" [size]="18" />
+          <div>
+            <strong>Cómo resolverlo</strong>
+            <p>Cambia el nombre propuesto o abre el módulo existente para actualizar su descripción.</p>
+          </div>
+        </div>
+      } @else {
+        <section class="ui-side-card ui-validations">
+          <h3>Antes de registrar</h3>
+          @for (v of validaciones(); track v.titulo) {
+            <div [class.is-pending]="!v.ok">
+              <app-icon [name]="v.ok ? 'circle-check' : 'circle-help'" [size]="17" />
+              <div>
+                <strong>{{ v.titulo }}</strong>
+                <small>{{ v.detalle }}</small>
+              </div>
+            </div>
+          }
+        </section>
+        <section class="ui-side-note">
+          <app-icon name="graduation-cap" [size]="20" />
+          <strong>Plan curricular controlado</strong>
+          <p class="ui-muted">Cada alta queda registrada con responsable, fecha y programa académico.</p>
+        </section>
+      }
+    </aside>
+  </div>
+}

@@ -1,0 +1,207 @@
+@if (creada(); as g) {
+  <!-- HE-03-HU-01-CA-02 · Guardada como borrador -->
+  <header class="ui-page-head">
+    <div>
+      <h1>Registro completado</h1>
+      <p>La guía base fue guardada correctamente.</p>
+    </div>
+  </header>
+
+  <div class="ui-success">
+    <ol class="ui-stepper">
+      <li class="is-active"><span>1</span> Estructura de la guía</li>
+      <li class="ui-stepper__line" aria-hidden="true"></li>
+      <li class="is-active"><span>2</span> Confirmación</li>
+    </ol>
+
+    <section class="ui-success__card ui-success__card--narrow">
+      <span class="ui-circle ui-circle--gold-soft"><app-icon name="save" [size]="24" /></span>
+      <h2>Guía guardada como borrador</h2>
+      <p>“{{ g.title }}” quedó registrada. Aún no es visible para los docentes del módulo.</p>
+
+      <div class="ui-entity">
+        <span class="ui-tile"><app-icon name="file-text" [size]="18" /></span>
+        <div class="ui-entity__info">
+          <strong>{{ g.title }}</strong>
+          <span>{{ g.code }} · {{ g.competencyCode }} · Estructura v{{ g.structureVersion }}</span>
+        </div>
+        <span class="ui-pill ui-pill--warn"><i></i> Borrador</span>
+      </div>
+
+      <p class="ui-flow"><strong>● Borrador</strong> <span>→</span> Publicada</p>
+
+      <div class="ui-notice ui-notice--info">
+        <app-icon name="lock" [size]="16" />
+        <div>
+          <strong>Solo visible para coordinación</strong>
+          <p>
+            Puedes seguir editando la guía mientras esté en borrador. Publícala cuando esté lista
+            para ser referencia oficial.
+          </p>
+        </div>
+      </div>
+
+      <div class="ui-actions ui-actions--center">
+        <a class="ui-btn ui-btn--outline" [routerLink]="['/guias', g.id, 'editar']"
+          ><app-icon name="pencil" [size]="15" /> Seguir editando</a
+        >
+        <a class="ui-btn ui-btn--primary" routerLink="/guias"
+          ><app-icon name="arrow-left" [size]="15" /> Volver a guías base</a
+        >
+      </div>
+    </section>
+
+    <p class="ui-success__trace">
+      <i class="ui-dot"></i> Registro HE-03-{{ g.code }} · Creado por {{ g.createdBy?.name }} · Hoy,
+      {{ hora(g.createdAt) }}
+    </p>
+  </div>
+} @else {
+  <header class="ui-page-head">
+    <div>
+      <h1>Registrar guía base</h1>
+      <p>
+        Diligencia la estructura institucional definida para el módulo. Todos los campos son
+        controlados.
+      </p>
+    </div>
+  </header>
+
+  @if (cargando()) {
+    <p class="ui-state">Cargando módulos disponibles...</p>
+  } @else if (errorCarga() && modulos().length === 0) {
+    <p class="ui-help ui-help--error" role="alert">{{ errorCarga() }}</p>
+  } @else if (modulos().length === 0) {
+    <div class="ui-notice ui-notice--info">
+      <app-icon name="info" [size]="18" />
+      <div>
+        <strong>No hay módulos disponibles para nuevas guías</strong>
+        <p>
+          Un módulo debe estar activo y tener al menos una competencia. Revisa el
+          <a routerLink="/modulos">programa académico</a>.
+        </p>
+      </div>
+    </div>
+  } @else {
+    @if (errorCarga(); as e) {
+      <p class="ui-help ui-help--error" role="alert">{{ e }}</p>
+    }
+
+    <ol class="ui-stepper ui-stepper--spaced">
+      <li class="is-active"><span>1</span> Estructura de la guía</li>
+      <li class="ui-stepper__line" aria-hidden="true"></li>
+      <li><span>2</span> Confirmación</li>
+    </ol>
+
+    <div class="ui-layout">
+      <form class="ui-card" (ngSubmit)="guardar()" novalidate>
+        <div class="ui-card__head">
+          <h2>Información de la guía</h2>
+          <p>
+            Los campos marcados con <span class="ui-required">*</span> son obligatorios. La
+            estructura proviene de “Configurar estructura”.
+          </p>
+        </div>
+
+        <p class="ui-section-label">Datos de identificación</p>
+        <div class="ui-grid-ident">
+          <div class="ui-field">
+            <label for="modulo">Módulo académico <span class="ui-required">*</span></label>
+            <div class="ui-control">
+              <select
+                id="modulo"
+                [value]="moduloId()"
+                (change)="elegirModulo(+$any($event.target).value)"
+              >
+                @for (m of modulos(); track m.id) {
+                  <option [value]="m.id">{{ m.name }}</option>
+                }
+              </select>
+            </div>
+          </div>
+          <div class="ui-field">
+            <label for="competencia">Competencia asociada <span class="ui-required">*</span></label>
+            <div class="ui-control" [class.ui-control--error]="faltaCompetencia()">
+              <select id="competencia" (change)="elegirCompetencia($any($event.target).value)">
+                <option value="" [selected]="!competenciaId()">Selecciona una competencia</option>
+                @for (c of competencias(); track c.id) {
+                  <option [value]="c.id" [selected]="c.id === competenciaId()">
+                    {{ c.code }} · {{ c.text }}
+                  </option>
+                }
+              </select>
+            </div>
+            @if (faltaCompetencia()) {
+              <p class="ui-help ui-help--error">Selecciona la competencia de la guía.</p>
+            }
+          </div>
+          <div class="ui-field">
+            <label for="codigo">Código de la guía</label>
+            <div class="ui-control ui-control--readonly">
+              <app-icon name="lock" [size]="13" />
+              <input id="codigo" type="text" [value]="codigo()" readonly />
+            </div>
+            <p class="ui-help">Generado automáticamente</p>
+          </div>
+        </div>
+
+        @if (estructura(); as est) {
+          <app-dynamic-form
+            [fields]="est.fields"
+            [valores]="contenido()"
+            seccionContenido="Contenido pedagógico"
+            (cambio)="contenido.set($event)"
+          />
+        }
+
+        <div class="ui-notice">
+          <app-icon name="triangle-alert" [size]="16" />
+          <div>
+            <strong>Se guardará como borrador</strong>
+            <p>
+              La guía no será visible para los docentes hasta que la publiques de forma explícita.
+            </p>
+          </div>
+        </div>
+
+        @if (error(); as e) {
+          <p class="ui-help ui-help--error" role="alert">{{ e }}</p>
+        }
+
+        <div class="ui-actions">
+          <a class="ui-btn" routerLink="/guias">Cancelar</a>
+          <button type="submit" class="ui-btn ui-btn--primary" [disabled]="guardando()">
+            <app-icon name="save" [size]="15" />
+            {{ guardando() ? 'Guardando…' : 'Guardar borrador' }}
+          </button>
+        </div>
+      </form>
+
+      <aside class="ui-side">
+        <section class="ui-side-card ui-validations">
+          <h3>Antes de guardar</h3>
+          @for (v of validaciones(); track v.titulo) {
+            <div [class.is-warn]="!v.ok">
+              <app-icon [name]="v.ok ? 'circle-check' : 'triangle-alert'" [size]="16" />
+              <div>
+                <strong>{{ v.titulo }}</strong>
+                <small>{{ v.detalle }}</small>
+              </div>
+            </div>
+          }
+        </section>
+
+        @if (estructura(); as est) {
+          <section class="ui-side-note ui-side-note--info">
+            <app-icon name="sliders" [size]="18" />
+            <strong>Estructura v{{ est.version }} · {{ modulo()?.competencyPrefix }}</strong>
+            <p>
+              {{ est.fields.length }} campos configurados · {{ obligatorios() }} obligatorios.
+              Última actualización {{ fecha(est.updatedAt) }}.
+            </p>
+          </section>
+        }
+      </aside>
+    </div>
+  }
+}

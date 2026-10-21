@@ -1,0 +1,11 @@
+<section class="card" role="alert">
+  <span class="card__icon"><app-icon name="ban" [size]="26" /></span>
+  <h1>No tienes acceso a esta sección</h1>
+  <p>
+    Tu rol actual ({{ rol() }}) no tiene permisos para ver esta página. Si crees que es un error,
+    comunícate con la coordinación académica o con el administrador.
+  </p>
+  <a class="btn-primary" [routerLink]="inicio()">
+    <app-icon name="arrow-left" [size]="16" /> Ir a mi inicio
+  </a>
+</section>

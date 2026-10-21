@@ -1,0 +1,1276 @@
+{
+  "info": {
+    "_postman_id": "b898f13d-8f80-40a1-81c1-4dad96536a3b",
+    "name": "Gestión de Guías - Usuarios, sesiones y edición",
+    "description": "Colección unificada: autenticación Keycloak (coordinador y docente), ciclo de vida de guías base y versiones personalizadas por docente, materiales de apoyo PDF/DOCX y operaciones del módulo /users. Los módulos y competencias son los de HE-02 (/programs, /modules, /competencies). Los datos académicos y materiales de apoyo se guardan en PostgreSQL. Los usuarios de /users se sincronizan con Keycloak mediante un cliente administrativo de servicio.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "keycloakTokenUrl",
+      "value": "http://localhost:8080/realms/system-plus/protocol/openid-connect/token"
+    },
+    {
+      "key": "clientId",
+      "value": "system-plus-client"
+    },
+    {
+      "key": "coordinatorUsername",
+      "value": ""
+    },
+    {
+      "key": "coordinatorPassword",
+      "value": ""
+    },
+    {
+      "key": "teacherUsername",
+      "value": ""
+    },
+    {
+      "key": "teacherPassword",
+      "value": ""
+    },
+    {
+      "key": "coordinatorToken",
+      "value": ""
+    },
+    {
+      "key": "teacherToken",
+      "value": ""
+    },
+    {
+      "key": "programId",
+      "value": ""
+    },
+    {
+      "key": "competencyId",
+      "value": ""
+    },
+    {
+      "key": "moduleId",
+      "value": ""
+    },
+    {
+      "key": "teacherSub",
+      "value": ""
+    },
+    {
+      "key": "guideId",
+      "value": ""
+    },
+    {
+      "key": "supportMaterialId",
+      "value": ""
+    },
+    {
+      "key": "personalizedVersionId",
+      "value": ""
+    },
+    {
+      "key": "newUserName",
+      "value": "Usuario de prueba Postman"
+    },
+    {
+      "key": "newUserEmail",
+      "value": ""
+    },
+    {
+      "key": "newUserPassword",
+      "value": "ClavePrueba123!"
+    },
+    {
+      "key": "newUserRole",
+      "value": "docente"
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "updatedUserName",
+      "value": "Usuario Postman editado"
+    },
+    {
+      "key": "updatedUserEmail",
+      "value": ""
+    },
+    {
+      "key": "updatedUserPassword",
+      "value": "NuevaClave123!"
+    },
+    {
+      "key": "updatedUserRole",
+      "value": "coordinador"
+    }
+  ],
+  "item": [
+    {
+      "name": "00 - Autenticación Keycloak",
+      "description": "Configura coordinatorUsername/coordinatorPassword (rol coordinador) y teacherUsername/teacherPassword (rol docente). El token del coordinador (coordinatorToken) se usa en la gestión de módulos, guías y usuarios (registro, consulta, edición, cambio de rol y desactivación); teacherToken se usa en las versiones personalizadas y en la prueba 403.",
+      "item": [
+        {
+          "name": "Obtener token coordinador",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Keycloak devuelve un access_token', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.access_token).to.be.a('string').and.not.empty;",
+                  "  pm.collectionVariables.set('coordinatorToken', body.access_token);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{clientId}}"
+                },
+                {
+                  "key": "username",
+                  "value": "{{coordinatorUsername}}"
+                },
+                {
+                  "key": "password",
+                  "value": "{{coordinatorPassword}}"
+                },
+                {
+                  "key": "scope",
+                  "value": "openid"
+                }
+              ]
+            },
+            "url": "{{keycloakTokenUrl}}"
+          }
+        },
+        {
+          "name": "Obtener token docente y guardar sub",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Keycloak devuelve el token del docente', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.access_token).to.be.a('string').and.not.empty;",
+                  "  pm.collectionVariables.set('teacherToken', body.access_token);",
+                  "  const payload = JSON.parse(atob(body.access_token.split('.')[1]));",
+                  "  pm.expect(payload.sub).to.be.a('string').and.not.empty;",
+                  "  pm.collectionVariables.set('teacherSub', payload.sub);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{clientId}}"
+                },
+                {
+                  "key": "username",
+                  "value": "{{teacherUsername}}"
+                },
+                {
+                  "key": "password",
+                  "value": "{{teacherPassword}}"
+                },
+                {
+                  "key": "scope",
+                  "value": "openid"
+                }
+              ]
+            },
+            "url": "{{keycloakTokenUrl}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 - Configuración de prueba (coordinador)",
+      "description": "Ejecutar en orden. Crea un módulo de prueba, configura los campos de guía base y docente, genera una guía borrador, la edita y la publica, y asigna el módulo al usuario docente.",
+      "item": [
+        {
+          "name": "Obtener programa académico (HE-02)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Programa disponible', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  const programs = Array.isArray(body) ? body : (body.items || []);",
+                  "  pm.expect(programs.length).to.be.above(0);",
+                  "  pm.collectionVariables.set('programId', programs[0].id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/programs"
+          }
+        },
+        {
+          "name": "Crear módulo de prueba (HE-02)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Módulo creado', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.id).to.be.a('string').and.not.empty;",
+                  "  pm.collectionVariables.set('moduleId', body.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Módulo Postman Sesiones\",\n  \"description\": \"Módulo temporal para verificar edición y versiones de guías\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/programs/{{programId}}/modules"
+          }
+        },
+        {
+          "name": "Asociar competencia al módulo (HE-02)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Competencia creada', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.id).to.be.a('string').and.not.empty;",
+                  "  pm.collectionVariables.set('competencyId', body.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Aplica el tema mediante una actividad práctica\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/modules/{{moduleId}}/competencies"
+          }
+        },
+        {
+          "name": "Configurar campos de guía base",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fields\": [\n    {\n      \"key\": \"objective\",\n      \"label\": \"Objetivo de aprendizaje\",\n      \"type\": \"textarea\",\n      \"required\": true,\n      \"section\": \"Planeación\"\n    },\n    {\n      \"key\": \"duration\",\n      \"label\": \"Duración en horas\",\n      \"type\": \"number\",\n      \"required\": false,\n      \"section\": \"Planeación\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/academic/modules/{{moduleId}}/guide-fields"
+          }
+        },
+        {
+          "name": "Configurar campos de versión personalizada docente",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fields\": [\n    {\n      \"key\": \"classroomNotes\",\n      \"label\": \"Notas para mi clase\",\n      \"type\": \"textarea\",\n      \"required\": false,\n      \"section\": \"Adaptación docente\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/academic/modules/{{moduleId}}/teacher-guide-fields"
+          }
+        },
+        {
+          "name": "Crear guía borrador",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Guía borrador creada', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.id).to.be.a('string').and.not.empty;",
+                  "  pm.expect(body.status).to.eql('draft');",
+                  "  pm.collectionVariables.set('guideId', body.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"moduleId\": \"{{moduleId}}\",\n  \"title\": \"Guía de prueba Postman\",\n  \"content\": {\n    \"objective\": \"Comprender el tema mediante una actividad práctica\",\n    \"duration\": 2\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/academic/guides"
+          }
+        },
+        {
+          "name": "Adjuntar material de apoyo PDF o DOCX",
+          "description": "Como coordinador, selecciona un PDF o DOCX en el campo file. El archivo se almacena sin edición en PostgreSQL (máximo 10 MB).",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Material de apoyo almacenado', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.id).to.be.a('string').and.not.empty;",
+                  "  pm.expect(body.guideId).to.eql(pm.collectionVariables.get('guideId'));",
+                  "  pm.collectionVariables.set('supportMaterialId', body.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/academic/guides/{{guideId}}/support-materials"
+          }
+        },
+        {
+          "name": "Editar guía borrador",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Guía borrador editada', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.title).to.eql('Guía Postman editada');",
+                  "  pm.expect(body.content.objective).to.eql('Objetivo actualizado desde Postman');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Guía Postman editada\",\n  \"content\": {\n    \"objective\": \"Objetivo actualizado desde Postman\",\n    \"duration\": 3\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/academic/guides/{{guideId}}"
+          }
+        },
+        {
+          "name": "Publicar guía",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Guía publicada', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().status).to.eql('published');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/guides/{{guideId}}/publish"
+          }
+        },
+        {
+          "name": "Asignar módulo al docente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Módulo asignado al docente', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.assigned).to.eql(true);",
+                  "  pm.expect(body.teacherId).to.eql(pm.collectionVariables.get('teacherSub'));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/modules/{{moduleId}}/teachers/{{teacherSub}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Consulta y exportación de guía",
+      "description": "Se puede ejecutar como coordinador o docente asignado (token docente para ver solamente guías publicadas del módulo asignado).",
+      "item": [
+        {
+          "name": "Listar guías del módulo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Listado de guías OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json()).to.be.an('array');",
+                  "  pm.expect(pm.response.json().some((guide) => guide.id === pm.collectionVariables.get('guideId'))).to.eql(true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/guides?moduleId={{moduleId}}"
+          }
+        },
+        {
+          "name": "Consultar guía",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Detalle de guía OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('guideId'));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/guides/{{guideId}}"
+          }
+        },
+        {
+          "name": "Listar material de apoyo (docente asignado)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Lista los materiales sin exponer los archivos binarios', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const materials = pm.response.json();",
+                  "  pm.expect(materials).to.be.an('array');",
+                  "  pm.expect(materials.some((item) => item.id === pm.collectionVariables.get('supportMaterialId'))).to.eql(true);",
+                  "  materials.forEach((item) => pm.expect(item).not.to.have.property('data'));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teacherToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/guides/{{guideId}}/support-materials"
+          }
+        },
+        {
+          "name": "Descargar material de apoyo",
+          "description": "Descarga el archivo original adjuntado por el coordinador.",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teacherToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/guides/{{guideId}}/support-materials/{{supportMaterialId}}/download"
+          }
+        },
+        {
+          "name": "Exportar guía base PDF",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/guides/{{guideId}}/export?format=pdf"
+          }
+        },
+        {
+          "name": "Exportar guía base DOCX",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/guides/{{guideId}}/export?format=docx"
+          }
+        },
+        {
+          "name": "Verificar que guía publicada no se edita (espera 409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('No permite editar una guía publicada', function () {",
+                  "  pm.response.to.have.status(409);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Esta edición debe rechazarse\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/academic/guides/{{guideId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Versión personalizada docente",
+      "description": "Ejecutar con el usuario que tiene rol docente y al que se asignó el módulo.",
+      "item": [
+        {
+          "name": "Crear mi versión personalizada",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Versión personalizada creada', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.id).to.be.a('string').and.not.empty;",
+                  "  pm.expect(body.baseGuideId).to.eql(pm.collectionVariables.get('guideId'));",
+                  "  pm.collectionVariables.set('personalizedVersionId', body.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teacherToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/guides/{{guideId}}/personalized-versions"
+          }
+        },
+        {
+          "name": "Listar mis versiones personalizadas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Listado de versiones personales OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().some((version) => version.id === pm.collectionVariables.get('personalizedVersionId'))).to.eql(true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teacherToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/personalized-versions"
+          }
+        },
+        {
+          "name": "Consultar mi versión",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Detalle de versión personal OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('personalizedVersionId'));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teacherToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/personalized-versions/{{personalizedVersionId}}"
+          }
+        },
+        {
+          "name": "Editar contenido de mi versión personalizada",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Versión personalizada editada', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().content.classroomNotes).to.eql('Agregué una actividad para mi grupo');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teacherToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": {\n    \"classroomNotes\": \"Agregué una actividad para mi grupo\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/academic/personalized-versions/{{personalizedVersionId}}"
+          }
+        },
+        {
+          "name": "Exportar mi versión personalizada PDF",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teacherToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/personalized-versions/{{personalizedVersionId}}/export?format=pdf"
+          }
+        },
+        {
+          "name": "Exportar mi versión personalizada DOCX",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teacherToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/personalized-versions/{{personalizedVersionId}}/export?format=docx"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Usuarios: registro y consulta",
+      "description": "Registra y consulta usuarios de aplicación con el token del coordinador (coordinatorToken). Ejecuta el registro antes de las solicitudes que usan userId.",
+      "item": [
+        {
+          "name": "Registrar usuario",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('newUserEmail', 'usuario.postman.' + Date.now() + '@example.com');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Usuario registrado sin exponer contraseña', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.id).to.be.a('string').and.not.empty;",
+                  "  pm.expect(body.email).to.eql(pm.collectionVariables.get('newUserEmail'));",
+                  "  pm.expect(body.isActive).to.eql(true);",
+                  "  pm.expect(body).not.to.have.property('password');",
+                  "  pm.collectionVariables.set('userId', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{newUserName}}\",\n  \"email\": \"{{newUserEmail}}\",\n  \"password\": \"{{newUserPassword}}\",\n  \"role\": \"{{newUserRole}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/users"
+          }
+        },
+        {
+          "name": "Listar usuarios",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Lista usuarios y excluye contraseñas', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const users = pm.response.json();",
+                  "  pm.expect(users).to.be.an('array');",
+                  "  pm.expect(users.some((user) => user.id === pm.collectionVariables.get('userId'))).to.eql(true);",
+                  "  users.forEach((user) => pm.expect(user).not.to.have.property('password'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/users"
+          }
+        },
+        {
+          "name": "Consultar usuario por ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Detalle de usuario correcto y sin contraseña', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const user = pm.response.json();",
+                  "  pm.expect(user.id).to.eql(pm.collectionVariables.get('userId'));",
+                  "  pm.expect(user).not.to.have.property('password');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/users/{{userId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Usuarios: edición y roles",
+      "description": "Permite actualizar nombre/correo y opcionalmente contraseña; el cambio de rol tiene una ruta independiente.",
+      "item": [
+        {
+          "name": "Editar nombre, correo y contraseña (opcional)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('updatedUserEmail', 'usuario.editado.' + Date.now() + '@example.com');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Usuario editado y contraseña no expuesta', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const user = pm.response.json();",
+                  "  pm.expect(user.name).to.eql(pm.collectionVariables.get('updatedUserName'));",
+                  "  pm.expect(user.email).to.eql(pm.collectionVariables.get('updatedUserEmail'));",
+                  "  pm.expect(user).not.to.have.property('password');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{updatedUserName}}\",\n  \"email\": \"{{updatedUserEmail}}\",\n  \"password\": \"{{updatedUserPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/users/{{userId}}"
+          }
+        },
+        {
+          "name": "Cambiar rol",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Rol del usuario actualizado', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().role).to.eql(pm.collectionVariables.get('updatedUserRole'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"{{updatedUserRole}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/users/{{userId}}/role"
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Usuarios: desactivación",
+      "description": "La desactivación es lógica. No existe actualmente una ruta para reactivar usuarios.",
+      "item": [
+        {
+          "name": "Desactivar usuario",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Usuario desactivado', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().isActive).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/users/{{userId}}/deactivate"
+          }
+        },
+        {
+          "name": "Consultar usuario desactivado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('El usuario desactivado sigue consultable como inactivo', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().isActive).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/users/{{userId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 - Usuarios: validaciones y acceso",
+      "item": [
+        {
+          "name": "Rechazar correo duplicado (espera 409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('No permite registrar un correo duplicado', function () {",
+                  "  pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Duplicado Postman\",\n  \"email\": \"{{newUserEmail}}\",\n  \"password\": \"ClaveDuplicada123!\",\n  \"role\": \"docente\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/users"
+          }
+        },
+        {
+          "name": "Rechazar acceso sin token (espera 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('La API exige token', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/users"
+          }
+        },
+        {
+          "name": "Rechazar usuario sin rol coordinador (espera 403, usa token docente)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Solo el coordinador puede administrar usuarios', function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teacherToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/users"
+          }
+        }
+      ],
+      "description": "Requiere haber ejecutado antes \"Obtener token docente y guardar sub\" en la carpeta 00, porque la prueba de 403 usa teacherToken."
+    }
+  ]
+}

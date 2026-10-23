@@ -16,6 +16,8 @@ import { FieldConfigApi } from './features/guides/field-config-api';
 import { HttpFieldConfigApi } from './features/guides/http-field-config-api';
 import { GuideApi } from './features/guides/guide-api';
 import { HttpGuideApi } from './features/guides/http-guide-api';
+import { HttpTeacherApi } from './features/teacher-space/http-teacher-api';
+import { TeacherApi } from './features/teacher-space/teacher-api';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -35,6 +37,8 @@ export const appConfig: ApplicationConfig = {
           { provide: CompetencyApi, useClass: HttpCompetencyApi },
           { provide: GuideApi, useClass: HttpGuideApi },
           { provide: FieldConfigApi, useClass: HttpFieldConfigApi },
+          // HE-04: espacio docente (guías asignadas y versiones propias) contra el backend.
+          { provide: TeacherApi, useClass: HttpTeacherApi },
         ]
       : []),
   ],

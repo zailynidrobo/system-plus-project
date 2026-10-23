@@ -611,6 +611,166 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
     ).rejects.toThrow(BadRequestException);
   });
 
+  it('names teacher versions, rejects repeated names and fields the teacher cannot edit', async () => {
+    const module = await seedModule('Matemáticas');
+    await service.configureModuleGuideFields(module.id, {
+      fields: [
+        { key: 'activity', label: 'Actividad', type: 'text', required: true },
+      ],
+    });
+    await service.configureTeacherGuideFields(module.id, {
+      fields: [
+        {
+          key: 'hours',
+          label: 'Intensidad horaria',
+          type: 'text',
+          required: false,
+          teacherEditable: false,
+        },
+        {
+          key: 'lessonPlan',
+          label: 'Plan de clases',
+          type: 'textarea',
+          required: false,
+        },
+      ],
+    });
+    const draft = await createGuide(module, { activity: 'Base' });
+    await service.publishGuide(draft.id);
+    await service.assignTeacherToModule(module.id, 'teacher-1');
+    await service.assignTeacherToModule(module.id, 'teacher-2');
+
+    const version = await service.createPersonalizedVersion(
+      draft.id,
+      'teacher-1',
+      '  Grupo   2026-1 ',
+    );
+    expect(version.name).toBe('Grupo 2026-1');
+
+    await expect(
+      service.createPersonalizedVersion(draft.id, 'teacher-1', 'grupo 2026-1'),
+    ).rejects.toThrow(ConflictException);
+    await expect(
+      service.createPersonalizedVersion(draft.id, 'teacher-1', '   '),
+    ).rejects.toThrow(BadRequestException);
+    // Otro docente sí puede usar el mismo nombre.
+    await expect(
+      service.createPersonalizedVersion(draft.id, 'teacher-2', 'Grupo 2026-1'),
+    ).resolves.toMatchObject({ name: 'Grupo 2026-1' });
+    // Sin nombre se usa el de la guía base.
+    const unnamed = await service.createPersonalizedVersion(
+      draft.id,
+      'teacher-2',
+    );
+    expect(unnamed.name).toBe(unnamed.title);
+
+    await expect(
+      service.updatePersonalizedVersion(version.id, 'teacher-1', {
+        content: { hours: '99' },
+      }),
+    ).rejects.toThrow(BadRequestException);
+    const edited = await service.updatePersonalizedVersion(
+      version.id,
+      'teacher-1',
+      { content: { lessonPlan: 'Clase 1' } },
+    );
+    expect(edited.content).toEqual({ lessonPlan: 'Clase 1' });
+  });
+
+  it('uses the base guide fields when coordination has not configured the teacher form', async () => {
+    const module = await seedModule('Matemáticas');
+    await service.configureModuleGuideFields(module.id, {
+      fields: [
+        { key: 'activity', label: 'Actividad', type: 'text', required: true },
+      ],
+    });
+    const draft = await createGuide(module, { activity: 'Base' });
+    await service.publishGuide(draft.id);
+    await service.assignTeacherToModule(module.id, 'teacher-1');
+
+    const version = await service.createPersonalizedVersion(
+      draft.id,
+      'teacher-1',
+      'Grupo A',
+    );
+    expect(version.fields.map((field) => field.key)).toEqual(['activity']);
+    const edited = await service.updatePersonalizedVersion(
+      version.id,
+      'teacher-1',
+      { content: { activity: 'Mi actividad' } },
+    );
+    expect(edited.content).toEqual({ activity: 'Mi actividad' });
+  });
+
+  it('tells a teacher which modules are assigned and how many guides stay hidden', async () => {
+    const assigned = await seedModule('Asignado');
+    const other = await seedModule('Otro módulo');
+    await service.configureModuleGuideFields(assigned.id, {
+      fields: [{ key: 'a', label: 'A', type: 'text', required: false }],
+    });
+    await service.configureModuleGuideFields(other.id, {
+      fields: [{ key: 'a', label: 'A', type: 'text', required: false }],
+    });
+    const mine = await createGuide(assigned, { a: 'x' });
+    const theirs = await createGuide(other, { a: 'y' });
+    await service.publishGuide(mine.id);
+    await service.publishGuide(theirs.id);
+    await service.assignTeacherToModule(assigned.id, 'teacher-1');
+
+    expect(await service.findAssignmentsForTeacher('teacher-1')).toEqual({
+      moduleIds: [assigned.id],
+      hidden: { total: 1, modules: ['Otro módulo'] },
+    });
+    expect(await service.findAssignmentsForTeacher('nobody')).toEqual({
+      moduleIds: [],
+      hidden: { total: 2, modules: ['Asignado', 'Otro módulo'] },
+    });
+  });
+
+  it('lets docente_autorizado read guides like a docente', async () => {
+    const module = await seedModule('Autorizado');
+    await service.configureModuleGuideFields(module.id, {
+      fields: [{ key: 'a', label: 'A', type: 'text', required: false }],
+    });
+    const guide = await createGuide(module, { a: 'x' });
+    await service.publishGuide(guide.id);
+    await service.assignTeacherToModule(module.id, 'authorized-1');
+
+    const page = await service.findGuidesForUser(
+      {},
+      'authorized-1',
+      ['docente_autorizado'],
+    );
+    expect(page.total).toBe(1);
+    await expect(
+      service.findGuideForUser(guide.id, 'authorized-1', ['docente_autorizado']),
+    ).resolves.toMatchObject({ id: guide.id });
+  });
+
+  it('counts versions from other teachers in the same module without exposing them', async () => {
+    const module = await seedModule('Aislamiento');
+    await service.configureModuleGuideFields(module.id, {
+      fields: [{ key: 'a', label: 'A', type: 'text', required: false }],
+    });
+    const guide = await createGuide(module, { a: 'x' });
+    await service.publishGuide(guide.id);
+    await service.assignTeacherToModule(module.id, 'teacher-1');
+    await service.assignTeacherToModule(module.id, 'teacher-2');
+    const mine = await service.createPersonalizedVersion(guide.id, 'teacher-1');
+    await service.createPersonalizedVersion(guide.id, 'teacher-2', 'Otra');
+
+    expect(
+      await service.findPersonalizedVersionIsolation(mine.id, 'teacher-1'),
+    ).toEqual({
+      moduleName: 'Aislamiento',
+      otherVersions: 1,
+      otherTeachers: 1,
+    });
+    await expect(
+      service.findPersonalizedVersionIsolation(mine.id, 'teacher-2'),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
   it('loads stored guides and personalized versions through a fresh service instance', async () => {
     const module = await seedModule('Persistencia');
     await service.configureModuleGuideFields(module.id, {

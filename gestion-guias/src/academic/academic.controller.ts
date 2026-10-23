@@ -22,6 +22,7 @@ import { AcademicService } from './academic.service.js';
 import { ConfigureGuideFieldsDto } from './dto/configure-guide-fields.dto.js';
 import { CreateGuideDto } from './dto/create-guide.dto.js';
 import { UpdateGuideDto } from './dto/update-guide.dto.js';
+import { CreatePersonalizedGuideVersionDto } from './dto/create-personalized-guide-version.dto.js';
 import { UpdatePersonalizedGuideVersionDto } from './dto/update-personalized-guide-version.dto.js';
 import { GuideDocumentExportService } from './guide-document-export.service.js';
 import { GuideFieldsImpactDto } from './dto/guide-fields-impact.dto.js';
@@ -103,7 +104,7 @@ export class AcademicController {
   }
 
   @Get('guides')
-  @Roles('coordinador', 'docente')
+  @Roles('coordinador', 'docente', 'docente_autorizado')
   findAllGuides(
     @Query() query: ListGuidesQuery,
     @Req() request: { user: KeycloakJwtPayload },
@@ -116,7 +117,7 @@ export class AcademicController {
   }
 
   @Get('guides/summary')
-  @Roles('coordinador', 'docente')
+  @Roles('coordinador', 'docente', 'docente_autorizado')
   getGuidesSummary(@Req() request: { user: KeycloakJwtPayload }) {
     return this.academicService.getGuidesSummaryForUser(
       request.user.sub,
@@ -125,7 +126,7 @@ export class AcademicController {
   }
 
   @Get('guides/:id')
-  @Roles('coordinador', 'docente')
+  @Roles('coordinador', 'docente', 'docente_autorizado')
   findGuide(
     @Param('id') id: string,
     @Req() request: { user: KeycloakJwtPayload },
@@ -138,7 +139,7 @@ export class AcademicController {
   }
 
   @Get('guides/:id/events')
-  @Roles('coordinador', 'docente')
+  @Roles('coordinador', 'docente', 'docente_autorizado')
   findGuideEvents(
     @Param('id') id: string,
     @Req() request: { user: KeycloakJwtPayload },
@@ -173,7 +174,7 @@ export class AcademicController {
   }
 
   @Get('guides/:id/support-materials')
-  @Roles('coordinador', 'docente')
+  @Roles('coordinador', 'docente', 'docente_autorizado')
   findGuideSupportMaterials(
     @Param('id') id: string,
     @Req() request: { user: KeycloakJwtPayload },
@@ -186,7 +187,7 @@ export class AcademicController {
   }
 
   @Get('guides/:id/support-materials/:materialId/download')
-  @Roles('coordinador', 'docente')
+  @Roles('coordinador', 'docente', 'docente_autorizado')
   async downloadGuideSupportMaterial(
     @Param('id') id: string,
     @Param('materialId') materialId: string,
@@ -204,7 +205,7 @@ export class AcademicController {
   }
 
   @Get('guides/:id/export')
-  @Roles('coordinador', 'docente')
+  @Roles('coordinador', 'docente', 'docente_autorizado')
   async exportGuide(
     @Param('id') id: string,
     @Query('format') format: string,
@@ -275,19 +276,27 @@ export class AcademicController {
   }
 
   @Post('guides/:guideId/personalized-versions')
-  @Roles('docente')
+  @Roles('docente', 'docente_autorizado')
   createPersonalizedVersion(
     @Param('guideId') guideId: string,
     @Req() request: { user: KeycloakJwtPayload },
+    @Body() dto?: CreatePersonalizedGuideVersionDto,
   ) {
     return this.academicService.createPersonalizedVersion(
       guideId,
       request.user.sub,
+      dto?.name,
     );
   }
 
+  @Get('my-assignments')
+  @Roles('docente', 'docente_autorizado')
+  findMyAssignments(@Req() request: { user: KeycloakJwtPayload }) {
+    return this.academicService.findAssignmentsForTeacher(request.user.sub);
+  }
+
   @Get('personalized-versions')
-  @Roles('docente')
+  @Roles('docente', 'docente_autorizado')
   findMyPersonalizedVersions(@Req() request: { user: KeycloakJwtPayload }) {
     return this.academicService.findPersonalizedVersionsForTeacher(
       request.user.sub,
@@ -295,7 +304,7 @@ export class AcademicController {
   }
 
   @Get('personalized-versions/:id')
-  @Roles('docente')
+  @Roles('docente', 'docente_autorizado')
   findPersonalizedVersion(
     @Param('id') id: string,
     @Req() request: { user: KeycloakJwtPayload },
@@ -306,8 +315,20 @@ export class AcademicController {
     );
   }
 
+  @Get('personalized-versions/:id/isolation')
+  @Roles('docente', 'docente_autorizado')
+  findPersonalizedVersionIsolation(
+    @Param('id') id: string,
+    @Req() request: { user: KeycloakJwtPayload },
+  ) {
+    return this.academicService.findPersonalizedVersionIsolation(
+      id,
+      request.user.sub,
+    );
+  }
+
   @Get('personalized-versions/:id/export')
-  @Roles('docente')
+  @Roles('docente', 'docente_autorizado')
   async exportPersonalizedVersion(
     @Param('id') id: string,
     @Query('format') format: string,
@@ -329,7 +350,7 @@ export class AcademicController {
   }
 
   @Patch('personalized-versions/:id')
-  @Roles('docente')
+  @Roles('docente', 'docente_autorizado')
   updatePersonalizedVersion(
     @Param('id') id: string,
     @Req() request: { user: KeycloakJwtPayload },

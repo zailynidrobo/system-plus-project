@@ -17,7 +17,11 @@ export type AcademicErrorCode =
   | 'MODULE_WITHOUT_COMPETENCIES'
   | 'NO_CHANGES'
   | 'MODULE_NAME_DUPLICATED'
-  | 'COMPETENCY_DUPLICATED';
+  | 'COMPETENCY_DUPLICATED'
+  | 'NAME_REQUIRED'
+  | 'NAME_TOO_LONG'
+  | 'VERSION_NAME_DUPLICATED'
+  | 'FIELD_NOT_EDITABLE';
 
 export const notFound = (code: AcademicErrorCode, message: string) =>
   new NotFoundException({

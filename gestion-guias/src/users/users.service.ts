@@ -83,6 +83,18 @@ export class UsersService {
       });
   }
 
+  /** Docentes activos que coordinación puede asignar a un módulo (HE-04). */
+  async findTeachers(): Promise<Pick<User, 'id' | 'name' | 'email' | 'role'>[]> {
+    const users = await this.findAll();
+    return users
+      .filter(
+        (user) =>
+          user.isActive &&
+          (user.role === Role.DOCENTE || user.role === Role.DOCENTE_AUTORIZADO),
+      )
+      .map(({ id, name, email, role }) => ({ id, name, email, role }));
+  }
+
   async findOne(id: string): Promise<User> {
     const [user, roleNames] = await Promise.all([
       this.keycloak.getUser(id),

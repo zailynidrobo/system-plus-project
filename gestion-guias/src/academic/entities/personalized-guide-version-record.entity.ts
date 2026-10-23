@@ -22,6 +22,10 @@ export class PersonalizedGuideVersionRecord {
   @Column({ type: 'varchar', length: 250 })
   title: string;
 
+  /** Nombre que el docente le da a su versión (null en versiones creadas antes de existir este dato). */
+  @Column({ type: 'varchar', length: 150, nullable: true })
+  name: string | null;
+
   @Column({ type: 'jsonb' })
   baseContent: GuideContent;
 

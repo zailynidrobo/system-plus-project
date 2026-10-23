@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, forkJoin, map, of, switchMap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Auth } from '../../core/auth/auth';
+import { mapKeycloakRole } from '../../core/auth/role-mapping';
 import { ApiError } from '../../shared/models/api-error';
 import { AcademicModule, ModuleView } from '../../shared/models/academic-module';
 import { Guide, GuideEvent, GuideStatus, GuideView } from '../../shared/models/guide';
@@ -11,7 +12,6 @@ import { User } from '../../shared/models/user';
 import { AcademicIds, numeroDe } from '../academic-program/academic-ids';
 import { falla } from '../academic-program/http-errores';
 import { ModuleApi } from '../academic-program/module-api';
-import { UserApi } from '../users/user-api';
 import { FiltroGuias, GuideApi, NuevaGuia, PaginaGuias, ResumenGuias } from './guide-api';
 
 interface GuideResponse {
@@ -61,7 +61,6 @@ export class HttpGuideApi {
   private http = inject(HttpClient);
   private ids = inject(AcademicIds);
   private moduleApi = inject(ModuleApi);
-  private userApi = inject(UserApi);
   private auth = inject(Auth);
   private base = `${environment.apiUrl}/academic/guides`;
   private guideUuids = new Map<number, string>();
@@ -145,18 +144,27 @@ export class HttpGuideApi {
           teacherIds: this.http.get<string[]>(
             `${environment.apiUrl}/academic/modules/${uuid}/teachers`,
           ),
-          users: this.userApi.listar({
-            busqueda: '',
-            rol: 'TODOS',
-            estado: 'ACTIVO',
-            pagina: 1,
-            porPagina: 1000,
-          }),
+          // GET /users es solo del administrador: la lista de docentes para coordinación es otra ruta.
+          teachers: this.http.get<{ id: string; name: string; email: string; role: string | null }[]>(
+            `${environment.apiUrl}/academic/teachers`,
+          ),
         }),
       ),
-      map(({ teacherIds, users }) => {
+      map(({ teacherIds, teachers }) => {
         const assigned = new Set(teacherIds);
-        return users.items.filter((user) => !!user.keycloakId && assigned.has(user.keycloakId));
+        return teachers.flatMap((teacher) => {
+          const rol = teacher.role ? mapKeycloakRole(teacher.role) : null;
+          if (!rol || !assigned.has(teacher.id)) return [];
+          const user: User = {
+            id: numeroDe(teacher.id),
+            keycloakId: teacher.id,
+            nombre: teacher.name,
+            correo: teacher.email,
+            rol,
+            activo: true,
+          };
+          return [user];
+        });
       }),
       catchError(falla()),
     );

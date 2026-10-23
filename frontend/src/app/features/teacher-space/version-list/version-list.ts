@@ -43,7 +43,11 @@ export class VersionList {
   /** "Paola Valencia, Santiago Gómez y 5 más" */
   otrosDocentes = computed(() => {
     const d = this.aislamiento()?.docentes ?? [];
-    if (d.length === 0) return 'Ningún otro docente tiene versiones';
+    if (d.length === 0) {
+      const n = this.aislamiento()?.cantidadDocentes ?? 0;
+      if (n > 0) return `${n} ${n === 1 ? 'docente tiene' : 'docentes tienen'} versiones propias`;
+      return 'Ningún otro docente tiene versiones';
+    }
     return d.slice(0, 2).join(', ') + (d.length > 2 ? ` y ${d.length - 2} más` : '');
   });
 

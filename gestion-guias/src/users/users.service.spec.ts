@@ -197,6 +197,34 @@ describe('UsersService (HE-01 sobre Keycloak)', () => {
     });
   });
 
+  describe('findTeachers (HE-04)', () => {
+    it('lista solo docentes y docentes autorizados activos, sin datos de más', async () => {
+      const docente = await service.create({ name: 'Docente Uno', email: 'docente@example.com' });
+      const autorizado = await service.create({
+        name: 'Autorizado Uno',
+        email: 'autorizado@example.com',
+        role: Role.DOCENTE_AUTORIZADO,
+      });
+      const baja = await service.create({ name: 'Docente Baja', email: 'baja@example.com' });
+      await service.deactivate(baja.id);
+      await service.create({
+        name: 'Coordinadora',
+        email: 'coordinadora@example.com',
+        role: Role.COORDINADOR,
+      });
+
+      const teachers = await service.findTeachers();
+
+      expect(teachers.map((teacher) => teacher.id).sort()).toEqual([autorizado.id, docente.id].sort());
+      expect(teachers[0]).toEqual({
+        id: expect.any(String),
+        name: expect.any(String),
+        email: expect.any(String),
+        role: expect.any(String),
+      });
+    });
+  });
+
   describe('update (HU-02)', () => {
     it('actualiza nombre y correo, y no toca el rol', async () => {
       const created = await service.create({

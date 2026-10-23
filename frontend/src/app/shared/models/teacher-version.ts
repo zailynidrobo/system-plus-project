@@ -45,5 +45,7 @@ export interface TeacherVersionView extends TeacherVersion {
 export interface AislamientoVersion {
   otrasVersiones: number;
   docentes: string[];
+  /** Cuántos docentes distintos tienen esas versiones, cuando el backend no entrega sus nombres. */
+  cantidadDocentes?: number;
   moduleName: string;
 }

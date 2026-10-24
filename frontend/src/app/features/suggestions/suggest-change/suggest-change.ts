@@ -2,8 +2,15 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiError } from '../../../shared/models/api-error';
 import { GuideField } from '../../../shared/models/guide-field';
-import { JUSTIFICACION_MIN } from '../../../shared/models/suggestion';
+import {
+  ANTICIPACION_MINIMA_DIAS,
+  JUSTIFICACION_MIN,
+  PLAZO_AVISO_DIAS_HABILES,
+  PLAZO_LIMITE_DIAS_HABILES,
+} from '../../../shared/models/suggestion';
 import { Icon } from '../../../shared/ui/icon/icon';
+import { fechaDeCalendario, fechaMinimaRequerida } from '../../../shared/utils/sugerencias';
+import { RELOJ } from '../reloj';
 import { GuiaAsignada, TeacherApi } from '../../teacher-space/teacher-api';
 import { SuggestionApi } from '../suggestion-api';
 
@@ -16,6 +23,10 @@ const MENSAJES: Record<string, string> = {
   JUSTIFICATION_TOO_SHORT: `La justificación debe tener al menos ${JUSTIFICACION_MIN} caracteres.`,
   SUGGESTION_ALREADY_PENDING: 'Ya tienes una sugerencia pendiente sobre este campo. Espera la decisión de coordinación.',
   GUIDE_NOT_ASSIGNED: 'Esta guía pertenece a un módulo que no tienes asignado.',
+  NEEDED_BY_REQUIRED: 'Indica la fecha en que necesitas el cambio aplicado.',
+  NEEDED_BY_INVALID: 'La fecha requerida no es válida.',
+  NOTICE_TOO_SHORT: `Las sugerencias se envían con al menos ${ANTICIPACION_MINIMA_DIAS} días de anticipación. Elige una fecha posterior.`,
+  INVALID_NUMBER: 'El cambio propuesto debe ser un número.',
 };
 
 // Figma HE-05-HU-01-CA-01 · Sugerir cambio (5003:26)
@@ -39,11 +50,19 @@ export class SuggestChange {
   campoKey = signal<string | null>(null);
   propuesta = signal('');
   justificacion = signal('');
+  /** AAAA-MM-DD */
+  requerida = signal('');
   mensaje = signal('');
   intentado = signal(false);
   enviando = signal(false);
 
   readonly minimo = JUSTIFICACION_MIN;
+  readonly anticipacion = ANTICIPACION_MINIMA_DIAS;
+  readonly plazoAviso = PLAZO_AVISO_DIAS_HABILES;
+  readonly plazoLimite = PLAZO_LIMITE_DIAS_HABILES;
+  /** Hoy + 14 días en Bogotá. */
+  readonly fechaMinima = fechaMinimaRequerida(inject(RELOJ)());
+  readonly fechaMinimaTexto = fechaDeCalendario(this.fechaMinima);
 
   campo = computed(() => this.guia()?.fields.find((f) => f.key === this.campoKey()) ?? null);
   actual = computed(() => {
@@ -54,6 +73,8 @@ export class SuggestChange {
 
   faltaPropuesta = computed(() => this.intentado() && !this.propuesta().trim() && !!this.campo()?.required);
   faltaJustificacion = computed(() => this.intentado() && this.justificacion().trim().length < this.minimo);
+  faltaFecha = computed(() => this.intentado() && !this.requerida());
+  fechaMuyPronto = computed(() => this.intentado() && !!this.requerida() && this.requerida() < this.fechaMinima);
 
   constructor() {
     this.teacherApi.obtenerGuia(this.id).subscribe({
@@ -81,11 +102,17 @@ export class SuggestChange {
     const campo = this.campo();
     if (!g || !campo || this.enviando()) return;
     this.intentado.set(true);
-    if (this.faltaPropuesta() || this.faltaJustificacion()) return;
+    if (this.faltaPropuesta() || this.faltaJustificacion() || this.faltaFecha() || this.fechaMuyPronto()) return;
 
     this.enviando.set(true);
     this.api
-      .enviar({ guideId: g.id, fieldKey: campo.key, proposedValue: this.propuesta(), justification: this.justificacion() })
+      .enviar({
+        guideId: g.id,
+        fieldKey: campo.key,
+        proposedValue: this.propuesta(),
+        justification: this.justificacion(),
+        neededBy: this.requerida(),
+      })
       .subscribe({
         next: (s) => this.router.navigate(['/mis-sugerencias', s.id], { state: { enviada: true } }),
         error: (e: ApiError) => {

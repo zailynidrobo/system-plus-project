@@ -49,6 +49,11 @@ import { CreateGuideDto } from './dto/create-guide.dto.js';
 import { UpdateGuideDto } from './dto/update-guide.dto.js';
 import { UpdatePersonalizedGuideVersionDto } from './dto/update-personalized-guide-version.dto.js';
 import { DEFAULT_GUIDE_FIELDS } from './default-guide-fields.js';
+import {
+  GuideValueProblem,
+  checkGuideFieldValue,
+  isEmptyGuideValue,
+} from './guide-field-value.js';
 import { ListGuidesQuery } from './dto/list-guides.query.js';
 
 @Injectable()
@@ -1351,11 +1356,7 @@ export class AcademicService implements OnModuleInit {
 
     for (const field of fields) {
       const value = content[field.key];
-      const empty =
-        value === undefined ||
-        value === null ||
-        (typeof value === 'string' && value.trim().length === 0);
-      if (empty) {
+      if (isEmptyGuideValue(value)) {
         if (requireRequired && field.required) {
           throw new BadRequestException(
             `El campo '${field.label}' es obligatorio para publicar`,
@@ -1369,32 +1370,15 @@ export class AcademicService implements OnModuleInit {
         continue;
       }
 
-      if (field.type === 'number') {
-        if (typeof value !== 'number' || !Number.isFinite(value)) {
-          throw new BadRequestException(
-            `El campo '${field.label}' debe ser numérico`,
-          );
-        }
-      } else if (typeof value !== 'string') {
-        throw new BadRequestException(
-          `El campo '${field.label}' debe ser texto`,
-        );
-      } else if (
-        field.maxLength !== undefined &&
-        value.length > field.maxLength
-      ) {
-        throw new BadRequestException(
-          `El campo '${field.label}' no puede superar ${field.maxLength} caracteres`,
-        );
-      } else if (field.type === 'date' && Number.isNaN(Date.parse(value))) {
-        throw new BadRequestException(
-          `El campo '${field.label}' debe contener una fecha válida`,
-        );
-      } else if (field.type === 'select' && !field.options?.includes(value)) {
-        throw new BadRequestException(
-          `El valor del campo '${field.label}' no está entre las opciones`,
-        );
-      }
+      const messages: Record<GuideValueProblem, string> = {
+        NOT_NUMBER: `El campo '${field.label}' debe ser numérico`,
+        NOT_TEXT: `El campo '${field.label}' debe ser texto`,
+        TOO_LONG: `El campo '${field.label}' no puede superar ${field.maxLength} caracteres`,
+        INVALID_DATE: `El campo '${field.label}' debe contener una fecha válida`,
+        INVALID_OPTION: `El valor del campo '${field.label}' no está entre las opciones`,
+      };
+      const problem = checkGuideFieldValue(field, value);
+      if (problem) throw new BadRequestException(messages[problem]);
     }
   }
 }

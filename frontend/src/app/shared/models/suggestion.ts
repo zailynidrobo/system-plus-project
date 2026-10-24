@@ -3,6 +3,9 @@ import { GuideValue } from './guide-field';
 
 export type SuggestionStatus = 'Pendiente' | 'Aprobada' | 'Rechazada';
 
+/** Estado del plazo de una pendiente: a tiempo, por vencer (desde el día hábil 5) o vencida (después del 8). */
+export type EstadoPlazo = 'on_time' | 'due_soon' | 'overdue';
+
 /** Sugerencia de cambio de un docente sobre un campo de una guía base publicada (HE-05). */
 export interface Suggestion {
   id: number;
@@ -18,11 +21,15 @@ export interface Suggestion {
   /** Contenido completo que tendría el campo si se aprueba. */
   proposedValue: GuideValue;
   justification: string;
+  /** Fecha (AAAA-MM-DD) en que el docente necesita el cambio aplicado. */
+  neededBy: string | null;
   /** Versión de la guía cuando se envió ("v1.0"). */
   baseVersion: string;
   status: SuggestionStatus;
   createdAt: string;
-  /** Plazo de respuesta: 5 días hábiles. */
+  /** Fin del día hábil 5 en Bogotá: desde aquí queda "por vencer". */
+  dueSoonAt: string;
+  /** Fin del día hábil 8: tiempo límite. Después queda vencida, pero sigue pendiente. */
   dueAt: string;
   decidedAt: string | null;
   decidedBy: Persona | null;
@@ -42,9 +49,16 @@ export interface SuggestionView extends Suggestion {
   competencyPrefix: string;
   /** "Agrega «...»" o "Cambia a «...»": resumen corto para las tablas. */
   summary: string;
+  /** Solo en pendientes; null en las decididas. */
+  deadlineStatus: EstadoPlazo | null;
+  businessDaysLeft: number | null;
+  businessDaysOverdue: number | null;
 }
 
-/** Motivos de rechazo (Figma HE-05-HU-04). */
+/**
+ * Motivos de rechazo (Figma HE-05-HU-04). La lista oficial está en el backend
+ * (gestion-guias/src/suggestions/suggestion-rules.ts, REJECT_REASONS): esta debe ser idéntica.
+ */
 export const MOTIVOS_RECHAZO = [
   'No se ajusta a la intensidad horaria del módulo',
   'No está alineada con la competencia',
@@ -56,3 +70,9 @@ export const MOTIVOS_RECHAZO = [
 export const RETROALIMENTACION_MIN = 30;
 export const RETROALIMENTACION_MAX = 500;
 export const JUSTIFICACION_MIN = 20;
+
+/** Plazo de respuesta: aviso al día hábil 5 y límite al día hábil 8 (mismos valores que el backend). */
+export const PLAZO_AVISO_DIAS_HABILES = 5;
+export const PLAZO_LIMITE_DIAS_HABILES = 8;
+/** La fecha requerida debe ser al menos 14 días de calendario después del envío. */
+export const ANTICIPACION_MINIMA_DIAS = 14;

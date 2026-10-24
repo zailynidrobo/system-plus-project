@@ -5,6 +5,7 @@ import { SuggestionView } from '../../../shared/models/suggestion';
 import { Icon } from '../../../shared/ui/icon/icon';
 import { fechaCorta, haceCuanto, hora } from '../../../shared/utils/fechas';
 import { cuando } from '../../../shared/utils/modulos';
+import { fechaDeCalendario, textoPlazo } from '../../../shared/utils/sugerencias';
 import { SuggestionApi } from '../suggestion-api';
 import { ICONO_ESTADO, PILL_ESTADO, nombreCorto } from '../estado-sugerencia';
 
@@ -32,6 +33,8 @@ export class MySuggestion {
   fecha = fechaCorta;
   hora = hora;
   corto = nombreCorto;
+  fechaRequerida = fechaDeCalendario;
+  plazo = textoPlazo;
 
   titulo = computed(() => {
     const s = this.sugerencia();

@@ -85,6 +85,17 @@
       }
       <label class="ui-select">
         <select
+          aria-label="Filtrar por autor"
+          (change)="cambiar({ autor: $any($event.target).value || null })"
+        >
+          <option value="">Autor: Todos</option>
+          @for (autor of autores(); track autor) {
+            <option [value]="autor">Autor: {{ autor }}</option>
+          }
+        </select>
+      </label>
+      <label class="ui-select">
+        <select
           aria-label="Filtrar por estado"
           (change)="cambiar({ estado: $any($event.target).value })"
         >

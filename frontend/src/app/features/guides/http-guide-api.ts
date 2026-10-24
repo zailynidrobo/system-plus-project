@@ -78,6 +78,7 @@ export class HttpGuideApi {
         if (search) params['search'] = search;
         if (moduleId) params['moduleId'] = moduleId;
         if (competencyId) params['competencyId'] = competencyId;
+        if (filtro.autor) params['author'] = filtro.autor;
         if (filtro.estado !== 'TODOS') {
           params['status'] = filtro.estado === 'Borrador' ? 'draft' : 'published';
         }

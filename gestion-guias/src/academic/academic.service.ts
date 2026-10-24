@@ -581,6 +581,13 @@ export class AcademicService implements OnModuleInit {
     const filters: FindOptionsWhere<AcademicGuideRecord> = {
       ...(query.moduleId ? { moduleId: query.moduleId } : {}),
       ...(query.competencyId ? { competencyId: query.competencyId } : {}),
+      ...(query.author
+        ? {
+            createdByName: ILike(
+              `%${query.author.trim().replace(/[\\%_]/g, '\\$&')}%`,
+            ),
+          }
+        : {}),
       ...(query.status ? { status: query.status } : {}),
       ...access,
     };

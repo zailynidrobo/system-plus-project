@@ -123,6 +123,7 @@ describe('HttpGuideApi', () => {
         busqueda: '',
         moduleId: null,
         competencyId: null,
+        autor: null,
         estado: 'TODOS',
         pagina: 1,
         porPagina: 6,
@@ -149,6 +150,7 @@ describe('HttpGuideApi', () => {
         busqueda: 'objetivos',
         moduleId: null,
         competencyId: COMPETENCY_ID,
+        autor: 'Coordinadora',
         estado: 'Publicada',
         pagina: 2,
         porPagina: 10,
@@ -157,6 +159,7 @@ describe('HttpGuideApi', () => {
     const request = http.expectOne((req) => req.url === GUIDE_URL);
     expect(request.request.params.get('search')).toBe('objetivos');
     expect(request.request.params.get('competencyId')).toBe(COMPETENCY_UUID);
+    expect(request.request.params.get('author')).toBe('Coordinadora');
     expect(request.request.params.get('status')).toBe('published');
     expect(request.request.params.get('page')).toBe('2');
     expect(request.request.params.get('pageSize')).toBe('10');

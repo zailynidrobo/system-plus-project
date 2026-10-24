@@ -848,7 +848,13 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
     });
 
     const page = await service.findGuidesForUser(
-      { search: 'Autores', status: 'published', page: '1', pageSize: '1' },
+      {
+        search: 'Autores',
+        author: 'Juliana Díaz',
+        status: 'published',
+        page: '1',
+        pageSize: '1',
+      },
       'coordinator-1',
       ['coordinador'],
     );

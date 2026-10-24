@@ -86,6 +86,7 @@ export class HttpTeacherApi {
         busqueda: f.busqueda,
         moduleId: f.moduleId,
         competencyId: null,
+        autor: null,
         estado: 'Publicada',
         pagina: 1,
         porPagina: 100,

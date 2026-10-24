@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, forkJoin, map, of, shareReplay, switchMap } from 'rxjs';
+import { Observable, forkJoin, map, of, shareReplay, switchMap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Persona } from '../../shared/models/academic-module';
 import { ApiError } from '../../shared/models/api-error';
@@ -76,6 +76,33 @@ export class AcademicIds {
         return this.exigir(id);
       }),
     );
+  }
+
+  /**
+   * UUID de una guía. Si no se conoce (p. ej. al recargar /guias/:id), recorre el listado de guías
+   * visibles para el usuario, de 100 en 100, hasta encontrarla.
+   */
+  guia(id: number): Observable<string> {
+    const guardado = this.uuids.get(id);
+    if (guardado) return of(guardado);
+    const buscar = (page: number): Observable<string> =>
+      this.http
+        .get<{ items: { id: string }[]; total: number; pageSize: number }>(`${this.base}/academic/guides`, {
+          params: { page: String(page), pageSize: '100' },
+        })
+        .pipe(
+          switchMap((r) => {
+            const guia = r.items.find((g) => numeroDe(g.id) === id);
+            if (guia) return of(guia.id);
+            if (page * r.pageSize >= r.total) return throwError(() => new ApiError('NOT_FOUND'));
+            return buscar(page + 1);
+          }),
+          map((uuid) => {
+            this.registrar(uuid);
+            return uuid;
+          }),
+        );
+    return buscar(1);
   }
 
   /** Carga el listado de módulos del programa y registra sus UUID. Devuelve los UUID. */

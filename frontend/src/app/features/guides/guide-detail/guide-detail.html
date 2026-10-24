@@ -58,6 +58,7 @@
           <div class="ui-kv"><span>Versión vigente</span><strong>{{ g.version }} · {{ fecha(g.updatedAt) }}</strong></div>
         </section>
       }
+      <app-support-materials [guideId]="g.id" [puedeSubir]="true" />
       <section class="ui-side-card" id="historial">
         <h3 class="ui-side-title"><app-icon name="history" [size]="15" /> Historial</h3>
         <ul class="ui-timeline">

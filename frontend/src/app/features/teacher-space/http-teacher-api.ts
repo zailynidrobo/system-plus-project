@@ -40,13 +40,6 @@ interface IsolationResponse {
   otherTeachers: number;
 }
 
-interface GuidePageResponse {
-  items: { id: string }[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
-
 const comparable = (v: unknown) => (v === null || v === undefined ? '' : String(v).trim());
 
 /**
@@ -68,7 +61,6 @@ export class HttpTeacherApi {
   private moduleApi = inject(ModuleApi);
   private base = `${environment.apiUrl}/academic`;
 
-  private guideUuids = new Map<number, string>();
   private versionUuids = new Map<number, string>();
   private versions = new Map<number, VersionResponse>();
 
@@ -128,7 +120,7 @@ export class HttpTeacherApi {
   crearVersion(guideId: number, nombre: string): Observable<TeacherVersionView> {
     const name = nombre.trim().replace(/\s+/g, ' ');
     if (!name) return throwError(() => new ApiError('NAME_REQUIRED'));
-    return this.uuidGuia(guideId).pipe(
+    return this.ids.guia(guideId).pipe(
       switchMap((uuid) =>
         this.http.post<VersionResponse>(`${this.base}/guides/${uuid}/personalized-versions`, { name }),
       ),
@@ -227,7 +219,7 @@ export class HttpTeacherApi {
     const id = numeroDe(v.id);
     this.versionUuids.set(id, v.id);
     this.versions.set(id, v);
-    this.guideUuids.set(numeroDe(v.baseGuideId), v.baseGuideId);
+    this.ids.registrar(v.baseGuideId);
     return id;
   }
 
@@ -254,26 +246,6 @@ export class HttpTeacherApi {
         return v;
       }),
     );
-  }
-
-  private uuidGuia(id: number): Observable<string> {
-    const conocido = this.guideUuids.get(id);
-    if (conocido) return of(conocido);
-    const buscar = (page: number): Observable<string> =>
-      this.http
-        .get<GuidePageResponse>(`${this.base}/guides`, { params: { page: String(page), pageSize: '100' } })
-        .pipe(
-          switchMap((r) => {
-            const guia = r.items.find((c) => numeroDe(c.id) === id);
-            if (guia) {
-              this.guideUuids.set(id, guia.id);
-              return of(guia.id);
-            }
-            if (page * r.pageSize >= r.total) return throwError(() => new ApiError('NOT_FOUND'));
-            return buscar(page + 1);
-          }),
-        );
-    return buscar(1);
   }
 
   private unaVista(version: VersionResponse): Observable<TeacherVersionView> {

@@ -1,10 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, forkJoin, map, of, switchMap, throwError } from 'rxjs';
+import { Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Auth } from '../../core/auth/auth';
 import { mapKeycloakRole } from '../../core/auth/role-mapping';
-import { ApiError } from '../../shared/models/api-error';
 import { AcademicModule, ModuleView } from '../../shared/models/academic-module';
 import { Guide, GuideEvent, GuideStatus, GuideView } from '../../shared/models/guide';
 import { GuideContent, GuideField } from '../../shared/models/guide-field';
@@ -63,7 +62,6 @@ export class HttpGuideApi {
   private moduleApi = inject(ModuleApi);
   private auth = inject(Auth);
   private base = `${environment.apiUrl}/academic/guides`;
-  private guideUuids = new Map<number, string>();
 
   listar(filtro: FiltroGuias): Observable<PaginaGuias> {
     const moduleId$ =
@@ -103,7 +101,7 @@ export class HttpGuideApi {
   }
 
   obtener(id: number): Observable<GuideView> {
-    return this.uuid(id).pipe(
+    return this.ids.guia(id).pipe(
       switchMap((uuid) => this.http.get<GuideResponse>(`${this.base}/${uuid}`)),
       switchMap((guide) => this.withModule(guide, (module) => this.aVista(guide, [module]))),
       catchError(falla()),
@@ -111,7 +109,7 @@ export class HttpGuideApi {
   }
 
   historial(id: number): Observable<GuideEvent[]> {
-    return this.uuid(id).pipe(
+    return this.ids.guia(id).pipe(
       switchMap((uuid) => this.http.get<GuideEventResponse[]>(`${this.base}/${uuid}/events`)),
       map((events) =>
         events.map((event) => ({
@@ -205,7 +203,7 @@ export class HttpGuideApi {
     data: { competencyId: number; content: GuideContent },
   ): Observable<GuideView> {
     return forkJoin({
-      uuid: this.uuid(id),
+      uuid: this.ids.guia(id),
       competencyId: this.ids.competencia(data.competencyId),
     }).pipe(
       switchMap(({ uuid, competencyId }) =>
@@ -233,7 +231,7 @@ export class HttpGuideApi {
   }
 
   publicar(id: number): Observable<GuideView> {
-    return this.uuid(id).pipe(
+    return this.ids.guia(id).pipe(
       switchMap((uuid) => this.http.patch<GuideResponse>(`${this.base}/${uuid}/publish`, {})),
       switchMap((guide) =>
         this.withModule(guide, (module) =>
@@ -253,30 +251,6 @@ export class HttpGuideApi {
     );
   }
 
-  private uuid(id: number): Observable<string> {
-    const known = this.guideUuids.get(id);
-    if (known) return of(known);
-    const buscarEnPagina = (page: number): Observable<string> =>
-      this.http
-        .get<GuidePageResponse>(this.base, {
-          params: { page: String(page), pageSize: '100' },
-        })
-        .pipe(
-          switchMap((result) => {
-            const guide = result.items.find((candidate) => numeroDe(candidate.id) === id);
-            if (guide) {
-              this.guideUuids.set(id, guide.id);
-              return of(guide.id);
-            }
-            if (page * result.pageSize >= result.total) {
-              return throwError(() => new ApiError('NOT_FOUND'));
-            }
-            return buscarEnPagina(page + 1);
-          }),
-        );
-    return buscarEnPagina(1);
-  }
-
   private withModule<T>(guide: GuideResponse, build: (module: ModuleView) => T): Observable<T> {
     const moduleId = this.ids.registrar(guide.moduleId);
     return this.moduleApi.obtener(moduleId).pipe(map(build));
@@ -288,7 +262,7 @@ export class HttpGuideApi {
     actor: { id: number; name: string } | null = null,
   ): GuideView {
     const id = numeroDe(response.id);
-    this.guideUuids.set(id, response.id);
+    this.ids.registrar(response.id);
     const moduleId = this.ids.registrar(response.moduleId);
     const competencyId = response.competencyId ? this.ids.registrar(response.competencyId) : null;
     const module: AcademicModule | undefined = modulos.find((item) => item.id === moduleId);

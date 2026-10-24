@@ -64,6 +64,9 @@ export const routes: Routes = [
       { path: 'sugerencias', loadComponent: () => import('./features/suggestions/suggestion-inbox/suggestion-inbox').then((m) => m.SuggestionInbox), canActivate: [roleGuard], data: sugerencias },
       { path: 'sugerencias/:id', loadComponent: () => import('./features/suggestions/suggestion-review/suggestion-review').then((m) => m.SuggestionReview), canActivate: [roleGuard], data: sugerencias },
 
+      // Inicio: resumen, tareas pendientes y atajos de cada rol
+      { path: 'inicio', loadComponent: () => import('./features/home/home').then((m) => m.Home), data: { titulo: 'Inicio' } },
+
       { path: 'sin-acceso', loadComponent: () => import('./features/auth/no-access/no-access').then((m) => m.NoAccess), data: { titulo: 'Sin acceso' } },
       { path: '', pathMatch: 'full', redirectTo: redirectToHome },
     ],

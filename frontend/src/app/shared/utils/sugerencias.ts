@@ -2,14 +2,14 @@ import { GuideValue } from '../models/guide-field';
 
 const texto = (v: GuideValue | undefined) => (v === null || v === undefined ? '' : String(v).trim());
 
-const recortar = (t: string, max = 70) => (t.length > max ? `${t.slice(0, max - 1).trimEnd()}…` : t);
+const recortar = (t: string, max = 70) => (t.length > max ? `${t.slice(0, max - 1).trimEnd()}...` : t);
 
-/** 14 → "SUG-014" */
+/** 14 -> "SUG-014" */
 export function formatSuggestionCode(n: number): string {
   return `SUG-${String(n).padStart(3, '0')}`;
 }
 
-/** Al aprobar una sugerencia la guía sube una versión menor: v1.0 → v1.1, v2.1 → v2.2. */
+/** Al aprobar una sugerencia la guía sube una versión menor: v1.0 -> v1.1, v2.1 -> v2.2. */
 export function siguienteVersion(version: string): string {
   const m = /^v(\d+)\.(\d+)$/.exec(version);
   return m ? `v${m[1]}.${Number(m[2]) + 1}` : 'v1.1';

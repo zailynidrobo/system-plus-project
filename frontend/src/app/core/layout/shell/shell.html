@@ -4,7 +4,7 @@
       <span class="brand__logo">A+</span>
       <div>
         <strong>System Plus Piendamó</strong>
-        <small>AthenaDev · Intranet académica</small>
+        <small>Intranet de guías académicas</small>
       </div>
     </div>
 
@@ -42,25 +42,51 @@
 
   <div class="main">
     <header class="topbar">
-      <div class="crumbs">
-        AthenaDev <span>/</span>
+      <nav class="crumbs" aria-label="Ruta de navegación">
+        <a routerLink="/">Inicio</a> <span>/</span>
         @if (subtitulo(); as sub) {
-          {{ titulo() }} <span>/</span> <strong>{{ sub }}</strong>
+          <a [routerLink]="seccionUrl()">{{ titulo() }}</a> <span>/</span> <strong>{{ sub }}</strong>
         } @else {
           <strong>{{ titulo() }}</strong>
         }
-      </div>
+      </nav>
 
       <div class="topbar__right">
-        <button type="button" class="icon-btn" aria-label="Notificaciones">
-          <app-icon name="bell" [size]="17" />
-        </button>
+        <div class="user-menu">
+          <button
+            type="button"
+            class="icon-btn"
+            aria-label="Notificaciones"
+            aria-haspopup="menu"
+            [attr.aria-expanded]="avisosAbierto()"
+            (click)="avisosAbierto.set(!avisosAbierto()); menuAbierto.set(false)"
+          >
+            <app-icon name="bell" [size]="17" />
+            @if (pendientesSugerencias()) {
+              <i class="icon-btn__dot"></i>
+            }
+          </button>
+
+          @if (avisosAbierto()) {
+            <div class="user-menu__backdrop" (click)="avisosAbierto.set(false)"></div>
+            <div class="user-menu__panel user-menu__panel--avisos" role="menu">
+              @if (pendientesSugerencias(); as n) {
+                <a role="menuitem" routerLink="/sugerencias" (click)="avisosAbierto.set(false)">
+                  <app-icon name="message-square" [size]="16" />
+                  {{ n }} {{ n === 1 ? 'sugerencia pendiente' : 'sugerencias pendientes' }} por revisar
+                </a>
+              } @else {
+                <p class="user-menu__empty">No tienes notificaciones nuevas.</p>
+              }
+            </div>
+          }
+        </div>
 
         <div class="user-menu">
           <button
             type="button"
             class="user"
-            (click)="menuAbierto.set(!menuAbierto())"
+            (click)="menuAbierto.set(!menuAbierto()); avisosAbierto.set(false)"
             aria-haspopup="menu"
             [attr.aria-expanded]="menuAbierto()"
           >

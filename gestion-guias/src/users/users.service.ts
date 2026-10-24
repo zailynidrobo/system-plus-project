@@ -83,6 +83,18 @@ export class UsersService {
       });
   }
 
+  /** Docentes activos que coordinación puede asignar a un módulo (HE-04). */
+  async findTeachers(): Promise<Pick<User, 'id' | 'name' | 'email' | 'role'>[]> {
+    const users = await this.findAll();
+    return users
+      .filter(
+        (user) =>
+          user.isActive &&
+          (user.role === Role.DOCENTE || user.role === Role.DOCENTE_AUTORIZADO),
+      )
+      .map(({ id, name, email, role }) => ({ id, name, email, role }));
+  }
+
   async findOne(id: string): Promise<User> {
     const [user, roleNames] = await Promise.all([
       this.keycloak.getUser(id),
@@ -114,16 +126,48 @@ export class UsersService {
     return this.findOne(id);
   }
 
-  async deactivate(id: string): Promise<User> { // HU-03
+  async deactivate(id: string, actorId?: string): Promise<User> { // HU-03
+    this.assertNotSelf(id, actorId);
+    const user = await this.findOne(id);
+    if (user.role === Role.ADMIN && user.isActive) await this.assertAnotherActiveAdmin(id);
     await this.keycloak.updateUser(id, { enabled: false });
     // Desactivar no borra al usuario; solo impide nuevos ingresos y cierra sus sesiones abiertas.
     await this.keycloak.logoutUser(id).catch(() => undefined);
     return this.findOne(id);
   }
 
-  async updateRole(id: string, dto: UpdateRoleDto): Promise<User> { // HU-04
-    await this.keycloak.getUser(id);
+  async updateRole(id: string, dto: UpdateRoleDto, actorId?: string): Promise<User> { // HU-04
+    this.assertNotSelf(id, actorId);
+    const user = await this.findOne(id);
+    if (user.role === Role.ADMIN && dto.role !== Role.ADMIN && user.isActive) {
+      await this.assertAnotherActiveAdmin(id);
+    }
     await this.keycloak.setRealmRole(id, dto.role, ROLES);
     return this.findOne(id);
+  }
+
+  /** Un administrador no puede desactivarse ni quitarse el rol a sí mismo: perdería el acceso. */
+  private assertNotSelf(id: string, actorId?: string): void {
+    if (actorId && id === actorId) {
+      throw new BadRequestException({
+        code: 'ACCION_SOBRE_SI_MISMO',
+        message: 'No puede desactivar ni cambiar el rol de su propia cuenta',
+      });
+    }
+  }
+
+  /** El sistema nunca debe quedarse sin un administrador activo. */
+  private async assertAnotherActiveAdmin(id: string): Promise<void> {
+    const [admins, users] = await Promise.all([
+      this.keycloak.listUserIdsByRole(Role.ADMIN),
+      this.keycloak.listUsers(),
+    ]);
+    const otherActive = users.some((user) => user.id !== id && user.enabled && admins.has(user.id));
+    if (!otherActive) {
+      throw new BadRequestException({
+        code: 'ULTIMO_ADMINISTRADOR',
+        message: 'Debe quedar al menos un administrador activo',
+      });
+    }
   }
 }

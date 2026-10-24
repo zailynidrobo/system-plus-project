@@ -9,7 +9,7 @@
     </div>
     @if (g.status === 'Borrador') {
       <div class="ui-page-head__actions">
-        <a class="ui-btn ui-btn--outline" [routerLink]="['/guias', g.id, 'editar']" [queryParams]="{ publicar: 1 }"><app-icon name="send" [size]="14" /> Publicar…</a>
+        <a class="ui-btn ui-btn--outline" [routerLink]="['/guias', g.id, 'editar']" [queryParams]="{ publicar: 1 }"><app-icon name="send" [size]="14" /> Publicar...</a>
         <a class="ui-btn ui-btn--primary" [routerLink]="['/guias', g.id, 'editar']"><app-icon name="pencil" [size]="15" /> Editar borrador</a>
       </div>
     }

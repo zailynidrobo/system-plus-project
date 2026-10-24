@@ -79,7 +79,7 @@
           <div class="ui-actions">
             <a class="ui-btn" [routerLink]="['/modulos', moduleId]">Cancelar</a>
             <button type="button" class="ui-btn ui-btn--danger" (click)="confirmar()" [disabled]="procesando()">
-              <app-icon name="trash-2" [size]="16" /> {{ procesando() ? 'Eliminando…' : 'Sí, eliminar competencia' }}
+              <app-icon name="trash-2" [size]="16" /> {{ procesando() ? 'Eliminando...' : 'Sí, eliminar competencia' }}
             </button>
           </div>
         } @else {

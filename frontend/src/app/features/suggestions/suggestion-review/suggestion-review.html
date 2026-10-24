@@ -1,5 +1,5 @@
 @if (aprobada(); as a) {
-  <!-- HE-05-HU-03 · Sugerencia aprobada (5003:831) -->
+  <!-- Sugerencia aprobada -->
   <header class="ui-page-head">
     <div>
       <h1>Sugerencia aprobada</h1>
@@ -25,7 +25,7 @@
         <span class="ui-tile ui-tile--xs ui-tile--ok"><app-icon name="file-text" [size]="15" /></span>
         <div class="flex">
           <strong>{{ a.guia.title }}</strong>
-          <small>{{ a.guia.code }} · {{ a.sugerencia.baseVersion }} → {{ a.guia.version }} · actualizada {{ hace(a.guia.updatedAt) }}</small>
+          <small>{{ a.guia.code }} · de {{ a.sugerencia.baseVersion }} a {{ a.guia.version }} · actualizada {{ hace(a.guia.updatedAt) }}</small>
         </div>
         <span class="ui-pill ui-pill--ok"><i></i> Publicada</span>
       </div>
@@ -185,5 +185,5 @@
 } @else if (noExiste()) {
   <section class="ui-card"><p class="ui-empty">La sugerencia que buscas no existe.</p></section>
 } @else {
-  <p class="ui-state">Cargando sugerencia…</p>
+  <p class="ui-state">Cargando sugerencia...</p>
 }

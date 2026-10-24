@@ -98,6 +98,57 @@
           </p>
         }
       </section>
+
+      @if (conAsignacion) {
+        <section class="ui-panel">
+          <header class="ui-toolbar">
+            <div class="ui-card__head">
+              <strong class="ui-section-title">Docentes asignados</strong>
+              <p>Solo los docentes asignados ven las guías publicadas de este módulo y pueden crear su versión.</p>
+            </div>
+            <span class="ui-pill">{{ asignados().length }} {{ asignados().length === 1 ? 'asignado' : 'asignados' }}</span>
+          </header>
+
+          <div class="ui-row">
+            <label class="ui-select">
+              <select
+                aria-label="Docente a asignar"
+                [value]="seleccion()"
+                (change)="seleccion.set($any($event.target).value)"
+              >
+                <option value="">Elegir un docente...</option>
+                @for (d of disponibles(); track d.id) {
+                  <option [value]="d.id">{{ d.nombre }} · {{ d.correo }}</option>
+                }
+              </select>
+            </label>
+            <button type="button" class="ui-btn ui-btn--primary ui-btn--sm" (click)="asignar()" [disabled]="!seleccion() || asignando()">
+              <app-icon name="user-plus" [size]="14" /> Asignar
+            </button>
+          </div>
+          @if (errorAsignacion()) {
+            <p class="ui-help ui-help--error">{{ errorAsignacion() }}</p>
+          }
+
+          @for (d of asignados(); track d.id) {
+            <div class="ui-row">
+              <span class="ui-tile ui-tile--sm"><app-icon name="user-check" [size]="16" /></span>
+              <div class="ui-row__body">
+                <strong>{{ d.nombre }}</strong>
+                <p>{{ d.correo }}</p>
+              </div>
+              <span class="ui-pill ui-pill--ok"><i></i> {{ d.rol === 'DOCENTE_AUTORIZADO' ? 'Docente autorizado' : 'Docente' }}</span>
+              <div class="ui-row__actions">
+                <button type="button" class="ui-icon-btn" (click)="quitar(d.id)" [disabled]="asignando()" title="Quitar del módulo" aria-label="Quitar docente del módulo">
+                  <app-icon name="user-x" [size]="14" />
+                </button>
+              </div>
+            </div>
+          } @empty {
+            <p class="ui-empty">Este módulo aún no tiene docentes asignados.</p>
+          }
+        </section>
+      }
     </div>
 
     <aside class="ui-side">

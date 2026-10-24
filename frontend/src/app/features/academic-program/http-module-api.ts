@@ -195,18 +195,18 @@ export class HttpModuleApi implements ContratoModuleApi {
     return validado.pipe(catchError(falla((m: ModuloApi) => this.aVista(m))));
   }
 
-  /** Borrador → activo. */
+  /** Borrador -> activo. */
   registrar(id: number): Observable<ModuleView> {
     return this.cambiarEstado(id, 'register', {});
   }
 
-  /** Activo → inhabilitado. Conserva competencias y guías; deja de admitir guías nuevas. */
+  /** Activo -> inhabilitado. Conserva competencias y guías; deja de admitir guías nuevas. */
   inhabilitar(id: number, motivo?: string): Observable<ModuleView> {
     const reason = motivo?.trim();
     return this.cambiarEstado(id, 'deactivate', reason ? { reason } : {});
   }
 
-  /** Inhabilitado → activo. */
+  /** Inhabilitado -> activo. */
   rehabilitar(id: number): Observable<ModuleView> {
     return this.cambiarEstado(id, 'reactivate', {});
   }
@@ -221,7 +221,7 @@ export class HttpModuleApi implements ContratoModuleApi {
     );
   }
 
-  /** Módulo del backend → módulo del front. El listado no trae auditoría: esos campos quedan en null. */
+  /** Módulo del backend -> módulo del front. El listado no trae auditoría: esos campos quedan en null. */
   private aVista(m: ModuloApi): ModuleView {
     const base: AcademicModule = {
       id: this.ids.registrar(m.id),

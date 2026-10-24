@@ -43,7 +43,7 @@ import {
 } from '../academic-program/entities/curricular-module.entity.js';
 import { buildCompetencyPrefix } from '../academic-program/curricular-codes.js';
 import { Competency } from '../academic-program/entities/competency.entity.js';
-import { badRequest } from '../academic-program/api-errors.js';
+import { badRequest, conflict } from '../academic-program/api-errors.js';
 import { ConfigureGuideFieldsDto } from './dto/configure-guide-fields.dto.js';
 import { CreateGuideDto } from './dto/create-guide.dto.js';
 import { UpdateGuideDto } from './dto/update-guide.dto.js';
@@ -514,7 +514,7 @@ export class AcademicService implements OnModuleInit {
   ) {
     if (query.moduleId !== undefined) await this.getModuleOrFail(query.moduleId);
     if (roles.includes('coordinador')) return this.listGuides(query);
-    if (!roles.includes('docente')) {
+    if (!this.isTeacher(roles)) {
       throw new ForbiddenException('No tienes permiso para consultar guías');
     }
     const assignments = await this.moduleTeacherAssignments.findBy({
@@ -540,7 +540,7 @@ export class AcademicService implements OnModuleInit {
     let visibleGuides: AcademicGuideRecord[];
     if (roles.includes('coordinador')) {
       visibleGuides = await this.guides.find();
-    } else if (roles.includes('docente')) {
+    } else if (this.isTeacher(roles)) {
       const assignments = await this.moduleTeacherAssignments.findBy({
         teacherId: userId,
       });
@@ -615,7 +615,7 @@ export class AcademicService implements OnModuleInit {
   async findGuideForUser(id: string, userId: string, roles: string[]) {
     const guide = await this.getGuideOrFail(id);
     if (roles.includes('coordinador')) return this.toGuide(guide);
-    if (!roles.includes('docente')) {
+    if (!this.isTeacher(roles)) {
       throw new ForbiddenException(
         'No tienes permiso para consultar esta guía',
       );
@@ -736,12 +736,16 @@ export class AcademicService implements OnModuleInit {
         fields: version.baseFields,
         content: version.baseContent,
       },
-      fields: version.fields,
+      fields: this.teacherFields(version),
       content: version.content,
     };
   }
 
-  async createPersonalizedVersion(baseGuideId: string, teacherId: string) {
+  async createPersonalizedVersion(
+    baseGuideId: string,
+    teacherId: string,
+    name?: string,
+  ) {
     const guide = await this.getGuideOrFail(baseGuideId);
     if (guide.status !== 'published') {
       throw new ConflictException(
@@ -749,6 +753,7 @@ export class AcademicService implements OnModuleInit {
       );
     }
     await this.assertTeacherCanAccessModule(guide.moduleId, teacherId);
+    const versionName = await this.validateVersionName(name, teacherId);
     const now = new Date();
     const version = await this.personalizedVersions.save({
       id: randomUUID(),
@@ -757,6 +762,7 @@ export class AcademicService implements OnModuleInit {
       moduleName: guide.moduleName,
       teacherId,
       title: guide.title,
+      name: versionName,
       baseContent: { ...guide.content },
       baseFields: guide.fields.map((field) => ({
         ...field,
@@ -805,8 +811,17 @@ export class AcademicService implements OnModuleInit {
         'Debe proporcionar al menos un campo para actualizar',
       );
     }
+    for (const key of Object.keys(dto.content)) {
+      const field = this.teacherFields(version).find((candidate) => candidate.key === key);
+      if (field?.teacherEditable === false) {
+        throw badRequest(
+          'FIELD_NOT_EDITABLE',
+          `El campo '${field.label}' no se puede editar en una versión docente`,
+        );
+      }
+    }
     const content = { ...version.content, ...dto.content };
-    this.validateGuideContent(content, version.fields, false);
+    this.validateGuideContent(content, this.teacherFields(version), false);
     version.content = content;
     version.updatedAt = new Date();
     return this.toPersonalizedVersion(
@@ -867,6 +882,81 @@ export class AcademicService implements OnModuleInit {
     const guide = await this.guides.findOneBy({ id });
     if (!guide) throw new NotFoundException('Guía no encontrada');
     return guide;
+  }
+
+  /** Módulos asignados al docente y cuántas guías publicadas de otros módulos no puede ver. */
+  async findAssignmentsForTeacher(teacherId: string) {
+    const assignments = await this.moduleTeacherAssignments.findBy({
+      teacherId,
+    });
+    const moduleIds = assignments.map((assignment) => assignment.moduleId);
+    const published = await this.guides.findBy({ status: 'published' });
+    const hidden = published.filter((guide) => !moduleIds.includes(guide.moduleId));
+    return {
+      moduleIds,
+      hidden: {
+        total: hidden.length,
+        modules: [...new Set(hidden.map((guide) => guide.moduleName))],
+      },
+    };
+  }
+
+  /** Cuántas versiones de otros docentes hay en el módulo (solo el conteo: su contenido no se expone). */
+  async findPersonalizedVersionIsolation(id: string, teacherId: string) {
+    const version = await this.getPersonalizedVersionOrFail(id);
+    if (version.teacherId !== teacherId) {
+      throw new ForbiddenException(
+        'Solo puedes consultar tus propias versiones',
+      );
+    }
+    const others = (
+      await this.personalizedVersions.findBy({ moduleId: version.moduleId })
+    ).filter((other) => other.teacherId !== teacherId);
+    return {
+      moduleName: version.moduleName,
+      otherVersions: others.length,
+      otherTeachers: new Set(others.map((other) => other.teacherId)).size,
+    };
+  }
+
+  private isTeacher(roles: string[]) {
+    return roles.includes('docente') || roles.includes('docente_autorizado');
+  }
+
+  private async validateVersionName(
+    name: string | undefined,
+    teacherId: string,
+  ): Promise<string | null> {
+    if (name === undefined) return null;
+    const clean = name.trim().replace(/\s+/g, ' ');
+    if (!clean) {
+      throw badRequest('NAME_REQUIRED', 'El nombre de la versión es obligatorio');
+    }
+    if (clean.length > 150) {
+      throw badRequest(
+        'NAME_TOO_LONG',
+        'El nombre de la versión no puede superar 150 caracteres',
+      );
+    }
+    const comparable = (value: string) =>
+      value
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+    const existing = await this.personalizedVersions.findBy({ teacherId });
+    if (
+      existing.some(
+        (version) =>
+          version.name !== null &&
+          comparable(version.name) === comparable(clean),
+      )
+    ) {
+      throw conflict(
+        'VERSION_NAME_DUPLICATED',
+        'Ya tienes una versión con ese nombre',
+      );
+    }
+    return clean;
   }
 
   private async getPersonalizedVersionOrFail(id: string) {
@@ -1157,13 +1247,19 @@ export class AcademicService implements OnModuleInit {
       moduleName: record.moduleName,
       teacherId: record.teacherId,
       title: record.title,
+      name: record.name ?? record.title,
       baseContent: record.baseContent,
       baseFields: record.baseFields,
       content: record.content,
-      fields: record.fields,
+      fields: this.teacherFields(record),
       createdAt: record.createdAt.toISOString(),
       updatedAt: record.updatedAt.toISOString(),
     };
+  }
+
+  /** Sin formulario docente configurado por coordinación, el docente ve los campos de la guía base. */
+  private teacherFields(record: { fields: GuideField[]; baseFields: GuideField[] }) {
+    return record.fields.length > 0 ? record.fields : record.baseFields;
   }
 
   private validateFieldDefinitions(fields: GuideField[]) {

@@ -129,6 +129,8 @@
 
   span { margin: 0 6px; color: var(--color-border-figma); }
   strong { font-weight: 400; color: var(--color-primary); }
+  a { color: inherit; text-decoration: none; }
+  a:hover { color: var(--color-primary); text-decoration: underline; }
 }
 
 .icon-btn {
@@ -142,7 +144,19 @@
   color: var(--color-muted-figma);
   cursor: pointer;
 
+  position: relative;
+
   &:hover { background: #eeeff6; }
+
+  &__dot {
+    position: absolute;
+    top: 7px;
+    right: 8px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-gold-accent);
+  }
 }
 
 .user-menu {
@@ -178,6 +192,28 @@
 
       &:hover { background: var(--color-surface-2); }
     }
+
+    a {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      color: var(--color-text-figma);
+      font-size: 13px;
+      text-decoration: none;
+
+      &:hover { background: var(--color-surface-2); }
+    }
+
+    &--avisos { min-width: 260px; }
+  }
+
+  &__empty {
+    margin: 0;
+    padding: 10px 12px;
+    color: var(--color-muted-figma);
+    font-size: 13px;
   }
 }
 

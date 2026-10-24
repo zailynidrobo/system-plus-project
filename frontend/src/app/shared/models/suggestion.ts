@@ -40,7 +40,7 @@ export interface SuggestionView extends Suggestion {
   moduleId: number;
   moduleName: string;
   competencyPrefix: string;
-  /** "Agrega «…»" o "Cambia a «…»": resumen corto para las tablas. */
+  /** "Agrega «...»" o "Cambia a «...»": resumen corto para las tablas. */
   summary: string;
 }
 

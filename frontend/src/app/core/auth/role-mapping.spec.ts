@@ -1,12 +1,12 @@
 import { mapKeycloakRole, mapKeycloakRoles, toBackendRole } from './role-mapping';
 
-describe('Mapeo de roles Keycloak → front', () => {
+describe('Mapeo de roles Keycloak -> front', () => {
   it.each([
     ['admin', 'ADMINISTRADOR'],
     ['coordinador', 'COORDINADOR'],
     ['docente', 'DOCENTE'],
     ['docente_autorizado', 'DOCENTE_AUTORIZADO'],
-  ])('%s → %s', (keycloak, front) => {
+  ])('%s -> %s', (keycloak, front) => {
     expect(mapKeycloakRole(keycloak)).toBe(front);
     expect(mapKeycloakRoles([keycloak])).toBe(front);
   });

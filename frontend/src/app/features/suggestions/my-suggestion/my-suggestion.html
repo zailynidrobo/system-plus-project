@@ -53,9 +53,9 @@
 
       <p class="ui-flow">
         @if (s.status === 'Pendiente') {
-          <strong>● Pendiente</strong><span>→</span>Aprobada / Rechazada
+          Estado: <strong>Pendiente</strong>. La coordinación la aprobará o rechazará.
         } @else {
-          Pendiente<span>→</span><strong [class.ok]="s.status === 'Aprobada'" [class.off]="s.status === 'Rechazada'">● {{ s.status }}</strong>
+          Estado: <strong [class.ok]="s.status === 'Aprobada'" [class.off]="s.status === 'Rechazada'">{{ s.status }}</strong>
         }
       </p>
 
@@ -88,5 +88,5 @@
     <p class="ui-empty">Esta sugerencia no existe o pertenece a otro docente.</p>
   </section>
 } @else {
-  <p class="ui-state">Cargando sugerencia…</p>
+  <p class="ui-state">Cargando sugerencia...</p>
 }

@@ -184,12 +184,14 @@ Usa la autenticación con Keycloak descrita arriba. Lecturas: cualquier usuario 
 
 The academic endpoints are available under `/academic`. HE-03 guide administration and
 configurable forms require the Keycloak realm role `coordinador`. HE-04 consultation and
-personalized versions require `docente`. A teacher's module assignments are keyed by their
+personalized versions require `docente` or `docente_autorizado`. A teacher's module assignments are keyed by their
 Keycloak `sub`; coordinators manage assignments using the routes below.
 
 1. Create the module and its competencies with the HE-02 routes described above
    (`POST /programs/:programId/modules` and `POST /modules/:moduleId/competencies`).
-2. Assign a teacher with `PUT /academic/modules/:moduleId/teachers/:teacherId`.
+2. List the active teachers with `GET /academic/teachers` (coordinator), then assign one with
+   `PUT /academic/modules/:moduleId/teachers/:teacherId` (remove with `DELETE`; list the
+   assigned ids with `GET /academic/modules/:moduleId/teachers`).
 3. Read the effective base-guide form with `GET /academic/modules/:moduleId/guide-fields`
    (optionally `?competencyId=:competencyId`), then configure module fields with
    `PUT /academic/modules/:moduleId/guide-fields`, or competency-specific fields with
@@ -213,9 +215,17 @@ Keycloak `sub`; coordinators manage assignments using the routes below.
    access rules as the guide.
 7. As an assigned teacher, list published guides with `GET /academic/guides?moduleId=:moduleId`,
    then create a personal copy with `POST /academic/guides/:guideId/personalized-versions`.
+   The body may carry `{ "name": "POO · Grupo 2026-1" }`: the name is trimmed, at most 150
+   characters, and unique per teacher (`VERSION_NAME_DUPLICATED`, 409). Without a name the base
+   guide's title is used. `GET /academic/my-assignments` returns the teacher's `moduleIds` and
+   how many published guides of other modules stay hidden (`hidden.total`, `hidden.modules`).
 8. Read and progressively edit only your copies with
    `GET /academic/personalized-versions`, `GET /academic/personalized-versions/:id`, and
    `PATCH /academic/personalized-versions/:id` using `{ "content": { "fieldKey": "value" } }`.
+   Fields with `teacherEditable: false` are rejected with `FIELD_NOT_EDITABLE`. Responses include
+   the version `name`. `GET /academic/personalized-versions/:id/isolation` returns how many
+   versions from other teachers exist in the same module (`otherVersions`, `otherTeachers`),
+   without exposing their content.
 9. Configure the teacher-form fields independently with
    `PUT /academic/modules/:moduleId/teacher-guide-fields`. Form fields accept `section`,
    `description`, `help`, `maxLength`, and `teacherEditable`; maximum lengths are validated by

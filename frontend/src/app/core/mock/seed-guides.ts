@@ -54,7 +54,7 @@ export function camposPorDefecto(): GuideField[] {
       type: 'textarea',
       required: true,
       maxLength: 500,
-      help: 'Describe las evidencias de desempeño, producto y conocimiento…',
+      help: 'Describe las evidencias de desempeño, producto y conocimiento...',
       teacherEditable: true,
     },
     {

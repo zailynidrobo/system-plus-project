@@ -82,6 +82,8 @@ export interface PersonalizedGuideVersion {
   moduleName: string;
   teacherId: string;
   title: string;
+  /** Nombre elegido por el docente; si no lo puso, el de la guía base. */
+  name: string;
   baseContent: GuideContent;
   baseFields: GuideField[];
   content: GuideContent;

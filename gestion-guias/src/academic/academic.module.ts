@@ -14,7 +14,7 @@ import { GuideDocumentExportService } from './guide-document-export.service.js';
 import { TypeOrmGuideStatsProvider } from './typeorm-guide-stats.provider.js';
 
 /**
- * HE-03/HE-04 — Guías, campos, asignación docente, versiones personalizadas y materiales.
+ * HE-03/HE-04 - Guías, campos, asignación docente, versiones personalizadas y materiales.
  * Los módulos y competencias son los de HE-02 (`curricular_modules` y `competencies`);
  * este componente solo los consulta para validar y no los administra.
  */

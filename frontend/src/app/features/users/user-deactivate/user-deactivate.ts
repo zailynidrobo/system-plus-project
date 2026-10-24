@@ -4,6 +4,7 @@ import { Auth } from '../../../core/auth/auth';
 import { ROLE_LABELS, User } from '../../../shared/models/user';
 import { Icon } from '../../../shared/ui/icon/icon';
 import { UserApi } from '../user-api';
+import { esMismoUsuario, mensajeDeError } from '../mismo-usuario';
 
 @Component({
   selector: 'app-user-deactivate',
@@ -22,10 +23,10 @@ export class UserDeactivate {
   cargando = signal(true);
   procesando = signal(false);
   hecho = signal(false);
-  error = signal(false);
-  hora = signal(this.ahora());
+  error = signal('');
 
-  responsable = computed(() => this.auth.user()?.nombre ?? '');
+  /** La cuenta abierta es la de quien está usando la sesión. */
+  esUnoMismo = computed(() => esMismoUsuario(this.auth.user(), this.usuario()));
 
   rolVisible = computed(() => {
     const u = this.usuario();
@@ -47,29 +48,24 @@ export class UserDeactivate {
         this.usuario.set(u);
         this.cargando.set(false);
       },
-      error: () => this.cargando.set(false), // usuario null → se muestra "no encontrado"
+      error: () => this.cargando.set(false), // usuario null: se muestra "no encontrado"
     });
   }
 
   confirmar(): void {
     this.procesando.set(true);
-    this.error.set(false);
+    this.error.set('');
 
     this.api.desactivar(this.id).subscribe({
       next: (u) => {
         this.usuario.set(u);
-        this.hora.set(this.ahora());
         this.hecho.set(true);
         this.procesando.set(false);
       },
-      error: () => {
+      error: (e: unknown) => {
         this.procesando.set(false);
-        this.error.set(true);
+        this.error.set(mensajeDeError(e, 'No pudimos desactivar al usuario. Inténtalo de nuevo en unos minutos.'));
       },
     });
-  }
-
-  private ahora(): string {
-    return new Date().toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit' });
   }
 }

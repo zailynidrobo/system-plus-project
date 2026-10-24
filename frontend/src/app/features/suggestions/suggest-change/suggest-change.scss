@@ -62,3 +62,6 @@
 .ui-control textarea.corta { min-height: 60px; }
 .ui-control select,
 .ui-control input { height: 38px; font-size: 13px; }
+
+// 5. Fecha requerida (HE-05, regla de anticipación)
+.fecha { min-height: 40px; max-width: 260px; }

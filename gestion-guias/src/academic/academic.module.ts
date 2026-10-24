@@ -38,6 +38,7 @@ import { TypeOrmGuideStatsProvider } from './typeorm-guide-stats.provider.js';
     TypeOrmGuideStatsProvider,
   ],
   // HE-02 lo usa para mostrar cuántas guías tiene cada módulo y competencia.
-  exports: [TypeOrmGuideStatsProvider],
+  // HE-05 (sugerencias) usa AcademicService para devolver la guía actualizada al aprobar.
+  exports: [TypeOrmGuideStatsProvider, AcademicService],
 })
 export class AcademicModule {}

@@ -1,10 +1,10 @@
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { GuideView } from '../../../shared/models/guide';
-import { SuggestionStatus, SuggestionView } from '../../../shared/models/suggestion';
+import { EstadoPlazo, SuggestionStatus, SuggestionView } from '../../../shared/models/suggestion';
 import { Icon } from '../../../shared/ui/icon/icon';
 import { fechaCorta, hora } from '../../../shared/utils/fechas';
-import { plazo } from '../../../shared/utils/sugerencias';
+import { fechaDeCalendario, textoPlazo } from '../../../shared/utils/sugerencias';
 import { FiltroSugerencias, ResumenSugerencias, SuggestionApi } from '../suggestion-api';
 import { PILL_ESTADO, iniciales } from '../estado-sugerencia';
 
@@ -24,7 +24,7 @@ export interface AvisoDecision {
 export class SuggestionInbox {
   private api = inject(SuggestionApi);
 
-  filtro = signal<FiltroSugerencias>({ estado: 'Pendiente', moduleId: null, guideId: null, orden: 'antiguas' });
+  filtro = signal<FiltroSugerencias>({ estado: 'Pendiente', moduleId: null, guideId: null, orden: 'antiguas', plazo: null });
   sugerencias = signal<SuggestionView[]>([]);
   resumen = signal<ResumenSugerencias | null>(null);
   guias = signal<GuideView[]>([]);
@@ -39,7 +39,14 @@ export class SuggestionInbox {
   ];
   pill = PILL_ESTADO;
   iniciales = iniciales;
-  plazo = plazo;
+  plazo = textoPlazo;
+  fechaRequerida = fechaDeCalendario;
+  plazos: { valor: EstadoPlazo | ''; texto: string }[] = [
+    { valor: '', texto: 'Plazo: Todos' },
+    { valor: 'overdue', texto: 'Vencidas' },
+    { valor: 'due_soon', texto: 'Por vencer' },
+    { valor: 'on_time', texto: 'A tiempo' },
+  ];
 
   constructor() {
     this.cargar();

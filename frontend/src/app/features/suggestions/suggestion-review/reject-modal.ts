@@ -58,7 +58,7 @@ import { SuggestionApi } from '../suggestion-api';
           <app-icon name="circle-alert" [size]="16" />
           <div>
             <strong>La guía base no cambiará</strong>
-            <p>El docente verá esta retroalimentación en Mis sugerencias y la sugerencia quedará como “Rechazada”.</p>
+            <p>El docente recibirá esta retroalimentación por notificación y la sugerencia quedará como “Rechazada”.</p>
           </div>
         </div>
 

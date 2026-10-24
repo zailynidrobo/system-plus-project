@@ -6,7 +6,7 @@ import { Guide, GuideView } from '../../shared/models/guide';
 import { GuideValue } from '../../shared/models/guide-field';
 import { TeacherVersion, TeacherVersionView } from '../../shared/models/teacher-version';
 import { Suggestion, SuggestionView } from '../../shared/models/suggestion';
-import { resumenCambio } from '../../shared/utils/sugerencias';
+import { estadoDelPlazo, resumenCambio } from '../../shared/utils/sugerencias';
 import { Auth } from '../auth/auth';
 import { MockDb } from './mock-db';
 
@@ -67,7 +67,7 @@ export function vistaVersion(db: MockDb, v: TeacherVersion): TeacherVersionView 
   };
 }
 
-export function vistaSugerencia(db: MockDb, s: Suggestion): SuggestionView {
+export function vistaSugerencia(db: MockDb, s: Suggestion, ahora = new Date()): SuggestionView {
   const guia = db.guias.find((g) => g.id === s.guideId);
   const modulo = db.modulos.find((m) => m.id === guia?.moduleId);
   return {
@@ -79,6 +79,7 @@ export function vistaSugerencia(db: MockDb, s: Suggestion): SuggestionView {
     moduleName: modulo?.name ?? '',
     competencyPrefix: modulo?.competencyPrefix ?? '',
     summary: resumenCambio(s.currentValue, s.proposedValue),
+    ...estadoDelPlazo(s, ahora),
   };
 }
 

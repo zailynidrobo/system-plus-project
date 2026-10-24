@@ -1,7 +1,8 @@
 import { Guide, GuideEvent } from '../../shared/models/guide';
 import { GuideValue } from '../../shared/models/guide-field';
 import { Suggestion, SuggestionStatus } from '../../shared/models/suggestion';
-import { formatSuggestionCode, sumarDiasHabiles } from '../../shared/utils/sugerencias';
+import { fechaEnBogota, sumarDias } from '../../shared/utils/dias-habiles';
+import { formatSuggestionCode, plazosDeRespuesta } from '../../shared/utils/sugerencias';
 import { COORDINADORA } from './seed-academic';
 import { UsuarioMock } from './seed-users';
 
@@ -33,6 +34,7 @@ function haceDias(dias: number, hora: number, minuto: number): string {
 
 // Bandeja de Figma (HE-05-HU-02, 5003:514): SUG-011 a SUG-014 pendientes. docente@ tiene SUG-014
 // pendiente, SUG-009 aprobada y SUG-006 rechazada (HE-05-HU-01-CA-02, 5003:322).
+// SUG-011 se envió hace 20 días: ya pasó el límite de 8 días hábiles (vencida, sigue pendiente).
 function semillas(): SemillaSugerencia[] {
   return [
     {
@@ -51,7 +53,7 @@ function semillas(): SemillaSugerencia[] {
     {
       numero: 11, teacherId: 4, guideCode: 'GB-RC-01', fieldKey: 'intensidad', propuesto: '80 horas · 20 semanas',
       justification: 'Las prácticas de certificación de puntos de red requieren más horas de laboratorio.',
-      createdAt: haceDias(5, 16, 15), status: 'Pendiente',
+      createdAt: haceDias(20, 16, 15), status: 'Pendiente',
     },
     {
       numero: 12, teacherId: 6, guideCode: 'GB-BD-02', fieldKey: 'metodologia', propuesto: 'Aula invertida',
@@ -89,10 +91,12 @@ export function crearSugerencias(guias: Guide[], usuarios: UsuarioMock[]): Sugge
       currentValue: actual,
       proposedValue: s.propuesto,
       justification: s.justification,
+      // Pidieron el cambio con tres semanas de anticipación.
+      neededBy: sumarDias(fechaEnBogota(s.createdAt), 21),
       baseVersion: s.resultingVersion ? 'v2.0' : guia.version,
       status: s.status,
       createdAt: s.createdAt,
-      dueAt: sumarDiasHabiles(s.createdAt, 5),
+      ...plazosDeRespuesta(s.createdAt),
       decidedAt: s.decidedAt ?? null,
       decidedBy: s.decidedAt ? COORDINADORA : null,
       rejectReason: s.rejectReason ?? null,
@@ -100,6 +104,42 @@ export function crearSugerencias(guias: Guide[], usuarios: UsuarioMock[]): Sugge
       resultingVersion: s.resultingVersion ?? null,
     };
   });
+}
+
+/** Notificación guardada para un docente (en el backend: tabla user_notifications). */
+export interface NotificacionMock {
+  id: string;
+  recipientId: number;
+  type: 'SUGGESTION_APPROVED' | 'SUGGESTION_REJECTED' | 'GUIDE_NEW_VERSION';
+  title: string;
+  message: string;
+  guideId: number;
+  suggestionId: number;
+  createdAt: string;
+  readAt: string | null;
+}
+
+/** Las decisiones de las semillas ya avisaron a su autor (y él ya las leyó). */
+export function notificacionesDeSugerencias(sugerencias: Suggestion[], guias: Guide[]): NotificacionMock[] {
+  return sugerencias
+    .filter((s) => s.status !== 'Pendiente')
+    .map((s, i) => {
+      const guia = guias.find((g) => g.id === s.guideId);
+      const aprobada = s.status === 'Aprobada';
+      return {
+        id: `n-semilla-${i + 1}`,
+        recipientId: s.teacherId,
+        type: aprobada ? ('SUGGESTION_APPROVED' as const) : ('SUGGESTION_REJECTED' as const),
+        title: `Sugerencia ${s.code} ${aprobada ? 'aprobada' : 'rechazada'}`,
+        message: aprobada
+          ? `Tu cambio en «${s.fieldLabel}» quedó en ${guia?.code} ${s.resultingVersion}.`
+          : `Motivo: ${s.rejectReason}. Revisa la retroalimentación en Mis sugerencias.`,
+        guideId: s.guideId,
+        suggestionId: s.id,
+        createdAt: s.decidedAt ?? s.createdAt,
+        readAt: s.decidedAt ?? s.createdAt,
+      };
+    });
 }
 
 /** Eventos del historial de la guía que dejan las sugerencias aprobadas. */

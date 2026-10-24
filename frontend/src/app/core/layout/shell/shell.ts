@@ -18,13 +18,14 @@ import { Icon } from '../../../shared/ui/icon/icon';
 import { TeacherApi } from '../../../features/teacher-space/teacher-api';
 import { SuggestionApi } from '../../../features/suggestions/suggestion-api';
 import { navPara } from './nav';
+import { NotificationBell } from '../notification-bell/notification-bell';
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, NotificationBell],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
-  host: { '(document:keydown.escape)': 'menuAbierto.set(false); avisosAbierto.set(false)' },
+  host: { '(document:keydown.escape)': 'menuAbierto.set(false)' },
 })
 export class Shell {
   private auth = inject(Auth);
@@ -36,7 +37,6 @@ export class Shell {
 
   user = this.auth.user;
   menuAbierto = signal(false);
-  avisosAbierto = signal(false);
 
   nav = computed(() => {
     const rol = this.user()?.rol;
@@ -100,10 +100,7 @@ export class Shell {
   constructor() {
     this.router.events
       .pipe(filter((e) => e instanceof NavigationStart), takeUntilDestroyed())
-      .subscribe(() => {
-        this.miga.detalle.set(null);
-        this.avisosAbierto.set(false);
-      });
+      .subscribe(() => this.miga.detalle.set(null));
   }
 
   // Primera y última palabra del nombre, como en Figma: Julián Andrés Ospina = JO

@@ -131,32 +131,6 @@
   a:hover { color: var(--color-primary); text-decoration: underline; }
 }
 
-.icon-btn {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border: 0;
-  border-radius: 50%;
-  background: var(--color-surface-2);
-  color: var(--color-muted-figma);
-  cursor: pointer;
-
-  position: relative;
-
-  &:hover { background: #eeeff6; }
-
-  &__dot {
-    position: absolute;
-    top: 7px;
-    right: 8px;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--color-gold-accent);
-  }
-}
-
 .user-menu {
   position: relative;
 
@@ -204,7 +178,6 @@
       &:hover { background: var(--color-surface-2); }
     }
 
-    &--avisos { min-width: 260px; }
   }
 
   &__empty {

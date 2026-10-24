@@ -54,41 +54,14 @@
       </nav>
 
       <div class="topbar__right">
-        <div class="user-menu">
-          <button
-            type="button"
-            class="icon-btn"
-            aria-label="Notificaciones"
-            aria-haspopup="menu"
-            [attr.aria-expanded]="avisosAbierto()"
-            (click)="avisosAbierto.set(!avisosAbierto()); menuAbierto.set(false)"
-          >
-            <app-icon name="bell" [size]="17" />
-            @if (pendientesSugerencias()) {
-              <i class="icon-btn__dot"></i>
-            }
-          </button>
-
-          @if (avisosAbierto()) {
-            <div class="user-menu__backdrop" (click)="avisosAbierto.set(false)"></div>
-            <div class="user-menu__panel user-menu__panel--avisos" role="menu">
-              @if (pendientesSugerencias(); as n) {
-                <a role="menuitem" routerLink="/sugerencias" (click)="avisosAbierto.set(false)">
-                  <app-icon name="message-square" [size]="16" />
-                  {{ n }} {{ n === 1 ? 'sugerencia pendiente' : 'sugerencias pendientes' }} por revisar
-                </a>
-              } @else {
-                <p class="user-menu__empty">No tienes notificaciones nuevas.</p>
-              }
-            </div>
-          }
-        </div>
+        <!-- HE-05: alertas y notificaciones del rol -->
+        <app-notification-bell />
 
         <div class="user-menu">
           <button
             type="button"
             class="user"
-            (click)="menuAbierto.set(!menuAbierto()); avisosAbierto.set(false)"
+            (click)="menuAbierto.set(!menuAbierto())"
             aria-haspopup="menu"
             [attr.aria-expanded]="menuAbierto()"
           >

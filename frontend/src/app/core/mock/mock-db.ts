@@ -16,6 +16,7 @@ import { crearEstructuras, crearEventosGuias, crearGuias } from './seed-guides';
 import { crearVersiones } from './seed-versions';
 import { crearSugerencias, eventosDeSugerencias } from './seed-suggestions';
 import { Suggestion } from '../../shared/models/suggestion';
+import { SupportMaterial } from '../../shared/models/support-material';
 import { EventoUsuarioMock, UsuarioMock, crearEventosUsuarios, crearUsuarios } from './seed-users';
 
 /**
@@ -46,4 +47,7 @@ export class MockDb {
   // HE-04
   asignaciones: AsignacionDocente[] = crearAsignaciones();
   versiones: TeacherVersion[] = crearVersiones(this.guias);
+
+  // Materiales de apoyo de las guías (empiezan vacíos)
+  materiales: (SupportMaterial & { guideId: number; contenido: Blob })[] = [];
 }

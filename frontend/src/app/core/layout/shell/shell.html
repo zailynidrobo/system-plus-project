@@ -1,7 +1,7 @@
 <div class="shell">
   <aside class="sidebar">
     <div class="brand">
-      <span class="brand__logo">A+</span>
+      <img class="brand__logo" src="logo-system-plus.svg" alt="System Plus, Red Nacional de Educación" />
       <div>
         <strong>System Plus Piendamó</strong>
         <small>Intranet de guías académicas</small>
@@ -43,11 +43,13 @@
   <div class="main">
     <header class="topbar">
       <nav class="crumbs" aria-label="Ruta de navegación">
-        <a routerLink="/">Inicio</a> <span>/</span>
-        @if (subtitulo(); as sub) {
+        @if (titulo() === 'Inicio') {
+          <strong>Inicio</strong>
+        } @else if (subtitulo(); as sub) {
+          <a routerLink="/">Inicio</a> <span>/</span>
           <a [routerLink]="seccionUrl()">{{ titulo() }}</a> <span>/</span> <strong>{{ sub }}</strong>
         } @else {
-          <strong>{{ titulo() }}</strong>
+          <a routerLink="/">Inicio</a> <span>/</span> <strong>{{ titulo() }}</strong>
         }
       </nav>
 

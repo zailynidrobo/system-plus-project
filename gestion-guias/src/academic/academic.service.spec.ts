@@ -20,6 +20,9 @@ import { ModuleTeacherAssignmentRecord } from './entities/module-teacher-assignm
 import { PersonalizedGuideVersionRecord } from './entities/personalized-guide-version-record.entity.js';
 import { GuideSupportMaterialRecord } from './entities/guide-support-material-record.entity.js';
 
+/** Quien sube materiales en las pruebas de HE-03. */
+const COORDINADOR = { id: 'coord-1', name: 'Coordinación', roles: ['coordinador'] };
+
 function memoryRepository<T extends { id: string }>() {
   const records: T[] = [];
   // Igual que TypeORM: las consultas no devuelven registros con borrado lógico (`deletedAt`).
@@ -915,7 +918,7 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
       mimetype: 'application/pdf',
       buffer: pdf,
       size: pdf.length,
-    });
+    }, COORDINADOR);
 
     const archive = new JSZip();
     archive.file('word/document.xml', '<document />');
@@ -926,7 +929,7 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       buffer: docx,
       size: docx.length,
-    });
+    }, COORDINADOR);
 
     await service.assignTeacherToModule(module.id, 'teacher-1');
     await expect(
@@ -987,7 +990,7 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
         mimetype: 'application/pdf',
         buffer: Buffer.from('no es PDF'),
         size: 9,
-      }),
+      }, COORDINADOR),
     ).rejects.toThrow('El archivo no tiene un formato PDF válido');
     await expect(
       service.addGuideSupportMaterial(guide.id, {
@@ -995,7 +998,66 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
         mimetype: 'application/octet-stream',
         buffer: Buffer.from('MZ'),
         size: 2,
-      }),
+      }, COORDINADOR),
     ).rejects.toThrow('Solo se permiten archivos PDF o DOCX');
+  });
+  it('el docente autorizado sube materiales a guías publicadas y solo borra los suyos', async () => {
+    const module = await seedModule('Materiales compartidos');
+    const guide = await createGuide(module, {
+      intensidad: '40 horas · 10 semanas',
+      evaluacion: 'Por proyecto',
+      objetivos: 'Desarrollar materiales.',
+      metodologia: 'Taller práctico guiado',
+      criterios: 'Entrega del material.',
+    });
+    const pdf = Buffer.from('%PDF-1.7\ncontenido');
+    const archivo = {
+      originalname: 'taller.pdf',
+      mimetype: 'application/pdf',
+      buffer: pdf,
+      size: pdf.length,
+    };
+    const autorizado = { id: 'auth-1', name: 'Paola', roles: ['docente_autorizado'] };
+
+    await expect(
+      service.addGuideSupportMaterial(guide.id, archivo, autorizado),
+    ).rejects.toThrow('Guía publicada no encontrada');
+    await service.publishGuide(guide.id);
+
+    const delCoordinador = await service.addGuideSupportMaterial(guide.id, archivo, COORDINADOR);
+    const propio = await service.addGuideSupportMaterial(guide.id, archivo, autorizado);
+    expect(propio.uploadedBy).toEqual({ id: 'auth-1', name: 'Paola' });
+
+    await expect(
+      service.removeGuideSupportMaterial(guide.id, delCoordinador.id, 'auth-1', ['docente_autorizado']),
+    ).rejects.toThrow(ForbiddenException);
+    await service.removeGuideSupportMaterial(guide.id, propio.id, 'auth-1', ['docente_autorizado']);
+    await service.removeGuideSupportMaterial(guide.id, delCoordinador.id, 'coord-1', ['coordinador']);
+
+    expect(
+      await service.findGuideSupportMaterialsForUser(guide.id, 'coord-1', ['coordinador']),
+    ).toHaveLength(0);
+  });
+
+  it('el docente autorizado consulta las guías publicadas de todos los módulos', async () => {
+    const module = await seedModule('Sin asignar');
+    const guide = await createGuide(module, {
+      intensidad: '40 horas · 10 semanas',
+      evaluacion: 'Por proyecto',
+      objetivos: 'Desarrollar materiales.',
+      metodologia: 'Taller práctico guiado',
+      criterios: 'Entrega del material.',
+    });
+    await service.publishGuide(guide.id);
+
+    await expect(service.findGuideForUser(guide.id, 'teacher-9', ['docente'])).rejects.toThrow(
+      ForbiddenException,
+    );
+    expect((await service.findGuideForUser(guide.id, 'auth-9', ['docente_autorizado'])).id).toBe(
+      guide.id,
+    );
+    const asignaciones = await service.findAssignmentsForTeacher('auth-9', ['docente_autorizado']);
+    expect(asignaciones.moduleIds).toContain(module.id);
+    expect(asignaciones.hidden.total).toBe(0);
   });
 });

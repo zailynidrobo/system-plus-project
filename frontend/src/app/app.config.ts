@@ -18,6 +18,8 @@ import { GuideApi } from './features/guides/guide-api';
 import { HttpGuideApi } from './features/guides/http-guide-api';
 import { HttpTeacherApi } from './features/teacher-space/http-teacher-api';
 import { TeacherApi } from './features/teacher-space/teacher-api';
+import { SupportMaterialApi } from './features/guides/support-materials/support-material-api';
+import { HttpSupportMaterialApi } from './features/guides/support-materials/http-support-material-api';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -39,6 +41,8 @@ export const appConfig: ApplicationConfig = {
           { provide: FieldConfigApi, useClass: HttpFieldConfigApi },
           // HE-04: espacio docente (guías asignadas y versiones propias) contra el backend.
           { provide: TeacherApi, useClass: HttpTeacherApi },
+          // Materiales de apoyo de las guías (PDF o DOCX).
+          { provide: SupportMaterialApi, useClass: HttpSupportMaterialApi },
         ]
       : []),
   ],

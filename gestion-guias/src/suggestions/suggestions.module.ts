@@ -14,6 +14,8 @@ import { SuggestionApprovalController } from './suggestion-approval.controller.j
 import { SuggestionApprovalService } from './suggestion-approval.service.js';
 import { SuggestionInboxController } from './suggestion-inbox.controller.js';
 import { SuggestionInboxService } from './suggestion-inbox.service.js';
+import { SuggestionRejectionController } from './suggestion-rejection.controller.js';
+import { SuggestionRejectionService } from './suggestion-rejection.service.js';
 import { SUGGESTION_RULES, loadSuggestionRules } from './suggestion-rules.js';
 import { SuggestionSubmissionService } from './suggestion-submission.service.js';
 import { SuggestionViewsService } from './suggestion-views.service.js';
@@ -41,6 +43,7 @@ import { TeacherSuggestionsController } from './teacher-suggestions.controller.j
     TeacherSuggestionsController,
     SuggestionInboxController,
     SuggestionApprovalController,
+    SuggestionRejectionController,
   ],
   providers: [
     { provide: CLOCK, useValue: systemClock },
@@ -54,6 +57,7 @@ import { TeacherSuggestionsController } from './teacher-suggestions.controller.j
     SuggestionSubmissionService,
     SuggestionInboxService,
     SuggestionApprovalService,
+    SuggestionRejectionService,
   ],
 })
 export class SuggestionsModule {}

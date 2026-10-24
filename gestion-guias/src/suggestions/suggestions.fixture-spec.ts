@@ -13,6 +13,7 @@ import { PersonalizedGuideVersionRecord } from '../academic/entities/personalize
 import { CurricularModule } from '../academic-program/entities/curricular-module.entity.js';
 import type { Clock } from './clock.js';
 import { SuggestionRecord } from './entities/suggestion-record.entity.js';
+import { UserNotificationRecord } from './entities/user-notification-record.entity.js';
 import { SuggestionActor } from './suggestion-actor.js';
 import {
   DEFAULT_SUGGESTION_RULES,
@@ -318,6 +319,8 @@ export function createScenario(
     assign,
     addVersion,
     suggestions: () => store.rows<SuggestionRecord>(SuggestionRecord),
+    notifications: () =>
+      store.rows<UserNotificationRecord>(UserNotificationRecord),
     events: () => store.rows<GuideEventRecord>(GuideEventRecord),
     guideRow: (id = guide.id) =>
       store

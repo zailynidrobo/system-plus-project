@@ -3,11 +3,15 @@ import { ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AcademicModule } from '../academic/academic.module.js';
 import { AcademicGuideRecord } from '../academic/entities/academic-guide-record.entity.js';
+import { GuideEventRecord } from '../academic/entities/guide-event-record.entity.js';
 import { ModuleTeacherAssignmentRecord } from '../academic/entities/module-teacher-assignment-record.entity.js';
 import { PersonalizedGuideVersionRecord } from '../academic/entities/personalized-guide-version-record.entity.js';
 import { CurricularModule } from '../academic-program/entities/curricular-module.entity.js';
 import { CLOCK, systemClock } from './clock.js';
 import { SuggestionRecord } from './entities/suggestion-record.entity.js';
+import { UserNotificationRecord } from './entities/user-notification-record.entity.js';
+import { SuggestionApprovalController } from './suggestion-approval.controller.js';
+import { SuggestionApprovalService } from './suggestion-approval.service.js';
 import { SuggestionInboxController } from './suggestion-inbox.controller.js';
 import { SuggestionInboxService } from './suggestion-inbox.service.js';
 import { SUGGESTION_RULES, loadSuggestionRules } from './suggestion-rules.js';
@@ -24,7 +28,9 @@ import { TeacherSuggestionsController } from './teacher-suggestions.controller.j
     AcademicModule,
     TypeOrmModule.forFeature([
       SuggestionRecord,
+      UserNotificationRecord,
       AcademicGuideRecord,
+      GuideEventRecord,
       ModuleTeacherAssignmentRecord,
       PersonalizedGuideVersionRecord,
       CurricularModule,
@@ -34,6 +40,7 @@ import { TeacherSuggestionsController } from './teacher-suggestions.controller.j
   controllers: [
     TeacherSuggestionsController,
     SuggestionInboxController,
+    SuggestionApprovalController,
   ],
   providers: [
     { provide: CLOCK, useValue: systemClock },
@@ -46,6 +53,7 @@ import { TeacherSuggestionsController } from './teacher-suggestions.controller.j
     SuggestionViewsService,
     SuggestionSubmissionService,
     SuggestionInboxService,
+    SuggestionApprovalService,
   ],
 })
 export class SuggestionsModule {}

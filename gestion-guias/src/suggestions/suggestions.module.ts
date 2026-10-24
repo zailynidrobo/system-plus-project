@@ -4,9 +4,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AcademicModule } from '../academic/academic.module.js';
 import { AcademicGuideRecord } from '../academic/entities/academic-guide-record.entity.js';
 import { ModuleTeacherAssignmentRecord } from '../academic/entities/module-teacher-assignment-record.entity.js';
+import { PersonalizedGuideVersionRecord } from '../academic/entities/personalized-guide-version-record.entity.js';
 import { CurricularModule } from '../academic-program/entities/curricular-module.entity.js';
 import { CLOCK, systemClock } from './clock.js';
 import { SuggestionRecord } from './entities/suggestion-record.entity.js';
+import { SuggestionInboxController } from './suggestion-inbox.controller.js';
+import { SuggestionInboxService } from './suggestion-inbox.service.js';
 import { SUGGESTION_RULES, loadSuggestionRules } from './suggestion-rules.js';
 import { SuggestionSubmissionService } from './suggestion-submission.service.js';
 import { SuggestionViewsService } from './suggestion-views.service.js';
@@ -23,12 +26,14 @@ import { TeacherSuggestionsController } from './teacher-suggestions.controller.j
       SuggestionRecord,
       AcademicGuideRecord,
       ModuleTeacherAssignmentRecord,
+      PersonalizedGuideVersionRecord,
       CurricularModule,
     ]),
   ],
   // TeacherSuggestionsController va primero: `suggestions/mine` antes que `suggestions/:id`.
   controllers: [
     TeacherSuggestionsController,
+    SuggestionInboxController,
   ],
   providers: [
     { provide: CLOCK, useValue: systemClock },
@@ -40,6 +45,7 @@ import { TeacherSuggestionsController } from './teacher-suggestions.controller.j
     },
     SuggestionViewsService,
     SuggestionSubmissionService,
+    SuggestionInboxService,
   ],
 })
 export class SuggestionsModule {}

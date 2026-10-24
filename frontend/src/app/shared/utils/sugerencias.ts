@@ -111,12 +111,3 @@ export function partesDelCambio(actual: GuideValue, propuesto: GuideValue): { ig
   if (a && p.startsWith(a)) return { igual: a, nuevo: p.slice(a.length) };
   return { igual: '', nuevo: p };
 }
-
-/** "Vence en 3 días", "Vence hoy" o "Venció hace 2 días". */
-export function plazo(dueAt: string, ahora = new Date()): { texto: string; vencida: boolean } {
-  const dia = (d: Date) => Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
-  const dias = Math.round((dia(new Date(dueAt)) - dia(ahora)) / 86_400_000);
-  if (dias > 0) return { texto: `Vence en ${dias} ${dias === 1 ? 'día' : 'días'}`, vencida: false };
-  if (dias === 0) return { texto: 'Vence hoy', vencida: false };
-  return { texto: `Venció hace ${-dias} ${dias === -1 ? 'día' : 'días'}`, vencida: true };
-}

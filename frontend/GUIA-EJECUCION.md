@@ -7,7 +7,7 @@ Esta guía explica cómo ejecutar el frontend y cómo probarlo. Tiene dos modos:
 - **Modo completo (configuración por defecto del repositorio):** `auth: 'keycloak'`, `api: 'http'` y `apiAcademico: 'http'`. Usa Keycloak, el backend y PostgreSQL. Los pasos están en las secciones 11, 12 y 13, y en el [README principal](../README.md#7-puesta-en-marcha-completa-frontend--backend--keycloak).
 - **Modo simulado:** sin backend ni Keycloak, con datos en memoria. Hay que cambiar `auth`, `api` y `apiAcademico` a `'mock'` en `src/environments/environment.ts` (solo en tu computador, sin hacer commit). Las secciones 3 a 8 describen este modo.
 
-Estado de las épicas: HE-01, HE-02 y HE-03 usan el backend. HE-04 (espacio docente) y HE-05 (sugerencias) siguen con datos simulados.
+Estado de las épicas: HE-01, HE-02 y HE-03 usan el backend. Con `apiAcademico: 'http'`, HE-05 (sugerencias y campana de notificaciones) también usa el backend (sección 14).
 
 ## 1. Requisitos
 
@@ -55,7 +55,7 @@ pnpm build                                       # producción (sale en dist\fro
 ```
 
 - La compilación de producción muestra 4 advertencias de *budget* en estilos de HE-01: `login`, `user-list`, `user-role` y `user-deactivate`. Pasan el aviso de 4 kB por pocos bytes, pero ninguno llega al límite de error de 8 kB.
-- El *bundle* inicial pesa unos 423 kB. Las pantallas de cada épica se cargan solo cuando se abren.
+- El *bundle* inicial pesa unos 520 kB y muestra la advertencia de 500 kB (el error es a 1 MB). La campana del encabezado y los adaptadores HTTP de HE-05 se cargan desde el inicio. Las pantallas de cada épica se cargan solo cuando se abren.
 
 ## 5. Pruebas
 
@@ -64,12 +64,14 @@ pnpm exec ng test --watch=false   # una sola pasada
 pnpm test                        # modo observación
 ```
 
-Estado actual: **199 pruebas en 28 archivos, todas pasan.** Cubren:
+Estado actual: **245 pruebas en 36 archivos, todas pasan.** Cubren:
 - Servicios mock de todas las épicas:
   - módulos y competencias duplicados;
   - transiciones de estado;
   - aislamiento de las copias de guía;
-  - aprobar y rechazar sugerencias.
+  - aprobar y rechazar sugerencias, plazos de 5 a 8 días hábiles con festivos, fecha requerida y notificaciones.
+- Adaptadores HTTP (`HttpTestingController`), incluidos los de sugerencias y notificaciones.
+- Panel de la campana del encabezado.
 - Guards y redirección por rol.
 - Mapeo de roles de Keycloak.
 - Interceptor HTTP.
@@ -104,8 +106,10 @@ Todos usan la contraseña **`123456`**.
 - 4 versiones docentes. Julián ya tiene «POO · Grupo 2026-1».
 - 6 sugerencias:
   - SUG-011 a SUG-014 pendientes; SUG-014 es de Julián;
+  - SUG-011 se envió hace 20 días: está **vencida, pero sigue pendiente**;
   - SUG-009 aprobada;
   - SUG-006 rechazada.
+- Julián ya tiene leídas las notificaciones de SUG-009 y SUG-006.
 
 ## 7. Rutas
 
@@ -158,19 +162,21 @@ Hazlo en una sola pestaña y sin recargar (ver la nota de la sección 3).
       - elige «Objetivos de aprendizaje»;
       - edita el texto;
       - escribe una justificación de al menos 20 caracteres;
+      - en «5. Fecha en que necesitas el cambio» elige una fecha de al menos 14 días desde hoy (el calendario no deja elegir antes);
       - pulsa **Enviar sugerencia**.
 
-      Queda **Pendiente** (HE-05-HU-01).
+      Queda **Pendiente**, con plazo de respuesta de 5 a 8 días hábiles (HE-05-HU-01).
    7. Cierra sesión.
 3. **Coordinador**:
-   1. El menú **Sugerencias** muestra el contador de pendientes.
-   2. Abre la sugerencia nueva con **Revisar** (HE-05-HU-02). Compara el contenido actual con el propuesto; el texto agregado aparece resaltado.
-   3. Pulsa **Aprobar y actualizar guía** y confirma. La guía pasa a `v1.1` y queda en su historial (HE-05-HU-03).
+   1. El menú **Sugerencias** y la **campana** del encabezado muestran el contador de pendientes sin abrir nada. Abre la campana: primero la vencida (SUG-011), luego las por vencer y al final la nueva («nueva, recibida hoy»).
+   2. Abre la sugerencia nueva desde la campana o con **Revisar** (HE-05-HU-02). Compara el contenido actual con el propuesto; el texto agregado aparece resaltado. La bandeja muestra la fecha requerida y el estado del plazo, y se puede filtrar por plazo.
+   3. Pulsa **Aprobar y actualizar guía** y confirma. La guía pasa a `v1.1` y queda en su historial; el bloque «Notificaciones enviadas» indica a quién se avisó (HE-05-HU-03). SUG-011, aunque está vencida, también se puede aprobar o rechazar.
    4. Abre otra pendiente (por ejemplo SUG-013) y usa **Rechazar**:
       - elige un motivo;
       - escribe al menos 30 caracteres de retroalimentación;
       - pulsa **Rechazar y enviar retroalimentación** (HE-05-HU-04).
-4. **Docente**: en **Mis sugerencias** ve su sugerencia aprobada, con la nueva versión. En la versión que creó en el paso 2.3, el editor avisa que la guía base cambió, pero su copia sigue igual.
+4. **Docente**: la campana muestra «Sugerencia … aprobada» sin leer; al abrirla queda leída y lleva al detalle. En **Mis sugerencias** ve su sugerencia aprobada, con la nueva versión. En la versión que creó en el paso 2.3, el editor avisa que la guía base cambió, pero su copia sigue igual.
+5. **Docente Autorizado** (`autorizado@`, también asignada a POO): la campana muestra «Nueva versión v1.1 de GB-POO-01 disponible».
 
 ### 8.2 Pruebas por épica
 
@@ -190,7 +196,9 @@ Hazlo en una sola pestaña y sin recargar (ver la nota de la sección 3).
 - **HE-04:** con `autorizado@` (Paola) no se ve ninguna versión de Julián, y abrir `/mis-versiones/1` dice que la versión no existe.
 - **HE-05:**
   - No se puede enviar otra sugerencia sobre un campo que ya tiene una pendiente propia.
-  - El rechazo exige motivo y 30 caracteres de retroalimentación.
+  - La fecha requerida debe ser al menos 14 días después de hoy.
+  - El rechazo exige motivo y 30 caracteres de retroalimentación. El docente recibe la notificación con el motivo.
+  - Con `admin@`, la campana está vacía.
 
 ## 9. Qué falta por conectar al backend
 
@@ -199,7 +207,7 @@ Ya están conectados HE-01 (usuarios y roles, con Keycloak), HE-02 (programa aca
 Siguen con datos simulados:
 
 1. **HE-04, espacio docente:** `teacher-api.ts` lee `MockDb`. Hay que reescribirlo con `HttpClient` sobre las rutas `/academic/...` del backend, conservando los nombres de métodos y los códigos de error.
-2. **HE-05, sugerencias:** el backend aún no tiene esas rutas.
+2. **HE-05, sugerencias:** ya tiene backend (sección 14). Con `apiAcademico: 'mock'` sigue funcionando con datos simulados y las mismas reglas.
 
 El detalle de pendientes está en `docs/verificacion-front-HE01-HE05.md`.
 
@@ -298,3 +306,22 @@ Para probar `'http'`: Keycloak + Postgres + backend encendidos (sección 12) y e
 Las guías se crean como borradores en `POST /academic/guides` y aparecen en el listado desde `GET /academic/guides`. El listado envía los filtros `search`, `moduleId`, `competencyId` y `status`, además de `page` y `pageSize`; la API responde `{ items, total, page, pageSize }`. El resumen de tarjetas se consulta en `GET /academic/guides/summary` y devuelve `total`, `modulos`, `publicadas` y `borradores`. Cada guía incluye los nombres de `createdBy`, `updatedBy` y `publishedBy` cuando estén disponibles. La API asigna el código y guarda la guía, su estructura, autores e historial en PostgreSQL. Si un módulo aún no tiene una estructura configurada, se usa la estructura institucional por defecto.
 
 Los ids visibles en las rutas son números derivados de los UUID del backend. Al abrir directamente una pantalla de detalle después de recargar, el front vuelve a consultar la API para resolver el UUID.
+
+## 14. Sugerencias (HE-05) y campana con el backend real
+
+Con `apiAcademico: 'http'`, `app.config.ts` registra `HttpSuggestionApi` y `HttpNotificationApi`, que llaman a `/academic/suggestions` y `/academic/notifications`. Las reglas y el contrato están en [`docs/he05-sugerencias.md`](../docs/he05-sugerencias.md).
+
+Para probar con el back real (Keycloak + PostgreSQL + `gestion-guias` encendidos):
+
+1. **Coordinador:** asigna el módulo a dos docentes (`docente@` y `autorizado@`) y publica una guía del módulo.
+2. **Docente:** abre la guía, pulsa **Sugerir cambio**, elige un campo, escribe la justificación y una fecha requerida de al menos 14 días, y envía.
+3. **Coordinador:** la campana muestra la alerta y el contador sin abrirla. Ábrela o ve a **Sugerencias** y aprueba. La guía pasa a `v1.1`.
+4. **Docente:** la campana muestra «Sugerencia … aprobada»; al abrirla queda leída. La guía base está en `v1.1`.
+5. **Docente Autorizado:** la campana muestra «Nueva versión v1.1 de … disponible».
+6. Repite con otra sugerencia y recházala: el docente ve el motivo en la campana y en **Mis sugerencias**.
+
+Notas:
+- La campana se consulta al entrar, cada 60 s y después de aprobar o rechazar. Una sugerencia que llega mientras el coordinador está en otra pantalla aparece en la siguiente consulta.
+- El docente autorizado también necesita tener asignado el módulo para enviar sugerencias.
+- Una sugerencia vencida sigue pendiente: se ve como «Vencida · sigue pendiente» y se puede aprobar o rechazar.
+- En el modo simulado (`'mock'`) todo funciona igual, con datos en memoria.

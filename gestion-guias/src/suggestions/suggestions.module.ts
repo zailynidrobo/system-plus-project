@@ -10,6 +10,8 @@ import { CurricularModule } from '../academic-program/entities/curricular-module
 import { CLOCK, systemClock } from './clock.js';
 import { SuggestionRecord } from './entities/suggestion-record.entity.js';
 import { UserNotificationRecord } from './entities/user-notification-record.entity.js';
+import { NotificationsController } from './notifications.controller.js';
+import { NotificationsService } from './notifications.service.js';
 import { SuggestionApprovalController } from './suggestion-approval.controller.js';
 import { SuggestionApprovalService } from './suggestion-approval.service.js';
 import { SuggestionInboxController } from './suggestion-inbox.controller.js';
@@ -44,6 +46,7 @@ import { TeacherSuggestionsController } from './teacher-suggestions.controller.j
     SuggestionInboxController,
     SuggestionApprovalController,
     SuggestionRejectionController,
+    NotificationsController,
   ],
   providers: [
     { provide: CLOCK, useValue: systemClock },
@@ -58,6 +61,7 @@ import { TeacherSuggestionsController } from './teacher-suggestions.controller.j
     SuggestionInboxService,
     SuggestionApprovalService,
     SuggestionRejectionService,
+    NotificationsService,
   ],
 })
 export class SuggestionsModule {}

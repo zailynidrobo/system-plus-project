@@ -20,7 +20,9 @@ import { HttpTeacherApi } from './features/teacher-space/http-teacher-api';
 import { TeacherApi } from './features/teacher-space/teacher-api';
 import { SupportMaterialApi } from './features/guides/support-materials/support-material-api';
 import { HttpSupportMaterialApi } from './features/guides/support-materials/http-support-material-api';
+import { HttpNotificationApi } from './features/suggestions/http-notification-api';
 import { HttpSuggestionApi } from './features/suggestions/http-suggestion-api';
+import { NotificationApi } from './features/suggestions/notification-api';
 import { SuggestionApi } from './features/suggestions/suggestion-api';
 
 export const appConfig: ApplicationConfig = {
@@ -45,8 +47,9 @@ export const appConfig: ApplicationConfig = {
           { provide: TeacherApi, useClass: HttpTeacherApi },
           // Materiales de apoyo de las guías (PDF o DOCX).
           { provide: SupportMaterialApi, useClass: HttpSupportMaterialApi },
-          // HE-05: sugerencias de cambio.
+          // HE-05: sugerencias de cambio y campana de notificaciones.
           { provide: SuggestionApi, useClass: HttpSuggestionApi },
+          { provide: NotificationApi, useClass: HttpNotificationApi },
         ]
       : []),
   ],

@@ -36,7 +36,7 @@ export class HttpUserApi implements ContratoUserApi {
   private http = inject(HttpClient);
   private base = `${environment.apiUrl}/users`;
 
-  /** id numérico del front → UUID del backend. Se llena en cada consulta del listado. */
+  /** id numérico del front -> UUID del backend. Se llena en cada consulta del listado. */
   private uuids = new Map<number, string>();
 
   listar(f: FiltroUsuarios): Observable<PaginaUsuarios> {
@@ -148,7 +148,7 @@ export class HttpUserApi implements ContratoUserApi {
     );
   }
 
-  /** Usuario del backend → usuario del front. Sin rol de la app (null) no se muestra. */
+  /** Usuario del backend -> usuario del front. Sin rol de la app (null) no se muestra. */
   private aUsuario(u: UsuarioApi): User | null {
     const rol = u.role ? mapKeycloakRole(u.role) : null;
     if (!rol) return null;
@@ -166,6 +166,8 @@ export class HttpUserApi implements ContratoUserApi {
   private aError(e: unknown): ApiError {
     if (e instanceof ApiError) return e;
     const estado = e instanceof HttpErrorResponse ? e.status : 0;
+    const codigo = e instanceof HttpErrorResponse ? (e.error as { code?: unknown } | null)?.code : undefined;
+    if (codigo === 'ACCION_SOBRE_SI_MISMO' || codigo === 'ULTIMO_ADMINISTRADOR') return new ApiError(codigo);
     if (estado === 409) return new ApiError('CORREO_EN_USO');
     if (estado === 404) return new ApiError('NO_ENCONTRADO');
     if (estado === 401 || estado === 403) return new ApiError('SIN_PERMISO');

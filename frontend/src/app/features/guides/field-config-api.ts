@@ -106,7 +106,7 @@ export class FieldConfigApi {
   }
 }
 
-/** Claves únicas a partir de la etiqueta: "Objetivos de aprendizaje" → objetivos_de_aprendizaje. */
+/** Claves únicas a partir de la etiqueta: "Objetivos de aprendizaje" -> objetivos_de_aprendizaje. */
 export function claveDesdeEtiqueta(label: string, usadas: Iterable<string>): string {
   const base =
     label
@@ -151,10 +151,10 @@ export function diferencias(antes: GuideField[], despues: GuideField[]): CambioE
       continue;
     }
     const detalle: string[] = [];
-    if (p.label !== f.label) detalle.push(`nombre “${p.label}” → “${f.label}”`);
+    if (p.label !== f.label) detalle.push(`nombre “${p.label}” -> “${f.label}”`);
     if (p.type !== f.type) detalle.push('tipo de dato');
     if (p.required !== f.required) detalle.push(f.required ? 'ahora obligatorio' : 'ahora opcional');
-    if ((p.maxLength ?? 0) !== (f.maxLength ?? 0)) detalle.push(`límite ${p.maxLength ?? 'sin límite'} → ${f.maxLength ?? 'sin límite'} caracteres`);
+    if ((p.maxLength ?? 0) !== (f.maxLength ?? 0)) detalle.push(`límite ${p.maxLength ?? 'sin límite'} -> ${f.maxLength ?? 'sin límite'} caracteres`);
     if (JSON.stringify(p.options ?? []) !== JSON.stringify(f.options ?? [])) detalle.push('opciones de la lista');
     if (detalle.length) cambios.push({ tipo: 'modificado', descripcion: `${f.label} · ${detalle.join(' · ')}` });
   }

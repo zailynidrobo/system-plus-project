@@ -12,14 +12,14 @@ export const numeroDe = (uuid: string | null | undefined): number => {
   return Number.isNaN(n) ? 0 : n;
 };
 
-/** Persona del backend ({ id, name }) → Persona del front (id numérico). */
+/** Persona del backend ({ id, name }) -> Persona del front (id numérico). */
 export const aPersona = (
   p: { id: string; name: string | null } | null | undefined,
 ): Persona | null => (p ? { id: numeroDe(p.id), name: p.name ?? '' } : null);
 
 /**
  * El backend identifica programas, módulos y competencias con UUID; las rutas del front usan números
- * (/modulos/:id). Este servicio guarda la equivalencia número → UUID y, si la página se recarga y aún
+ * (/modulos/:id). Este servicio guarda la equivalencia número -> UUID y, si la página se recarga y aún
  * no se conoce, la reconstruye consultando el backend.
  */
 @Injectable({ providedIn: 'root' })

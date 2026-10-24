@@ -153,7 +153,7 @@ export class GuideApi {
     });
   }
 
-  /** Borrador → Publicada: queda visible para los docentes del módulo con fecha y autor. */
+  /** Borrador -> Publicada: queda visible para los docentes del módulo con fecha y autor. */
   publicar(id: number): Observable<GuideView> {
     return simular(this.ms, () => {
       const actual = this.buscar(id);

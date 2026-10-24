@@ -24,7 +24,7 @@ export interface AcademicModule {
   name: string;
   description: string | null;
   status: ModuleStatus;
-  /** Sigla usada en los códigos de competencia: POO → COMP-POO-01. */
+  /** Sigla usada en los códigos de competencia: POO -> COMP-POO-01. */
   competencyPrefix: string;
   createdBy: Persona | null;
   createdAt: string;

@@ -1,10 +1,10 @@
 .login-page {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 40% 1fr;
+  grid-template-columns: 40% minmax(0, 1fr);
 
   @media (max-width: 900px) {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     .brand { display: none; }
   }
 }

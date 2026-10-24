@@ -95,9 +95,16 @@
                 (input)="justificacion.set($any($event.target).value)"
               ></textarea>
             </div>
-            <p class="ui-help" [class.ui-help--error]="faltaJustificacion()">
-              Mínimo {{ minimo }} caracteres · {{ justificacion().trim().length }}/500
-            </p>
+            <div class="ui-help-count">
+              <p class="ui-help" [class.ui-help--error]="faltaJustificacion()">
+                @if (faltaJustificacion()) {
+                  Escribe al menos {{ minimo }} caracteres.
+                } @else {
+                  Explica por qué propones el cambio.
+                }
+              </p>
+              <span class="ui-counter">{{ justificacion().length }}/500</span>
+            </div>
           </div>
         </div>
       </div>
@@ -113,7 +120,7 @@
       <div class="ui-actions">
         <a class="ui-btn ui-btn--md" [routerLink]="['/mis-modulos/guias', g.id]">Cancelar</a>
         <button type="button" class="ui-btn ui-btn--primary ui-btn--md" [disabled]="enviando()" (click)="enviar()">
-          <app-icon name="send" [size]="14" /> {{ enviando() ? 'Enviando…' : 'Enviar sugerencia' }}
+          <app-icon name="send" [size]="14" /> {{ enviando() ? 'Enviando...' : 'Enviar sugerencia' }}
         </button>
       </div>
     </section>
@@ -149,5 +156,5 @@
     </p>
   </section>
 } @else {
-  <p class="ui-state">Cargando guía…</p>
+  <p class="ui-state">Cargando guía...</p>
 }

@@ -2,7 +2,9 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Role, ROLE_LABELS, User } from '../../../shared/models/user';
 import { Icon } from '../../../shared/ui/icon/icon';
+import { Auth } from '../../../core/auth/auth';
 import { UserApi } from '../user-api';
+import { esMismoUsuario, mensajeDeError } from '../mismo-usuario';
 
 interface InfoRol {
   value: Role;
@@ -11,40 +13,36 @@ interface InfoRol {
   permisos: string[];
 }
 
-// Las descripciones salen del Figma. Los permisos del Coordinador también;
-// los de los otros roles son provisionales hasta confirmarlos con el equipo.
+// Permisos que hoy tiene cada rol en el sistema.
 const ROLES: InfoRol[] = [
   {
     value: 'ADMINISTRADOR',
     icono: 'shield-check',
-    descripcion: 'Gestión total de usuarios, configuración y auditoría.',
-    permisos: ['Gestionar usuarios y roles', 'Configurar el sistema', 'Consultar auditoría'],
+    descripcion: 'Gestiona las cuentas de usuario y sus roles.',
+    permisos: ['Registrar y editar usuarios', 'Desactivar usuarios', 'Asignar roles'],
   },
   {
     value: 'COORDINADOR',
     icono: 'clipboard-check',
-    descripcion: 'Coordina programas, docentes, horarios y seguimiento.',
+    descripcion: 'Gestiona el programa académico y las guías base.',
     permisos: [
-      'Gestionar oferta académica',
-      'Coordinar cargas docentes',
-      'Consultar reportes',
-      'Supervisar asistencia',
+      'Gestionar módulos y competencias',
+      'Crear, editar y publicar guías base',
+      'Asignar docentes a los módulos',
+      'Revisar las sugerencias de los docentes',
     ],
   },
   {
     value: 'DOCENTE',
     icono: 'book-open',
-    descripcion: 'Gestiona cursos, asistencia y resultados de sus grupos.',
-    permisos: ['Consultar guías base', 'Crear versiones personalizadas', 'Gestionar sus grupos'],
+    descripcion: 'Trabaja con las guías de los módulos que tiene asignados.',
+    permisos: ['Consultar guías base', 'Crear versiones personalizadas', 'Sugerir cambios a una guía base'],
   },
   {
     value: 'DOCENTE_AUTORIZADO',
     icono: 'badge-check',
-    descripcion: 'Funciones docentes con autorizaciones académicas ampliadas.',
-    permisos: [
-      'Todas las funciones de Docente',
-      'Revisar y validar cambios de otros docentes',
-    ],
+    descripcion: 'Por ahora tiene los mismos permisos que el Docente.',
+    permisos: ['Todas las funciones de Docente'],
   },
 ];
 
@@ -56,6 +54,7 @@ const ROLES: InfoRol[] = [
 })
 export class UserRole {
   private api = inject(UserApi);
+  private auth = inject(Auth);
   private route = inject(ActivatedRoute);
 
   private id = Number(this.route.snapshot.paramMap.get('id'));
@@ -68,7 +67,9 @@ export class UserRole {
   cargando = signal(true);
   guardando = signal(false);
   guardado = signal(false);
-  error = signal(false);
+  error = signal('');
+
+  esUnoMismo = computed(() => esMismoUsuario(this.auth.user(), this.usuario()));
 
   hayCambio = computed(() => {
     const u = this.usuario();
@@ -94,22 +95,22 @@ export class UserRole {
         this.seleccionado.set(u.rol);
         this.cargando.set(false);
       },
-      error: () => this.cargando.set(false), // usuario null → se muestra "no encontrado"
+      error: () => this.cargando.set(false), // usuario null: se muestra "no encontrado"
     });
   }
 
   seleccionar(rol: Role): void {
     this.seleccionado.set(rol);
     this.guardado.set(false);
-    this.error.set(false);
+    this.error.set('');
   }
 
   guardar(): void {
     const rol = this.seleccionado();
-    if (!rol || !this.hayCambio()) return;
+    if (!rol || !this.hayCambio() || this.esUnoMismo()) return;
 
     this.guardando.set(true);
-    this.error.set(false);
+    this.error.set('');
 
     this.api.cambiarRol(this.id, rol).subscribe({
       next: (u) => {
@@ -118,9 +119,9 @@ export class UserRole {
         this.guardando.set(false);
         this.guardado.set(true);
       },
-      error: () => {
+      error: (e: unknown) => {
         this.guardando.set(false);
-        this.error.set(true);
+        this.error.set(mensajeDeError(e, 'No pudimos actualizar el rol. Inténtalo de nuevo en unos minutos.'));
       },
     });
   }

@@ -135,7 +135,7 @@ export class ModuleApi {
     });
   }
 
-  /** Borrador → activo. */
+  /** Borrador -> activo. */
   registrar(id: number): Observable<ModuleView> {
     return simular(this.ms, () => {
       const m = this.buscar(id);
@@ -145,7 +145,7 @@ export class ModuleApi {
     });
   }
 
-  /** Activo → inhabilitado. Conserva competencias y guías; deja de admitir guías nuevas. */
+  /** Activo -> inhabilitado. Conserva competencias y guías; deja de admitir guías nuevas. */
   inhabilitar(id: number, motivo?: string): Observable<ModuleView> {
     return simular(this.ms, () => {
       if (this.buscar(id).status !== 'active') throw new ApiError('INVALID_STATUS');
@@ -158,7 +158,7 @@ export class ModuleApi {
     });
   }
 
-  /** Inhabilitado → activo. */
+  /** Inhabilitado -> activo. */
   rehabilitar(id: number): Observable<ModuleView> {
     return simular(this.ms, () => {
       if (this.buscar(id).status !== 'inactive') throw new ApiError('INVALID_STATUS');

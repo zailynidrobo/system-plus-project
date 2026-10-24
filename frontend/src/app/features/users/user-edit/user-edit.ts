@@ -55,11 +55,6 @@ export class UserEdit {
     return u ? ROLE_LABELS[u.rol] : '';
   });
 
-  codigo = computed(() => {
-    const u = this.usuario();
-    return u ? `HE-01-${String(u.id).padStart(3, '0')}` : '';
-  });
-
   iniciales = computed(() =>
     (this.usuario()?.nombre ?? '')
       .split(' ')
@@ -81,7 +76,7 @@ export class UserEdit {
         this.form.reset({ nombre: u.nombre, correo: u.correo });
         this.cargando.set(false);
       },
-      error: () => this.cargando.set(false), // usuario null → se muestra "no encontrado"
+      error: () => this.cargando.set(false), // usuario null -> se muestra "no encontrado"
     });
 
     this.form.controls.correo.valueChanges

@@ -10,10 +10,12 @@
   gap: 16px;
   margin-bottom: 22px;
 
+  flex-wrap: wrap; // con poco ancho los botones bajan en vez de apretar el título
+  > div:first-child { flex: 1 1 280px; min-width: 0; }
   h1 { margin: 0 0 6px; font-size: 28px; font-weight: 400; color: var(--color-primary); }
   p { margin: 0; font-size: 14px; color: var(--color-muted-figma); }
 
-  &__actions { display: flex; gap: 10px; flex-shrink: 0; }
+  &__actions { display: flex; flex-wrap: wrap; gap: 10px; }
 }
 
 .ui-back {

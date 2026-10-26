@@ -116,7 +116,7 @@
                 [value]="seleccion()"
                 (change)="seleccion.set($any($event.target).value)"
               >
-                <option value="">Elegir un docente…</option>
+                <option value="">Elegir un docente...</option>
                 @for (d of disponibles(); track d.id) {
                   <option [value]="d.id">{{ d.nombre }} · {{ d.correo }}</option>
                 }

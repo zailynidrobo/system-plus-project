@@ -10,7 +10,7 @@
     <app-icon name="send" [size]="16" />
     <div>
       <strong>Sugerencia {{ r.code }} rechazada</strong>
-      <p>{{ r.teacherName }} verá el motivo y tu retroalimentación en Mis sugerencias. La guía base no cambió.</p>
+      <p>{{ r.teacherName }} recibirá una notificación con el motivo y tu retroalimentación. La guía base no cambió.</p>
     </div>
   </div>
 }
@@ -18,7 +18,18 @@
 <section class="ui-stats">
   <article class="ui-stat">
     <span class="ui-tile ui-tile--warn"><app-icon name="clock" [size]="18" /></span>
-    <div><small>Pendientes</small><strong>{{ resumen()?.pendientes ?? '–' }}</strong><em>por revisar</em></div>
+    <div>
+      <small>Pendientes</small><strong>{{ resumen()?.pendientes ?? '–' }}</strong>
+      @if (resumen(); as r) {
+        @if (r.vencidas || r.porVencer) {
+          <em [class.vencida]="r.vencidas">{{ r.vencidas }} vencidas · {{ r.porVencer }} por vencer</em>
+        } @else {
+          <em>por revisar, todas a tiempo</em>
+        }
+      } @else {
+        <em>por revisar</em>
+      }
+    </div>
   </article>
   <article class="ui-stat">
     <span class="ui-tile ui-tile--ok"><app-icon name="circle-check" [size]="18" /></span>
@@ -57,6 +68,13 @@
         </select>
       </label>
       <label class="ui-select">
+        <select aria-label="Filtrar por plazo" (change)="cambiar({ plazo: $any($event.target).value || null })">
+          @for (p of plazos; track p.valor) {
+            <option [value]="p.valor">{{ p.texto }}</option>
+          }
+        </select>
+      </label>
+      <label class="ui-select">
         <select aria-label="Ordenar" (change)="cambiar({ orden: $any($event.target).value })">
           <option value="antiguas">Más antiguas primero</option>
           <option value="recientes">Más recientes primero</option>
@@ -73,7 +91,8 @@
           <th>Docente</th>
           <th>Guía · Campo</th>
           <th>Propuesta</th>
-          <th>Recibida</th>
+          <th>Recibida · plazo</th>
+          <th>Requerida</th>
           <th>Estado</th>
           <th class="ui-right">Acción</th>
         </tr>
@@ -98,13 +117,13 @@
               <div class="ui-cell">
                 <div>
                   <strong>{{ recibida(s.createdAt) }}</strong>
-                  @if (s.status === 'Pendiente') {
-                    @let p = plazo(s.dueAt);
-                    <small [class.vencida]="p.vencida">{{ p.texto }}</small>
+                  @if (plazo(s); as p) {
+                    <small [class.vencida]="p.tono === 'vencida'" [class.por-vencer]="p.tono === 'aviso'">{{ p.texto }}</small>
                   }
                 </div>
               </div>
             </td>
+            <td class="requerida">{{ fechaRequerida(s.neededBy) || '—' }}</td>
             <td><span class="ui-pill ui-pill--sm" [class]="pill[s.status]"><i></i> {{ s.status }}</span></td>
             <td class="ui-actions-cell">
               @if (s.status === 'Pendiente') {
@@ -116,8 +135,8 @@
           </tr>
         } @empty {
           <tr>
-            <td colspan="7" class="ui-empty">
-              {{ cargando() ? 'Cargando sugerencias…' : 'No hay sugerencias con estos filtros.' }}
+            <td colspan="8" class="ui-empty">
+              {{ cargando() ? 'Cargando sugerencias...' : 'No hay sugerencias con estos filtros.' }}
             </td>
           </tr>
         }

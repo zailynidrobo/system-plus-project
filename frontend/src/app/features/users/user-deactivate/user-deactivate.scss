@@ -8,7 +8,9 @@
   gap: 24px;
   align-items: start;
 
-  @media (max-width: 1000px) { grid-template-columns: 1fr; }
+  @media (max-width: 1000px) { grid-template-columns: minmax(0, 1fr); }
+
+  &--single { grid-template-columns: minmax(0, 760px); }
 }
 
 .card {

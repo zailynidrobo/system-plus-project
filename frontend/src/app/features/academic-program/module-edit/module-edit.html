@@ -36,7 +36,7 @@
           <div class="ui-field">
             <label for="nombre">Nombre del módulo *</label>
             <div class="ui-control" [class.ui-control--dup]="duplicado()">
-              <input id="nombre" type="text" formControlName="name" autocomplete="off" />
+              <input id="nombre" type="text" formControlName="name" autocomplete="off" [attr.maxlength]="nombreMax" />
             </div>
             @if (duplicado(); as d) {
               <p class="ui-help ui-help--error">
@@ -48,16 +48,18 @@
             } @else {
               <p class="ui-help">Este nombre se mostrará inmediatamente en listados y nuevas guías.</p>
             }
+            <span class="ui-counter">{{ form.controls.name.value.length }}/{{ nombreMax }}</span>
           </div>
 
           <div class="ui-field">
             <label for="descripcion">Descripción {{ m.status === 'draft' ? '' : '*' }}</label>
             <div class="ui-control" [class.ui-control--error]="faltaDescripcion()">
-              <textarea id="descripcion" formControlName="description" rows="3"></textarea>
+              <textarea id="descripcion" formControlName="description" rows="3" [attr.maxlength]="descripcionMax"></textarea>
             </div>
             @if (faltaDescripcion()) {
               <p class="ui-help ui-help--error">La descripción es obligatoria.</p>
             }
+            <span class="ui-counter">{{ form.controls.description.value.length }}/{{ descripcionMax }}</span>
           </div>
         </div>
 
@@ -79,7 +81,7 @@
         <div class="ui-actions">
           <button type="button" class="ui-btn" (click)="descartar()" [disabled]="!hayCambios()">Descartar cambios</button>
           <button type="submit" class="ui-btn ui-btn--primary" [disabled]="guardando() || !hayCambios()">
-            <app-icon name="save" [size]="16" /> {{ guardando() ? 'Guardando…' : 'Guardar cambios' }}
+            <app-icon name="save" [size]="16" /> {{ guardando() ? 'Guardando...' : 'Guardar cambios' }}
           </button>
         </div>
       </form>

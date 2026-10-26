@@ -18,24 +18,24 @@ export function normalizeForComparison(value: string): string {
   return cleanText(value).toLocaleLowerCase('es');
 }
 
-/** TS + 6 → TS-MOD-06 */
+/** TS + 6 -> TS-MOD-06 */
 export function formatModuleCode(programCode: string, sequence: number): string {
   return `${programCode}-MOD-${String(sequence).padStart(2, '0')}`;
 }
 
-/** POO + 5 → COMP-POO-05 */
+/** POO + 5 -> COMP-POO-05 */
 export function formatCompetencyCode(prefix: string, sequence: number): string {
   return `COMP-${prefix}-${String(sequence).padStart(2, '0')}`;
 }
 
-/** POO + 1 → GB-POO-01 */
+/** POO + 1 -> GB-POO-01 */
 export function formatGuideCode(prefix: string, sequence: number): string {
   return `GB-${prefix}-${String(sequence).padStart(2, '0')}`;
 }
 
 /**
  * Sigla del módulo a partir de las iniciales de sus palabras significativas:
- * "Programación Orientada a Objetos" → POO, "Bases de Datos" → BD, "Redes" → RED.
+ * "Programación Orientada a Objetos" -> POO, "Bases de Datos" -> BD, "Redes" -> RED.
  */
 export function buildCompetencyPrefix(moduleName: string): string {
   const words = moduleName

@@ -23,7 +23,7 @@ const ADMINISTRADOR: NavConfig = {
   seccion: 'Administración',
   recuadro: 'entorno',
   items: [
-    { label: 'Inicio', icon: 'dashboard', route: null },
+    { label: 'Inicio', icon: 'dashboard', route: '/inicio' },
     { label: 'Usuarios', icon: 'users', route: '/usuarios' },
     { label: 'Roles y permisos', icon: 'shield-check', route: '/roles' },
     { label: 'Auditoría', icon: 'scroll', route: null },
@@ -34,7 +34,7 @@ const COORDINADOR: NavConfig = {
   seccion: 'Gestión académica',
   recuadro: 'programa',
   items: [
-    { label: 'Inicio', icon: 'dashboard', route: null },
+    { label: 'Inicio', icon: 'dashboard', route: '/inicio' },
     { label: 'Programa académico', icon: 'book-open', route: '/modulos' },
     { label: 'Guías de aprendizaje', icon: 'notebook-tabs', route: '/guias' },
     { label: 'Sugerencias', icon: 'message-square', route: '/sugerencias', badge: 'sugerencias' },
@@ -46,7 +46,7 @@ const DOCENTE: NavConfig = {
   seccion: 'Mi espacio docente',
   recuadro: 'modulos',
   items: [
-    { label: 'Inicio', icon: 'dashboard', route: null },
+    { label: 'Inicio', icon: 'dashboard', route: '/inicio' },
     { label: 'Guías base', icon: 'book-open', route: '/mis-modulos' },
     { label: 'Mis versiones', icon: 'folder', route: '/mis-versiones' },
     { label: 'Mis sugerencias', icon: 'message-square', route: '/mis-sugerencias' },

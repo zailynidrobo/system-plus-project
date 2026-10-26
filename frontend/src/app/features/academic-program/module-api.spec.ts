@@ -46,14 +46,14 @@ describe('ModuleApi (HE-02 módulos)', () => {
   });
 
   it('el código nunca se repite y la sigla se desambigua si ya existe', async () => {
-    const a = await nuevo('Bodegas Digitales'); // BD ya existe → BD2
+    const a = await nuevo('Bodegas Digitales'); // BD ya existe -> BD2
     const b = await nuevo('Programación web');
 
     expect(a.competencyPrefix).toBe('BD2');
     expect(b.code).toBe('TS-MOD-08');
   });
 
-  it('flujo borrador → registrar: el borrador no está disponible para guías', async () => {
+  it('flujo borrador -> registrar: el borrador no está disponible para guías', async () => {
     const borrador = await nuevo('Programación web', true);
     expect(borrador.status).toBe('draft');
     expect(borrador.availableForGuides).toBe(false);

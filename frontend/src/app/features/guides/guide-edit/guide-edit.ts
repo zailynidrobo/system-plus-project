@@ -82,7 +82,7 @@ export class GuideEdit {
     this.guardarCambios().subscribe();
   }
 
-  /** "Publicar…": guarda los cambios pendientes y abre la confirmación explícita. */
+  /** "Publicar...": guarda los cambios pendientes y abre la confirmación explícita. */
   abrirPublicar(): void {
     this.guardarCambios().subscribe((ok) => {
       const g = this.guia();

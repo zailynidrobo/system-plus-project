@@ -47,7 +47,7 @@ export type TonoModal = 'primary' | 'danger' | 'ok' | 'warn';
             (click)="confirmar.emit()"
           >
             <app-icon [name]="iconoBoton() || icono()" [size]="16" />
-            {{ procesando() ? 'Procesando…' : textoConfirmar() }}
+            {{ procesando() ? 'Procesando...' : textoConfirmar() }}
           </button>
         </div>
       </section>

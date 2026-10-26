@@ -1,0 +1,74 @@
+<div class="campana">
+  <button
+    type="button"
+    class="campana__boton"
+    [attr.aria-label]="etiqueta()"
+    aria-haspopup="dialog"
+    [attr.aria-expanded]="abierto()"
+    (click)="alternar()"
+  >
+    <app-icon name="bell" [size]="17" />
+    @if (campana().unread) {
+      <span class="campana__contador" aria-hidden="true">{{ contador() }}</span>
+    }
+  </button>
+
+  @if (abierto()) {
+    <div class="campana__fondo" (click)="abierto.set(false)"></div>
+    <section class="campana__panel" role="dialog" aria-label="Notificaciones">
+      <header class="campana__head">
+        <strong>Notificaciones</strong>
+        @if (esDocente() && campana().unread) {
+          <button type="button" class="campana__accion" (click)="marcarTodas()">Marcar todas como leídas</button>
+        } @else if (esCoordinador() && campana().unread) {
+          <span class="ui-pill ui-pill--gold ui-pill--sm">{{ campana().unread }} por revisar</span>
+        }
+      </header>
+
+      @if (visibles().length) {
+        <ul class="campana__lista">
+          @for (n of visibles(); track n.id) {
+            <li>
+              <button type="button" class="campana__item" [class.is-unread]="esDocente() && !n.read" (click)="abrir(n)">
+                <span class="ui-tile ui-tile--xs" [class]="tono[n.severity]">
+                  <app-icon [name]="icono[n.type]" [size]="14" />
+                </span>
+                <span class="campana__texto">
+                  <strong>{{ n.title }}</strong>
+                  <span>{{ n.message }}</span>
+                  <small>
+                    @if (n.guide; as g) {
+                      {{ g.code }} {{ g.version }} · {{ g.moduleName }} ·
+                    }
+                    {{ hace(n.createdAt) }}
+                  </small>
+                </span>
+                @if (esDocente() && !n.read) {
+                  <i class="campana__punto" title="Sin leer"></i>
+                }
+              </button>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="campana__vacio">
+          @if (esCoordinador()) {
+            No hay sugerencias pendientes por revisar.
+          } @else {
+            No tienes notificaciones.
+          }
+        </p>
+      }
+
+      @if (verTodas(); as ruta) {
+        <a class="campana__todas" [routerLink]="ruta" (click)="abierto.set(false)">
+          Ver todas
+          @if (campana().items.length > visibles().length) {
+            ({{ campana().items.length }})
+          }
+          <app-icon name="arrow-right" [size]="13" />
+        </a>
+      }
+    </section>
+  }
+</div>

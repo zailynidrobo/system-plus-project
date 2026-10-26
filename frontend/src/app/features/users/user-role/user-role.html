@@ -76,15 +76,15 @@
           Rol actualizado: {{ u.nombre }} ahora es {{ labels[u.rol] }}.
         </p>
       }
-      @if (error()) {
-        <p class="error" role="alert">
-          No pudimos actualizar el rol. Inténtalo de nuevo en unos minutos.
-        </p>
+      @if (esUnoMismo()) {
+        <p class="error" role="alert">No puedes cambiar el rol de tu propia cuenta. Pídeselo a otro administrador.</p>
+      } @else if (error()) {
+        <p class="error" role="alert">{{ error() }}</p>
       }
 
       <div class="actions">
         <a class="link" routerLink="/roles">{{ guardado() ? 'Volver a roles y permisos' : 'Cancelar' }}</a>
-        <button type="button" class="btn-primary" (click)="guardar()" [disabled]="guardando() || !hayCambio()">
+        <button type="button" class="btn-primary" (click)="guardar()" [disabled]="guardando() || !hayCambio() || esUnoMismo()">
           <app-icon name="refresh-cw" [size]="18" />
           {{ guardando() ? 'Actualizando...' : 'Actualizar rol' }}
         </button>

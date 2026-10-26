@@ -19,3 +19,6 @@
 .avatar { width: 26px; height: 26px; font-size: 9.5px; font-weight: 600; }
 .propuesta { max-width: 280px; line-height: 1.45; }
 .vencida { color: var(--color-danger-figma) !important; }
+.por-vencer { color: #9a7a2e !important; }
+.requerida { white-space: nowrap; }
+em.vencida { color: var(--color-danger-figma); }

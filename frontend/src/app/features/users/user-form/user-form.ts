@@ -93,7 +93,7 @@ export class UserForm {
   private detalleCorreo(formatoValido: boolean): string {
     if (this.correoEnUso()) return 'Ya existe en el directorio';
     if (this.correoDisponible()) return 'Disponible en el directorio';
-    return formatoValido ? 'Verificando disponibilidad…' : 'Pendiente de validar';
+    return formatoValido ? 'Verificando disponibilidad...' : 'Pendiente de validar';
   }
 
   mensajeNombre(): string | null {

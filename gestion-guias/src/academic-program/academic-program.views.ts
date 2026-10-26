@@ -22,7 +22,7 @@ export function toModuleView(
     programId: module.programId,
     code: module.code,
     sequence: module.sequence,
-    /** Sigla de los códigos de competencia (POO → COMP-POO-01); el front la usa para el ícono. */
+    /** Sigla de los códigos de competencia (POO -> COMP-POO-01); el front la usa para el ícono. */
     competencyPrefix: module.competencyPrefix,
     name: module.name,
     description: module.description,

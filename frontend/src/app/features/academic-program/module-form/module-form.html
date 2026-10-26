@@ -1,5 +1,5 @@
 @if (creado(); as m) {
-  <!-- Registro completado (HE-02-HU-01 "posible CA-03") -->
+  <!-- Registro completado -->
   <header class="ui-page-head">
     <div>
       @if (m.status === 'draft') {
@@ -61,7 +61,7 @@
     </section>
 
     <p class="ui-success__trace">
-      <i class="ui-dot"></i> Registro HE-02-MOD · Creado por {{ m.createdBy?.name }} · Hoy, {{ hora(m.createdAt) }}
+      Creado por {{ m.createdBy?.name }} · Hoy, {{ hora(m.createdAt) }}
     </p>
   </div>
 } @else {
@@ -110,7 +110,7 @@
           <div class="ui-field">
             <label for="nombre">Nombre del módulo *</label>
             <div class="ui-control" [class.ui-control--dup]="duplicado()" [class.ui-control--error]="form.controls.name.touched && form.controls.name.invalid">
-              <input #nombreInput id="nombre" type="text" formControlName="name" autocomplete="off" />
+              <input #nombreInput id="nombre" type="text" formControlName="name" autocomplete="off" [attr.maxlength]="nombreMax" />
             </div>
             @if (duplicado()) {
               <p class="ui-help ui-help--error">Nombre duplicado. Usa un nombre diferente o edita el módulo existente.</p>
@@ -121,18 +121,20 @@
             } @else {
               <p class="ui-help">Usa un nombre breve y reconocible para docentes y estudiantes.</p>
             }
+            <span class="ui-counter">{{ form.controls.name.value.length }}/{{ nombreMax }}</span>
           </div>
 
           <div class="ui-field">
             <label for="descripcion">Descripción *</label>
             <div class="ui-control" [class.ui-control--error]="faltaDescripcion()">
-              <textarea id="descripcion" formControlName="description" rows="3"></textarea>
+              <textarea id="descripcion" formControlName="description" rows="3" [attr.maxlength]="descripcionMax"></textarea>
             </div>
             @if (faltaDescripcion()) {
               <p class="ui-help ui-help--error">Describe el alcance formativo para registrar el módulo.</p>
             } @else if (!duplicado()) {
               <p class="ui-help">Describe el alcance formativo y su aplicación en el programa.</p>
             }
+            <span class="ui-counter">{{ form.controls.description.value.length }}/{{ descripcionMax }}</span>
           </div>
         </div>
 
@@ -169,11 +171,11 @@
               </button>
             } @else {
               <button type="button" class="ui-btn ui-btn--outline" (click)="guardarBorrador()" [disabled]="guardando()">
-                {{ guardando() === 'borrador' ? 'Guardando…' : 'Guardar borrador' }}
+                {{ guardando() === 'borrador' ? 'Guardando...' : 'Guardar borrador' }}
               </button>
             }
             <button type="submit" class="ui-btn ui-btn--primary" [disabled]="guardando() || duplicado()">
-              <app-icon name="plus" [size]="16" /> {{ guardando() === 'registrar' ? 'Registrando…' : 'Registrar módulo' }}
+              <app-icon name="plus" [size]="16" /> {{ guardando() === 'registrar' ? 'Registrando...' : 'Registrar módulo' }}
             </button>
           </div>
         </div>
@@ -185,10 +187,10 @@
         <section class="ui-blocked">
           <span class="ui-circle ui-circle--white"><app-icon name="ban" [size]="24" /></span>
           <strong>Registro bloqueado por duplicado</strong>
-          <p>AthenaDev compara el nombre sin distinguir mayúsculas, minúsculas ni espacios finales.</p>
+          <p>El sistema compara el nombre sin distinguir mayúsculas, minúsculas ni espacios finales.</p>
         </section>
         <div class="ui-notice">
-          <app-icon name="lightbulb" [size]="18" />
+          <app-icon name="info" [size]="18" />
           <div>
             <strong>Cómo resolverlo</strong>
             <p>Cambia el nombre propuesto o abre el módulo existente para actualizar su descripción.</p>

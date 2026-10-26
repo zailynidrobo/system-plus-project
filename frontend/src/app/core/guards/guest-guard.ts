@@ -9,7 +9,7 @@ export const guestGuard: CanActivateFn = () => {
   return user ? inject(Router).createUrlTree([homeForRole(user.rol)]) : true;
 };
 
-/** Ruta vacía → inicio según el rol. */
+/** Ruta vacía -> inicio según el rol. */
 export const redirectToHome: RedirectFunction = () => {
   const user = inject(Auth).user();
   return user ? homeForRole(user.rol) : '/login';

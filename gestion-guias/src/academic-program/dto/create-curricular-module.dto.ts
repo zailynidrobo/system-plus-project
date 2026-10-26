@@ -27,7 +27,7 @@ export class CreateCurricularModuleDto {
   @MaxLength(2000, { message: 'La descripción admite máximo 2000 caracteres' })
   description?: string;
 
-  /** `true` → "Guardar borrador"; omitido o `false` → "Registrar módulo". */
+  /** `true` -> "Guardar borrador"; omitido o `false` -> "Registrar módulo". */
   @IsOptional()
   @IsBoolean({ message: 'draft debe ser booleano' })
   draft?: boolean;

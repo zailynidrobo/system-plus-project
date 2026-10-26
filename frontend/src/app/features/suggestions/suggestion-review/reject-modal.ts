@@ -42,14 +42,23 @@ import { SuggestionApi } from '../suggestion-api';
           <div class="ui-control" [class.ui-control--error]="intentado() && corta()">
             <textarea id="retro" [attr.maxlength]="max" [value]="retro()" (input)="retro.set($any($event.target).value)"></textarea>
           </div>
-          <p class="ui-help" [class.ui-help--error]="intentado() && corta()">Mínimo {{ min }} caracteres · {{ largo() }}/{{ max }}</p>
+          <div class="ui-help-count">
+            <p class="ui-help" [class.ui-help--error]="intentado() && corta()">
+              @if (intentado() && corta()) {
+                Escribe al menos {{ min }} caracteres.
+              } @else {
+                Explica al docente el motivo del rechazo.
+              }
+            </p>
+            <span class="ui-counter">{{ largo() }}/{{ max }}</span>
+          </div>
         </div>
 
         <div class="ui-notice ui-notice--gold">
           <app-icon name="circle-alert" [size]="16" />
           <div>
             <strong>La guía base no cambiará</strong>
-            <p>El docente verá esta retroalimentación en Mis sugerencias y la sugerencia quedará como “Rechazada”.</p>
+            <p>El docente recibirá esta retroalimentación por notificación y la sugerencia quedará como “Rechazada”.</p>
           </div>
         </div>
 
@@ -60,7 +69,7 @@ import { SuggestionApi } from '../suggestion-api';
         <div class="ui-actions">
           <button type="button" class="ui-btn ui-btn--outline ui-btn--md" (click)="cancelar.emit()">Volver a la revisión</button>
           <button type="button" class="ui-btn ui-btn--danger ui-btn--md" [disabled]="enviando()" (click)="rechazar()">
-            <app-icon name="send" [size]="14" /> {{ enviando() ? 'Enviando…' : 'Rechazar y enviar retroalimentación' }}
+            <app-icon name="send" [size]="14" /> {{ enviando() ? 'Enviando...' : 'Rechazar y enviar retroalimentación' }}
           </button>
         </div>
       </section>

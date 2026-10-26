@@ -6,11 +6,12 @@ import { Icon } from '../../../shared/ui/icon/icon';
 import { fechaCorta, hora } from '../../../shared/utils/fechas';
 import { cuando } from '../../../shared/utils/modulos';
 import { GuideApi } from '../guide-api';
+import { SupportMaterials } from '../support-materials/support-materials';
 
 // "Ver guía publicada": no tiene frame propio en Figma; usa el estilo del resto de HE-03.
 @Component({
   selector: 'app-guide-detail',
-  imports: [RouterLink, Icon, GuideContentView],
+  imports: [RouterLink, Icon, GuideContentView, SupportMaterials],
   templateUrl: './guide-detail.html',
 })
 export class GuideDetail {

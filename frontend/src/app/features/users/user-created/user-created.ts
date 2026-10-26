@@ -25,7 +25,6 @@ export class UserCreated {
   contrasenaTemporal = this.usuario?.contrasenaTemporal ?? '';
   rol = this.usuario ? ROLE_LABELS[this.usuario.rol] : '';
 
-  codigo = this.usuario ? `HE-01-${String(this.usuario.id).padStart(3, '0')}` : '';
   hora = new Date(this.estado.fecha ?? Date.now()).toLocaleTimeString('es-CO', {
     hour: 'numeric',
     minute: '2-digit',

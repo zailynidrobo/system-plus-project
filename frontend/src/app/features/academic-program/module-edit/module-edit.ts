@@ -1,7 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { startWith } from 'rxjs';
 import { ApiError } from '../../../shared/models/api-error';
 import { MODULE_STATUS_LABELS, ModuleView } from '../../../shared/models/academic-module';
@@ -10,7 +10,9 @@ import { fechaCorta } from '../../../shared/utils/fechas';
 import { iconoModulo, pillEstadoModulo } from '../../../shared/utils/modulos';
 import { ModuleApi } from '../module-api';
 
-// Figma HE-02-HU-02 · Editar módulo (204:3587)
+import { DESCRIPCION_MAX, NOMBRE_MAX } from '../modulo-limites';
+
+// Editar módulo
 @Component({
   selector: 'app-module-edit',
   imports: [ReactiveFormsModule, RouterLink, Icon],
@@ -19,6 +21,9 @@ import { ModuleApi } from '../module-api';
 export class ModuleEdit {
   private fb = inject(FormBuilder);
   private api = inject(ModuleApi);
+  private router = inject(Router);
+  nombreMax = NOMBRE_MAX;
+  descripcionMax = DESCRIPCION_MAX;
   private id = Number(inject(ActivatedRoute).snapshot.paramMap.get('id'));
 
   modulo = signal<ModuleView | null>(null);
@@ -34,8 +39,8 @@ export class ModuleEdit {
   fecha = fechaCorta;
 
   form = this.fb.nonNullable.group({
-    name: ['', [Validators.required, Validators.pattern(/\S/)]],
-    description: [''],
+    name: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(NOMBRE_MAX)]],
+    description: ['', [Validators.maxLength(DESCRIPCION_MAX)]],
   });
 
   private valores = toSignal(this.form.valueChanges.pipe(startWith(null)));
@@ -81,6 +86,8 @@ export class ModuleEdit {
         this.cargarEnFormulario(m);
         this.guardando.set(false);
         this.guardado.set(true);
+        // Al guardar se sale de la edición y se vuelve al detalle del módulo.
+        this.router.navigate(['/modulos', this.id]);
       },
       error: (err: ApiError<ModuleView>) => {
         this.guardando.set(false);

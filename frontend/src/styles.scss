@@ -51,3 +51,32 @@ input,
 select {
   font: inherit;
 }
+/*
+ * Textos largos sin espacios (p. ej. "mmmmmmmm...") no deben salirse de su tarjeta
+ * ni pasar por debajo de otros elementos: se parten donde haga falta.
+ */
+p,
+li,
+td,
+th,
+dd,
+dt,
+h1,
+h2,
+h3,
+h4,
+strong,
+small,
+blockquote,
+label {
+  overflow-wrap: anywhere;
+}
+
+/* Los hijos de grid/flex pueden encogerse en vez de empujar el contenido fuera de la pantalla. */
+.ui-row__body,
+.ui-entity__info,
+.ui-box,
+.ui-card,
+.ui-side-card {
+  min-width: 0;
+}

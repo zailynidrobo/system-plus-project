@@ -42,6 +42,7 @@ describe('Rutas: redirección por rol', () => {
   it.each([
     [CORREOS.docente, '/sugerencias'],
     [CORREOS.docente, '/guias'],
+    [CORREOS.docente, '/guias/buscar'],
     [CORREOS.coordinador, '/mis-versiones'],
     [CORREOS.coordinador, '/mis-sugerencias'],
     [CORREOS.admin, '/sugerencias'],
@@ -55,6 +56,7 @@ describe('Rutas: redirección por rol', () => {
     [CORREOS.autorizado, '/mis-versiones'],
     [CORREOS.autorizado, '/mis-sugerencias'],
     [CORREOS.coordinador, '/sugerencias'],
+    [CORREOS.coordinador, '/guias/buscar'],
   ])('%s sí puede abrir %s', async (correo, ruta) => {
     await entrarComo(correo);
     await harness.navigateByUrl(ruta);

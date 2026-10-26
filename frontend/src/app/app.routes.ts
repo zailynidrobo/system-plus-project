@@ -48,6 +48,8 @@ export const routes: Routes = [
       { path: 'guias', loadComponent: () => import('./features/guides/guide-list/guide-list').then((m) => m.GuideList), canActivate: [roleGuard], data: guias },
       { path: 'guias/nueva', loadComponent: () => import('./features/guides/guide-form/guide-form').then((m) => m.GuideForm), canActivate: [roleGuard], data: { ...guias, subtitulo: 'Nueva guía base' } },
       { path: 'guias/estructura', loadComponent: () => import('./features/guides/field-config/field-config').then((m) => m.FieldConfigPage), canActivate: [roleGuard], data: { ...guias, subtitulo: 'Configurar estructura' } },
+      // HE-06 · Buscar guías (filtros combinados). Va antes de guias/:id para que "buscar" no se lea como un id.
+      { path: 'guias/buscar', loadComponent: () => import('./features/guides/guide-search/guide-search').then((m) => m.GuideSearch), canActivate: [roleGuard], data: { ...guias, subtitulo: 'Buscar guías' } },
       { path: 'guias/:id', loadComponent: () => import('./features/guides/guide-detail/guide-detail').then((m) => m.GuideDetail), canActivate: [roleGuard], data: { ...guias, subtitulo: 'Guía base' } },
       { path: 'guias/:id/editar', loadComponent: () => import('./features/guides/guide-edit/guide-edit').then((m) => m.GuideEdit), canActivate: [roleGuard], data: { ...guias, subtitulo: 'Editar guía base' } },
 

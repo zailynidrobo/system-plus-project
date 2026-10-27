@@ -53,4 +53,4 @@ export interface CambioContrasenaTemporal {
 export interface LoginResponse {
   token: string;
   usuario: User;
-}
+}

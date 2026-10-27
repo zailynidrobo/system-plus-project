@@ -44,7 +44,13 @@ export interface LoginRequest {
   contrasena: string;
 }
 
+export interface CambioContrasenaTemporal {
+  correo: string;
+  contrasenaTemporal: string;
+  contrasenaNueva: string;
+}
+
 export interface LoginResponse {
   token: string;
   usuario: User;
-}
+}

@@ -5,7 +5,8 @@
 | Qué | Detalle |
 |---|---|
 | Roles del realm | `admin`, `coordinador`, `docente`, `docente_autorizado` |
-| Client `system-plus-front` | Público, flujo de código con PKCE (S256). Redirect URI y web origin: `http://localhost:4200`. Incluye el mapper que agrega `system-plus-api` al `aud` del token |
+| Client `system-plus-front` | Público, con Direct access grants (lo usa la API para el formulario de inicio de sesión de System Plus) y flujo de código con PKCE (S256). Redirect URI y web origin: `http://localhost:4200`. Incluye el mapper que agrega `system-plus-api` al `aud` del token |
+| Bloqueo por intentos fallidos | Después de 5 intentos fallidos la cuenta se bloquea 1 minuto, y el tiempo crece hasta 15 minutos si sigue fallando |
 | Client `system-plus-api` | Confidencial, con cuenta de servicio. Es la que usa el backend para administrar usuarios; tiene los roles `manage-users`, `view-users`, `query-users` y `view-realm` de `realm-management` |
 | Usuarios de prueba | `admin@example.com`, `coordinador@example.com`, `docente@example.com` y `autorizado@example.com`, todos con la contraseña `12345678` |
 
@@ -24,7 +25,7 @@ docker run --name keycloak -p 8080:8080 \
 
 (En Linux o macOS usa `$(pwd)` en lugar de `$(pwd -W)`.) La consola de administración queda en <http://localhost:8080/admin> con `admin` / `admin`.
 
-El realm solo se importa la primera vez. Para volver a empezar de cero, borra el contenedor con `docker rm -f keycloak` y repite el comando. Las veces siguientes usa `docker start keycloak`.
+El realm solo se importa la primera vez. Si tu Keycloak ya tenía el realm de antes, aplica los cambios a mano: *Clients → system-plus-front → Capability config → Direct access grants* y *Realm settings → Security defenses → Brute force detection* (modo *Lockout temporarily*, 5 intentos). Para volver a empezar de cero, borra el contenedor con `docker rm -f keycloak` y repite el comando. Las veces siguientes usa `docker start keycloak`.
 
 ## Configurar el backend
 

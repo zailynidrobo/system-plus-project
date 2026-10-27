@@ -96,6 +96,29 @@ the realm only if you are sure it contains no data you need.
 The API does not implement the browser login flow: the client application signs in through
 Keycloak and sends the resulting access token to this API.
 
+### Inicio de sesión de System Plus
+
+El front muestra su propio formulario y la API valida las credenciales contra Keycloak con el client `system-plus-front` (Direct Access Grants). La API no guarda contraseñas ni sesiones: devuelve los tokens de Keycloak y el front los renueva antes de que venzan. Estas rutas son públicas.
+
+| Método | Ruta | Qué hace |
+| --- | --- | --- |
+| POST | `/auth/login` | Recibe `email` y `password`. Devuelve `accessToken`, `refreshToken`, `expiresIn`, `refreshExpiresIn` y `user` |
+| POST | `/auth/refresh` | Recibe `refreshToken` y devuelve una sesión nueva. `401 SESION_VENCIDA` si ya no se puede renovar |
+| POST | `/auth/logout` | Recibe `refreshToken` y cierra la sesión en Keycloak (204) |
+| POST | `/auth/temporary-password` | Primer ingreso: recibe `email`, `currentPassword` (la temporal) y `newPassword` (8 a 128 caracteres). Guarda la nueva como definitiva y devuelve la sesión |
+
+Códigos de error (`code` en el cuerpo de la respuesta):
+
+| Código | Estado | Cuándo |
+| --- | --- | --- |
+| `CREDENCIALES_INVALIDAS` | 401 | Contraseña incorrecta, usuario inexistente, desactivado o bloqueado por intentos. Es el mismo mensaje en todos los casos para no revelar cuál dato falló |
+| `CAMBIO_CONTRASENA_REQUERIDO` | 403 | La contraseña es correcta pero es temporal: hay que usar `/auth/temporary-password` |
+| `SIN_ROL` | 403 | La cuenta no tiene un rol de la app |
+| `CONTRASENA_REPETIDA` | 400 | La nueva contraseña es igual a la temporal |
+| `SERVICIO_NO_DISPONIBLE` | 503 | Keycloak no responde |
+
+El realm bloquea la cuenta unos minutos después de 5 intentos fallidos (`bruteForceProtected`).
+
 ### HE-01 — Usuarios, roles y permisos (sobre Keycloak)
 
 Los usuarios **viven en Keycloak**; `/users` es un puente hacia la API de administración de Keycloak
@@ -307,7 +330,7 @@ Las tablas `academic_guide_suggestions` y `user_notifications` se crean con `DB_
 
 La carpeta **08 - HE-05 Sugerencias** de [`postman/gestion-guias_postman_collection.json`](postman/gestion-guias_postman_collection.json) usa los tokens de la carpeta 00 y un segundo docente (`teacher2Username` / `teacher2Password`, el usuario `docente_autorizado` del realm). Crea su propio módulo y guía, así que se puede repetir. Hay un entorno de ejemplo sin contraseñas en [`postman/gestion-guias.local.postman_environment.example.json`](postman/gestion-guias.local.postman_environment.example.json).
 
-Para pedir tokens con contraseña, el client del entorno (`clientId`) necesita **Direct Access Grants**. El realm de `keycloak/` no lo trae activado en ningún client: en tu Keycloak local, actívalo en *Clients → system-plus-front → Settings → Capability config → Direct access grants* (solo en desarrollo).
+Para pedir tokens con contraseña, el client del entorno (`clientId`) necesita **Direct Access Grants**. El realm de `keycloak/` ya lo trae activado en `system-plus-front`, porque lo usa el inicio de sesión de System Plus. Si tu Keycloak importó una versión anterior del realm, actívalo en *Clients → system-plus-front → Settings → Capability config → Direct access grants*.
 
 Con Keycloak, PostgreSQL y la API corriendo:
 

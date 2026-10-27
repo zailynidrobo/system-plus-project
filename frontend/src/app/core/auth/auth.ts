@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, tap } from 'rxjs';
-import { LoginRequest, Role, User } from '../../shared/models/user';
+import { Observable, of, tap, throwError } from 'rxjs';
+import { ApiError } from '../../shared/models/api-error';
+import { CambioContrasenaTemporal, LoginRequest, Role, User } from '../../shared/models/user';
 import { ProblemaLogin } from './auth-provider';
 import { AUTH_PROVIDER } from './provide-auth';
 
@@ -33,8 +34,28 @@ export class Auth {
     return this.provider.refrescar().pipe(tap((u) => this._user.set(u)));
   }
 
+  /** Primer ingreso con contraseña temporal: la cambia e inicia sesión. */
+  cambiarContrasenaTemporal(datos: CambioContrasenaTemporal, recordar = false): Observable<User> {
+    if (!this.provider.cambiarContrasenaTemporal) {
+      return throwError(() => new ApiError('NO_DISPONIBLE'));
+    }
+    return this.provider
+      .cambiarContrasenaTemporal(datos, recordar)
+      .pipe(tap((u) => this._user.set(u)));
+  }
+
   token(): string | null {
     return this.provider.token();
+  }
+
+  /** Token para la próxima petición, renovando la sesión si hace falta. */
+  tokenVigente(): Observable<string | null> {
+    if (!this.provider.tokenVigente) return of(this.provider.token());
+    return this.provider.tokenVigente().pipe(
+      tap((token) => {
+        if (!token && this._user()) this._user.set(null);
+      }),
+    );
   }
 
   logout(): void {

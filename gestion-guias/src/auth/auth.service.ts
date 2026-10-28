@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   HttpException,
   Injectable,
+  Logger,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -71,6 +72,8 @@ const invalidCredentials = () =>
  */
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly config: ConfigService,
     private readonly keycloak: KeycloakAdminService,
@@ -208,9 +211,22 @@ export class AuthService {
     const body = (await response
       .json()
       .catch(() => ({}))) as Partial<TokenResponse> & {
+      error?: string;
       error_description?: string;
     };
-    if (!response.ok) return { ok: false, error: body.error_description ?? '' };
+    if (!response.ok) {
+      // invalid_grant = el problema es del usuario (contraseña, cuenta, sesión). Cualquier otro
+      // error es de configuración de Keycloak y no se le debe mostrar como credenciales inválidas.
+      if (body.error !== 'invalid_grant') {
+        this.logger.warn(
+          `Keycloak rechazó la petición por configuración (${body.error ?? response.status}: ` +
+            `${body.error_description ?? 'sin detalle'}). Revisa que el client ` +
+            `${this.clientId} tenga activado "Direct access grants" en Keycloak.`,
+        );
+        throw this.unavailable();
+      }
+      return { ok: false, error: body.error_description ?? '' };
+    }
     if (
       !body.access_token ||
       !body.refresh_token ||

@@ -189,6 +189,25 @@ describe('AuthService', () => {
     });
   });
 
+  it('si Keycloak rechaza por configuración, no lo muestra como credenciales inválidas', async () => {
+    fetchMock.mockResolvedValueOnce(
+      json(
+        {
+          error: 'unauthorized_client',
+          error_description: 'Client not allowed for direct access grants',
+        },
+        400,
+      ),
+    );
+
+    const promise = createService().login({
+      email: 'c@example.com',
+      password: 'x',
+    });
+
+    expect(await errorCode(promise)).toBe('SERVICIO_NO_DISPONIBLE');
+  });
+
   describe('refresh', () => {
     it('renueva la sesión con el refresh token', async () => {
       fetchMock.mockResolvedValueOnce(tokens());
@@ -238,12 +257,10 @@ describe('AuthService', () => {
     };
 
     it('guarda la nueva contraseña como definitiva y abre la sesión', async () => {
-      const findUserByEmail = vi
-        .fn()
-        .mockResolvedValue({
-          id: 'id-nuevo',
-          requiredActions: ['UPDATE_PASSWORD'],
-        });
+      const findUserByEmail = vi.fn().mockResolvedValue({
+        id: 'id-nuevo',
+        requiredActions: ['UPDATE_PASSWORD'],
+      });
       const setPassword = vi.fn().mockResolvedValue(undefined);
       fetchMock
         .mockResolvedValueOnce(rejected('Account is not fully set up'))

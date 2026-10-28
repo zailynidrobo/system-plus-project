@@ -12,6 +12,7 @@ import { fechaCorta } from '../../../shared/utils/fechas';
 import { Icon } from '../../../shared/ui/icon/icon';
 import { UserApi } from '../user-api';
 import { validarCorreo } from '../../../shared/utils/correo';
+import { NOMBRE_COMPLETO } from '../nombre-completo';
 
 
 @Component({
@@ -35,7 +36,7 @@ export class UserEdit {
   errorGeneral = signal(false);
 
   form = this.fb.nonNullable.group({
-    nombre: ['', [Validators.required, Validators.minLength(5), Validators.pattern(/\S/)]],
+    nombre: ['', [Validators.required, Validators.pattern(NOMBRE_COMPLETO)]],
     correo: ['', [Validators.required, validarCorreo]],
   });
 
@@ -89,7 +90,7 @@ export class UserEdit {
   mensajeNombre(): string | null {
     const c = this.form.controls.nombre;
     if (!c.touched || c.valid) return null;
-    return c.hasError('required') ? 'Ingresa el nombre completo.' : 'Escribe nombres y apellidos.';
+    return c.hasError('required') ? 'Ingresa el nombre completo.' : 'Escribe nombre y apellido.';
   }
 
   mensajeCorreo(): string | null {

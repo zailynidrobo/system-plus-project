@@ -27,33 +27,36 @@
     position: absolute;
     z-index: 0;
 
+    // Arriba a la derecha, sin llegar al logo en pantallas angostas
     &--red {
       top: 50px;
-      right: -50px;
-      width: 330px;
-      height: 70px;
+      right: -90px;
+      width: 300px;
+      height: 64px;
       background: #c04a3f;
       transform: rotate(-15deg);
     }
+    // Abajo a la derecha, lejos del texto (que va alineado a la izquierda)
     &--gold {
-      bottom: 60px;
-      left: -40px;
-      width: 420px;
-      height: 60px;
+      bottom: 70px;
+      right: -90px;
+      width: 340px;
+      height: 56px;
       background: #bfa25e;
-      transform: rotate(15deg);
+      transform: rotate(-15deg);
     }
   }
 
+  // Asoma por el borde derecho, a media altura, sin pasar por encima del texto
   &__circle {
     position: absolute;
     z-index: 0;
-    right: 80px;
-    bottom: 110px;
-    width: 180px;
-    height: 180px;
+    right: -90px;
+    top: 42%;
+    width: 200px;
+    height: 200px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.08);
   }
 
   &__logo {
@@ -63,7 +66,6 @@
     gap: 12px;
 
     strong { display: block; font-size: 20px; font-weight: 400; }
-    small { font-size: 12px; opacity: 0.75; }
   }
 
   &__content { max-width: 440px; }
@@ -129,39 +131,9 @@
   flex-direction: column;
   padding: 24px 56px;
 
-  &__top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 12px;
-  }
-
   &__main { flex: 1; display: grid; place-items: center; }
 
   &__footer { text-align: center; font-size: 12px; color: var(--color-muted); }
-}
-
-.status {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--color-muted);
-
-  &__dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--color-success);
-  }
-}
-
-.help {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--color-primary);
-  font-weight: 500;
-  text-decoration: none;
 }
 
 /* ---------- Tarjeta ---------- */
@@ -200,6 +172,8 @@
 
   strong { display: block; margin-bottom: 2px; }
   p { margin: 0; color: var(--color-text); }
+
+  &--info { background: var(--color-notice); color: var(--color-navy); }
 }
 
 .input {
@@ -252,7 +226,14 @@
   margin: 12px 0 24px;
   font-size: 13px;
 
-  a { color: var(--color-primary); text-decoration: none; }
+  .link {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-primary);
+    font: inherit;
+    cursor: pointer;
+  }
 }
 
 .remember {
@@ -280,6 +261,32 @@
 
   &:hover:not(:disabled) { background: var(--color-primary-dark); }
   &:disabled { opacity: 0.6; cursor: wait; }
+}
+
+.note {
+  margin: -12px 0 20px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--color-notice);
+  color: var(--color-text);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.submit--spaced { margin-top: 16px; }
+
+.back {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 8px;
+  border: 0;
+  background: none;
+  color: var(--color-primary);
+  font-size: 13px;
+  cursor: pointer;
 }
 
 .secure {

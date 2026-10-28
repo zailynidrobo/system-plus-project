@@ -31,11 +31,11 @@ describe('authGuard', () => {
     expect(await ejecutar()).toBe(true);
   });
 
-  it('si el usuario fue desactivado durante la sesión, lo saca al login', async () => {
+  it('si el usuario fue desactivado durante la sesión, lo saca al login con un aviso', async () => {
     const docente = await entrarComo(CORREOS.docente);
     const db = TestBed.inject(MockDb);
     db.usuarios = db.usuarios.map((u) => (u.id === docente.id ? { ...u, activo: false } : u));
 
-    expect(url(await ejecutar())).toBe('/login');
+    expect(url(await ejecutar())).toBe('/login?motivo=sesion-vencida');
   });
 });

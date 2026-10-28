@@ -1,12 +1,13 @@
 import { Observable } from 'rxjs';
-import { LoginRequest, User } from '../../shared/models/user';
+import { CambioContrasenaTemporal, LoginRequest, User } from '../../shared/models/user';
 
 /** Por qué la pantalla de login no puede redirigir sola a un inicio de sesión externo. */
 export type ProblemaLogin = 'SIN_ROL' | 'SERVICIO_NO_DISPONIBLE';
 
 /**
  * Contrato de autenticación. Pantallas, guards y menú NO lo usan directamente: usan `Auth`.
- * Lo implementan MockAuthProvider (login simulado) y KeycloakAuthProvider (login real);
+ * Lo implementan MockAuthProvider (login simulado), HttpAuthProvider (formulario propio validado
+ * por la API) y KeycloakAuthProvider (redirección a Keycloak);
  * provide-auth.ts elige cuál según environment.auth.
  */
 export interface AuthProvider {
@@ -30,6 +31,15 @@ export interface AuthProvider {
 
   /** Token para el encabezado Authorization, o null si no hay sesión. */
   token(): string | null;
+
+  /**
+   * Token listo para usar: si está por vencer, primero renueva la sesión. Emite null si la
+   * sesión ya no se puede renovar. Sin esta función se usa token() tal cual.
+   */
+  tokenVigente?(): Observable<string | null>;
+
+  /** Primer ingreso con contraseña temporal: la cambia por una definitiva e inicia sesión. */
+  cambiarContrasenaTemporal?(datos: CambioContrasenaTemporal, recordar: boolean): Observable<User>;
 
   logout(): void;
 }

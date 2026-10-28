@@ -17,6 +17,8 @@ export interface KeycloakUser {
   lastName?: string;
   enabled: boolean;
   createdTimestamp?: number;
+  /** Acciones pendientes del usuario, p. ej. UPDATE_PASSWORD si tiene contraseña temporal. */
+  requiredActions?: string[];
 }
 
 export interface KeycloakRole {
@@ -72,6 +74,16 @@ export class KeycloakAdminService {
     return new Set(users.map((user) => user.id));
   }
 
+  /** Usuario con exactamente ese correo, o null si no existe. */
+  async findUserByEmail(email: string): Promise<KeycloakUser | null> {
+    const response = await this.request(
+      'GET',
+      `/users?email=${encodeURIComponent(email)}&exact=true`,
+    );
+    const [user] = (await response.json()) as KeycloakUser[];
+    return user ?? null;
+  }
+
   async getUser(id: string): Promise<KeycloakUser> {
     const response = await this.request('GET', `/users/${encodeURIComponent(id)}`);
     return (await response.json()) as KeycloakUser;
@@ -102,13 +114,9 @@ export class KeycloakAdminService {
     const fromLocation = response.headers.get('location')?.split('/').pop();
     if (fromLocation) return fromLocation;
 
-    const found = await this.request(
-      'GET',
-      `/users?email=${encodeURIComponent(user.email)}&exact=true`,
-    );
-    const [first] = (await found.json()) as KeycloakUser[];
-    if (!first) throw new BadGatewayException('Keycloak creó el usuario pero no devolvió su id');
-    return first.id;
+    const found = await this.findUserByEmail(user.email);
+    if (!found) throw new BadGatewayException('Keycloak creó el usuario pero no devolvió su id');
+    return found.id;
   }
 
   /** Cambia solo los campos enviados; el resto del usuario queda igual. */

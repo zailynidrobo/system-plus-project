@@ -6,18 +6,14 @@
 
     <header class="brand__logo">
       <img class="logo-img" src="logo-system-plus.svg" alt="System Plus, Red Nacional de Educación" />
-      <div>
-        <strong>System Plus Piendamó</strong>
-        <small>Intranet de guías académicas</small>
-      </div>
+      <strong>System Plus Piendamó</strong>
     </header>
 
     <div class="brand__content">
       <span class="badge"><app-icon name="graduation-cap" [size]="16" /> COMUNIDAD ACADÉMICA</span>
       <p class="brand__title">Tu espacio institucional, claro y seguro.</p>
       <p class="brand__text">
-        Administra procesos académicos, personas y permisos desde una intranet diseñada para
-        System Plus Piendamó.
+        Consulta, crea y mejora las guías académicas de tu programa en un solo lugar.
       </p>
       <ul class="brand__list">
         <li><span class="check"><app-icon name="check" [size]="14" /></span> Acceso protegido para cada perfil</li>
@@ -30,11 +26,6 @@
   </aside>
 
   <section class="panel">
-    <header class="panel__top">
-      <span class="status"><span class="status__dot"></span> Servicios disponibles</span>
-      <a class="help" href="#"><app-icon name="circle-help" [size]="16" /> ¿Necesitas ayuda?</a>
-    </header>
-
     <main class="panel__main">
       @if (externo) {
         <div class="card">
@@ -68,7 +59,7 @@
               </button>
             }
             @default {
-              <p class="card__subtitle">Te estamos llevando al inicio de sesión institucional...</p>
+              <p class="card__subtitle">Te estamos llevando al inicio de sesión...</p>
               <button type="button" class="submit" [disabled]="cargando()" (click)="irAKeycloak()">
                 <app-icon name="log-in" [size]="18" />
                 Ir al inicio de sesión
@@ -76,76 +67,205 @@
             }
           }
         </div>
-      } @else {
-      <form class="card" [formGroup]="form" (ngSubmit)="enviar()" novalidate>
-        <h1>Inicia sesión</h1>
-        <p class="card__subtitle">Ingresa con tu correo institucional para continuar.</p>
+      } @else if (paso() === 'credenciales') {
+        <form class="card" [formGroup]="form" (ngSubmit)="enviar()" novalidate>
+          <h1>Inicia sesión</h1>
+          <p class="card__subtitle">Ingresa con tu correo electrónico y tu contraseña.</p>
 
-        @if (credencialesInvalidas()) {
-          <div class="alert" role="alert">
-            <app-icon name="circle-alert" [size]="18" />
-            <div>
-              <strong>No pudimos iniciar sesión</strong>
-              <p>Las credenciales ingresadas no son válidas. Verifica tus datos e inténtalo de nuevo.</p>
-            </div>
+          @switch (aviso()) {
+            @case ('CREDENCIALES_INVALIDAS') {
+              <div class="alert" role="alert">
+                <app-icon name="circle-alert" [size]="18" />
+                <div>
+                  <strong>No pudimos iniciar sesión</strong>
+                  <p>
+                    Las credenciales ingresadas no son válidas. Verifica tus datos e inténtalo de nuevo.
+                    Por seguridad, después de 5 intentos fallidos la cuenta se bloquea unos minutos.
+                  </p>
+                </div>
+              </div>
+            }
+            @case ('SERVICIO_NO_DISPONIBLE') {
+              <div class="alert" role="alert">
+                <app-icon name="circle-alert" [size]="18" />
+                <div>
+                  <strong>No pudimos conectar con el servicio de acceso</strong>
+                  <p>Inténtalo de nuevo en unos minutos. Si el problema continúa, avisa al administrador.</p>
+                </div>
+              </div>
+            }
+            @case ('SIN_ROL') {
+              <div class="alert" role="alert">
+                <app-icon name="circle-alert" [size]="18" />
+                <div>
+                  <strong>Tu cuenta no tiene un rol asignado</strong>
+                  <p>Pídele al administrador que te asigne un rol y vuelve a ingresar.</p>
+                </div>
+              </div>
+            }
+            @case ('PERFIL_INCOMPLETO') {
+              <div class="alert" role="alert">
+                <app-icon name="circle-alert" [size]="18" />
+                <div>
+                  <strong>Tu cuenta tiene datos incompletos</strong>
+                  <p>Pídele al administrador que revise tu cuenta y vuelve a intentarlo.</p>
+                </div>
+              </div>
+            }
+            @case ('SESION_VENCIDA') {
+              <div class="alert alert--info" role="status">
+                <app-icon name="info" [size]="18" />
+                <div>
+                  <strong>Tu sesión terminó</strong>
+                  <p>Por seguridad, vuelve a ingresar para continuar.</p>
+                </div>
+              </div>
+            }
+          }
+
+          <label for="correo">Correo electrónico *</label>
+          <div class="input" [class.input--error]="errorCorreo()">
+            <app-icon name="mail" [size]="18" />
+            <input
+              id="correo"
+              type="email"
+              formControlName="correo"
+              placeholder="nombre@dominio.com"
+              autocomplete="username"
+            />
           </div>
-        }
+          @if (mensajeCorreo(); as msg) {
+            <small class="field-error">{{ msg }}</small>
+          }
 
-        <label for="correo">Correo institucional *</label>
-        <div class="input" [class.input--error]="mensajeCorreo()">
-          <app-icon name="mail" [size]="18" />
-          <input
-            id="correo"
-            type="email"
-            formControlName="correo"
-            placeholder="nombre@dominio.com"
-            autocomplete="username"
-          />
-        </div>
-        @if (mensajeCorreo(); as msg) {
-          <small class="field-error">{{ msg }}</small>
-        }
+          <label for="contrasena">Contraseña *</label>
+          <div class="input" [class.input--error]="errorContrasena()">
+            <app-icon name="lock" [size]="18" />
+            <input
+              id="contrasena"
+              [type]="verContrasena() ? 'text' : 'password'"
+              formControlName="contrasena"
+              placeholder="Contraseña"
+              autocomplete="current-password"
+            />
+            <button
+              type="button"
+              class="input__toggle"
+              (click)="verContrasena.set(!verContrasena())"
+              [attr.aria-label]="verContrasena() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+            >
+              <app-icon [name]="verContrasena() ? 'eye' : 'eye-off'" [size]="18" />
+            </button>
+          </div>
+          @if (mensajeContrasena(); as msg) {
+            <small class="field-error">{{ msg }}</small>
+          }
 
-        <label for="contrasena">Contraseña *</label>
-        <div class="input" [class.input--error]="errorContrasena()">
-          <app-icon name="lock" [size]="18" />
-          <input
-            id="contrasena"
-            [type]="verContrasena() ? 'text' : 'password'"
-            formControlName="contrasena"
-            placeholder="Contraseña"
-            autocomplete="current-password"
-          />
-          <button
-            type="button"
-            class="input__toggle"
-            (click)="verContrasena.set(!verContrasena())"
-            [attr.aria-label]="verContrasena() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
-          >
-            <app-icon [name]="verContrasena() ? 'eye' : 'eye-off'" [size]="18" />
+          <div class="options">
+            <label class="remember">
+              <input type="checkbox" formControlName="recordar" /> Mantener sesión iniciada
+            </label>
+            <button
+              type="button"
+              class="link"
+              [attr.aria-expanded]="verAyudaContrasena()"
+              (click)="verAyudaContrasena.set(!verAyudaContrasena())"
+            >
+              ¿Olvidaste tu contraseña?
+            </button>
+          </div>
+          @if (verAyudaContrasena()) {
+            <p class="note" role="status">
+              Pídele al administrador que te asigne una contraseña temporal. Al ingresar con ella
+              podrás crear una nueva.
+            </p>
+          }
+
+          <button type="submit" class="submit" [disabled]="cargando()">
+            <app-icon name="log-in" [size]="18" />
+            {{ cargando() ? 'Ingresando...' : 'Ingresar' }}
           </button>
-        </div>
-        @if (mensajeContrasena(); as msg) {
-          <small class="field-error">{{ msg }}</small>
-        }
 
-        <div class="options">
-          <label class="remember">
-            <input type="checkbox" formControlName="recordar" /> Mantener sesión iniciada
-          </label>
-          <a href="#">¿Olvidaste tu contraseña?</a>
-        </div>
+          <p class="secure">
+            <app-icon name="shield-check" [size]="16" />
+            Acceso solo para usuarios registrados por el administrador
+          </p>
+        </form>
+      } @else {
+        <form class="card" [formGroup]="formNueva" (ngSubmit)="enviarNueva()" novalidate>
+          <h1>Crea tu contraseña</h1>
+          <p class="card__subtitle">
+            Es tu primer ingreso. Reemplaza la contraseña temporal por una que solo tú conozcas.
+          </p>
 
-        <button type="submit" class="submit" [disabled]="cargando()">
-          <app-icon name="log-in" [size]="18" />
-          {{ cargando() ? 'Ingresando...' : 'Ingresar' }}
-        </button>
+          @switch (aviso()) {
+            @case ('CONTRASENA_REPETIDA') {
+              <div class="alert" role="alert">
+                <app-icon name="circle-alert" [size]="18" />
+                <div>
+                  <strong>Usa una contraseña diferente</strong>
+                  <p>La nueva contraseña no puede ser igual a la temporal.</p>
+                </div>
+              </div>
+            }
+            @case ('SERVICIO_NO_DISPONIBLE') {
+              <div class="alert" role="alert">
+                <app-icon name="circle-alert" [size]="18" />
+                <div>
+                  <strong>No pudimos guardar la contraseña</strong>
+                  <p>Inténtalo de nuevo en unos minutos. Si el problema continúa, avisa al administrador.</p>
+                </div>
+              </div>
+            }
+          }
 
-        <p class="secure">
-          <app-icon name="shield-check" [size]="16" />
-          Conexión segura · La contraseña nunca se muestra en texto plano
-        </p>
-      </form>
+          <label for="nueva">Nueva contraseña *</label>
+          <div class="input" [class.input--error]="mensajeNueva()">
+            <app-icon name="lock" [size]="18" />
+            <input
+              id="nueva"
+              [type]="verNueva() ? 'text' : 'password'"
+              formControlName="nueva"
+              placeholder="Al menos {{ contrasenaMin }} caracteres"
+              autocomplete="new-password"
+            />
+            <button
+              type="button"
+              class="input__toggle"
+              (click)="verNueva.set(!verNueva())"
+              [attr.aria-label]="verNueva() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+            >
+              <app-icon [name]="verNueva() ? 'eye' : 'eye-off'" [size]="18" />
+            </button>
+          </div>
+          @if (mensajeNueva(); as msg) {
+            <small class="field-error">{{ msg }}</small>
+          }
+
+          <label for="confirmar">Confirmar contraseña *</label>
+          <div class="input" [class.input--error]="mensajeConfirmar()">
+            <app-icon name="lock" [size]="18" />
+            <input
+              id="confirmar"
+              [type]="verNueva() ? 'text' : 'password'"
+              formControlName="confirmar"
+              placeholder="Escríbela de nuevo"
+              autocomplete="new-password"
+            />
+          </div>
+          @if (mensajeConfirmar(); as msg) {
+            <small class="field-error">{{ msg }}</small>
+          }
+
+          <button type="submit" class="submit submit--spaced" [disabled]="cargando()">
+            <app-icon name="check" [size]="18" />
+            {{ cargando() ? 'Guardando...' : 'Guardar e ingresar' }}
+          </button>
+          <button type="button" class="back" (click)="volver()">
+            <app-icon name="arrow-left" [size]="16" />
+            Volver al inicio de sesión
+          </button>
+        </form>
       }
     </main>
 

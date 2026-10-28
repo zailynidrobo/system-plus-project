@@ -1,0 +1,18 @@
+# Fin de línea: el repositorio guarda los archivos de texto con LF y Git los convierte al
+# formato de cada sistema al descargarlos. Así todos los PC del equipo suben lo mismo.
+* text=auto
+
+# El código y la configuración siempre son texto (aunque alguna vez se hayan subido con CRLF).
+*.ts text
+*.js text
+*.mjs text
+*.json text
+*.html text
+*.scss text
+*.css text
+*.md text
+*.svg text
+*.yml text
+*.yaml text
+*.txt text
+*.env.example text

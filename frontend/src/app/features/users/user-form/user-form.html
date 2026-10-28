@@ -1,5 +1,5 @@
 <h1 class="title">Registrar nuevo usuario</h1>
-<p class="subtitle">Crea el acceso institucional y asigna un único rol activo.</p>
+<p class="subtitle">Crea la cuenta de la persona y asígnale un rol.</p>
 
 <ol class="stepper">
   <li class="step step--active"><span>1</span> Datos del usuario</li>
@@ -11,7 +11,7 @@
   <form class="card" [formGroup]="form" (ngSubmit)="registrar()" novalidate>
     <h2>Información del usuario</h2>
     <p class="card__hint">
-      Los campos marcados con * son obligatorios. Usa los datos institucionales vigentes.
+      Los campos marcados con * son obligatorios.
     </p>
 
     <label for="nombre">Nombre completo *</label>

@@ -1048,3 +1048,12 @@
 
   li { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--color-text-figma); }
 }
+
+/* Nombre de una fila que abre su detalle (p. ej. el módulo en Programa académico) */
+.ui-cell-link {
+  color: inherit;
+  text-decoration: none;
+
+  &:hover strong,
+  &:focus-visible strong { color: var(--color-primary); text-decoration: underline; }
+}

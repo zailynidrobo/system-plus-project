@@ -3,7 +3,7 @@ import { RouterLink } from '@angular/router';
 import { Observable, catchError, forkJoin, map, of } from 'rxjs';
 import { Auth } from '../../core/auth/auth';
 import { navPara } from '../../core/layout/shell/nav';
-import { ROLE_LABELS, Role } from '../../shared/models/user';
+import { Role } from '../../shared/models/user';
 import { Icon } from '../../shared/ui/icon/icon';
 import { GuideApi } from '../guides/guide-api';
 import { SuggestionApi } from '../suggestions/suggestion-api';
@@ -66,7 +66,6 @@ export class Home {
   private teacher = inject(TeacherApi);
 
   user = this.auth.user;
-  rol = computed(() => (this.user() ? ROLE_LABELS[this.user()!.rol] : ''));
   primerNombre = computed(() => this.user()?.nombre.split(' ')[0] ?? '');
 
   resumen = signal<Resumen | null>(null);

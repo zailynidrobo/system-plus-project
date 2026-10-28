@@ -84,7 +84,7 @@
               <div class="ui-cell">
                 <span class="ui-tile ui-tile--sm"><app-icon name="book-open" [size]="16" /></span>
                 <div>
-                  <strong>{{ m.name }}</strong>
+                  <a class="ui-cell-link" [routerLink]="['/modulos', m.id]"><strong>{{ m.name }}</strong></a>
                   <small>{{ m.code }}</small>
                 </div>
               </div>
@@ -135,7 +135,7 @@
   </div>
 
   <footer class="ui-table-foot">
-    <span class="ui-cell"><i class="ui-dot"></i> El número total del plan se confirmará con el cliente.</span>
+    <span class="ui-cell"></span>
     <button type="button" class="ui-btn ui-btn--sm" (click)="verTodo()">Ver plan curricular completo</button>
   </footer>
 </section>

@@ -1,6 +1,6 @@
 @if (usuario) {
   <h1 class="title">Registro completado</h1>
-  <p class="subtitle">El acceso institucional fue creado correctamente.</p>
+  <p class="subtitle">La cuenta quedó creada correctamente.</p>
 
   <ol class="stepper">
     <li class="step step--active"><span>1</span> Datos del usuario</li>
@@ -12,7 +12,7 @@
     <span class="badge-ok"><app-icon name="circle-check" [size]="34" /></span>
     <h2>Usuario registrado exitosamente</h2>
     <p class="card__text">
-      {{ usuario.nombre }} ya forma parte del directorio institucional de System Plus Piendamó.
+      {{ usuario.nombre }} ya puede ingresar a System Plus con su correo y la contraseña temporal.
     </p>
 
     <div class="summary">
@@ -43,10 +43,10 @@
       <div class="notice">
         <app-icon name="shield-check" [size]="20" />
         <div>
-          <strong>Credencial inicial generada de forma segura</strong>
+          <strong>Primer ingreso</strong>
           <p>
-            La contraseña temporal no es visible en texto plano. Se enviaron instrucciones de acceso
-            al correo registrado.
+            Entrega la contraseña temporal a la persona por un medio seguro. Al ingresar con ella,
+            el sistema le pedirá crear una contraseña nueva.
           </p>
         </div>
       </div>
@@ -67,4 +67,4 @@
   <p class="footnote">
     Creado por {{ creadoPor }} · Hoy, {{ hora }}
   </p>
-}
+}

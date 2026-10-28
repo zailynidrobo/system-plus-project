@@ -47,7 +47,7 @@ import { SuggestionApi } from '../suggestion-api';
               @if (intentado() && corta()) {
                 Escribe al menos {{ min }} caracteres.
               } @else {
-                Explica al docente el motivo del rechazo.
+                Explica al docente el motivo del rechazo (mínimo {{ min }} caracteres).
               }
             </p>
             <span class="ui-counter">{{ largo() }}/{{ max }}</span>

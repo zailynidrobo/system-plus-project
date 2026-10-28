@@ -6,18 +6,14 @@
 
     <header class="brand__logo">
       <img class="logo-img" src="logo-system-plus.svg" alt="System Plus, Red Nacional de Educación" />
-      <div>
-        <strong>System Plus Piendamó</strong>
-        <small>Intranet de guías académicas</small>
-      </div>
+      <strong>System Plus Piendamó</strong>
     </header>
 
     <div class="brand__content">
       <span class="badge"><app-icon name="graduation-cap" [size]="16" /> COMUNIDAD ACADÉMICA</span>
       <p class="brand__title">Tu espacio institucional, claro y seguro.</p>
       <p class="brand__text">
-        Administra procesos académicos, personas y permisos desde una intranet diseñada para
-        System Plus Piendamó.
+        Consulta, crea y mejora las guías académicas de tu programa en un solo lugar.
       </p>
       <ul class="brand__list">
         <li><span class="check"><app-icon name="check" [size]="14" /></span> Acceso protegido para cada perfil</li>
@@ -30,11 +26,6 @@
   </aside>
 
   <section class="panel">
-    <header class="panel__top">
-      <span class="status"><span class="status__dot"></span> Servicios disponibles</span>
-      <a class="help" href="#"><app-icon name="circle-help" [size]="16" /> ¿Necesitas ayuda?</a>
-    </header>
-
     <main class="panel__main">
       @if (externo) {
         <div class="card">
@@ -68,7 +59,7 @@
               </button>
             }
             @default {
-              <p class="card__subtitle">Te estamos llevando al inicio de sesión institucional...</p>
+              <p class="card__subtitle">Te estamos llevando al inicio de sesión...</p>
               <button type="button" class="submit" [disabled]="cargando()" (click)="irAKeycloak()">
                 <app-icon name="log-in" [size]="18" />
                 Ir al inicio de sesión
@@ -79,7 +70,7 @@
       } @else if (paso() === 'credenciales') {
         <form class="card" [formGroup]="form" (ngSubmit)="enviar()" novalidate>
           <h1>Inicia sesión</h1>
-          <p class="card__subtitle">Ingresa con tu correo institucional para continuar.</p>
+          <p class="card__subtitle">Ingresa con tu correo electrónico y tu contraseña.</p>
 
           @switch (aviso()) {
             @case ('CREDENCIALES_INVALIDAS') {
@@ -123,7 +114,7 @@
             }
           }
 
-          <label for="correo">Correo institucional *</label>
+          <label for="correo">Correo electrónico *</label>
           <div class="input" [class.input--error]="errorCorreo()">
             <app-icon name="mail" [size]="18" />
             <input
@@ -165,8 +156,21 @@
             <label class="remember">
               <input type="checkbox" formControlName="recordar" /> Mantener sesión iniciada
             </label>
-            <a href="#">¿Olvidaste tu contraseña?</a>
+            <button
+              type="button"
+              class="link"
+              [attr.aria-expanded]="verAyudaContrasena()"
+              (click)="verAyudaContrasena.set(!verAyudaContrasena())"
+            >
+              ¿Olvidaste tu contraseña?
+            </button>
           </div>
+          @if (verAyudaContrasena()) {
+            <p class="note" role="status">
+              Pídele al administrador que te asigne una contraseña temporal. Al ingresar con ella
+              podrás crear una nueva.
+            </p>
+          }
 
           <button type="submit" class="submit" [disabled]="cargando()">
             <app-icon name="log-in" [size]="18" />
@@ -175,7 +179,7 @@
 
           <p class="secure">
             <app-icon name="shield-check" [size]="16" />
-            Conexión segura · La contraseña nunca se muestra en texto plano
+            Acceso solo para usuarios registrados por el administrador
           </p>
         </form>
       } @else {

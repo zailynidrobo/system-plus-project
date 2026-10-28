@@ -42,7 +42,8 @@ export class Login {
   form = this.fb.nonNullable.group({
     correo: ['', [Validators.required, Validators.email]],
     contrasena: ['', [Validators.required]],
-    recordar: [true],
+    // Desmarcado por defecto: en equipos compartidos la sesión no debe quedar abierta
+    recordar: [false],
   });
 
   /** Primer ingreso: la contraseña temporal se cambia por una definitiva. */
@@ -65,9 +66,10 @@ export class Login {
   );
   verContrasena = signal(false);
   verNueva = signal(false);
+  verAyudaContrasena = signal(false);
   readonly contrasenaMin = CONTRASENA_MIN;
 
-  // Con Keycloak no hay formulario: la pantalla redirige al inicio de sesión institucional
+  // Con Keycloak no hay formulario: la pantalla redirige al inicio de sesión de Keycloak
   externo = this.auth.loginExterno;
   problema = this.auth.problemaLogin();
 
@@ -101,7 +103,7 @@ export class Login {
   mensajeCorreo(): string | null {
     const c = this.form.controls.correo;
     if (!c.touched) return null;
-    if (c.hasError('required')) return 'Ingresa tu correo institucional.';
+    if (c.hasError('required')) return 'Ingresa tu correo electrónico.';
     if (c.hasError('email')) return 'Ingresa un correo válido.';
     return null;
   }

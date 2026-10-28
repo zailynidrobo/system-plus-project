@@ -98,6 +98,22 @@ describe('Login', () => {
     expect(texto()).not.toContain('no son válidas');
   });
 
+  it('"Mantener sesión iniciada" viene desmarcado', async () => {
+    await crear();
+
+    expect(component.form.controls.recordar.value).toBe(false);
+  });
+
+  it('"¿Olvidaste tu contraseña?" explica cómo recuperar el acceso', async () => {
+    await crear();
+    fixture.detectChanges();
+
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.link')!.click();
+    fixture.detectChanges();
+
+    expect(texto()).toContain('Pídele al administrador que te asigne una contraseña temporal');
+  });
+
   it('avisa cuando la sesión anterior terminó', async () => {
     await crear('sesion-vencida');
     fixture.detectChanges();

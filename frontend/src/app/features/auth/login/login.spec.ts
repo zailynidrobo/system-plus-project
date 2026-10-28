@@ -160,6 +160,17 @@ describe('Login', () => {
       expect(navegar).toHaveBeenCalledWith('/inicio');
     });
 
+    it('si la cuenta tiene datos incompletos, vuelve al inicio de sesión y lo explica', () => {
+      auth.respuestaCambio = falla('PERFIL_INCOMPLETO');
+      component.formNueva.setValue({ nueva: 'Definitiva123', confirmar: 'Definitiva123' });
+
+      component.enviarNueva();
+      fixture.detectChanges();
+
+      expect(component.paso()).toBe('credenciales');
+      expect(texto()).toContain('Tu cuenta tiene datos incompletos');
+    });
+
     it('si la temporal ya no sirve, vuelve al inicio de sesión con el aviso', () => {
       auth.respuestaCambio = falla('CREDENCIALES_INVALIDAS');
       component.formNueva.setValue({ nueva: 'Definitiva123', confirmar: 'Definitiva123' });

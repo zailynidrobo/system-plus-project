@@ -80,12 +80,13 @@ export class AuthService {
   ) {}
 
   async login(dto: LoginDto): Promise<Session> {
+    const email = this.normalizeEmail(dto.email);
     const result = await this.postToken({
       grant_type: 'password',
-      username: this.normalizeEmail(dto.email),
+      username: email,
       password: dto.password,
     });
-    if (!result.ok) throw this.loginError(result.error);
+    if (!result.ok) throw await this.loginError(result.error, email);
     return this.toSession(result.tokens);
   }
 
@@ -237,11 +238,30 @@ export class AuthService {
     return { ok: true, tokens: body as TokenResponse };
   }
 
-  private loginError(error: string): HttpException {
+  private async loginError(
+    error: string,
+    email: string,
+  ): Promise<HttpException> {
+    // La contraseña es correcta, pero a la cuenta le falta algo. Puede ser la contraseña temporal
+    // (se resuelve en el primer ingreso) o datos del perfil que exige Keycloak, como el apellido
+    // (eso solo lo puede corregir el administrador).
     if (error === ACCOUNT_NOT_SET_UP) {
+      const user = await this.keycloak.findUserByEmail(email);
+      if (user?.requiredActions?.includes(UPDATE_PASSWORD)) {
+        return new ForbiddenException({
+          code: 'CAMBIO_CONTRASENA_REQUERIDO',
+          message: 'Debes cambiar tu contraseña temporal antes de ingresar',
+        });
+      }
+      this.logger.warn(
+        `La cuenta ${email} no puede ingresar porque Keycloak la considera incompleta ` +
+          `(acciones pendientes: ${user?.requiredActions?.join(', ') || 'ninguna'}). Revisa en ` +
+          'Keycloak que tenga nombre, apellido y correo. Se corrige editando el usuario en System Plus.',
+      );
       return new ForbiddenException({
-        code: 'CAMBIO_CONTRASENA_REQUERIDO',
-        message: 'Debes cambiar tu contraseña temporal antes de ingresar',
+        code: 'PERFIL_INCOMPLETO',
+        message:
+          'La cuenta tiene datos incompletos. El administrador debe revisarla.',
       });
     }
     // Contraseña incorrecta, usuario inexistente, desactivado o bloqueado por intentos: mismo

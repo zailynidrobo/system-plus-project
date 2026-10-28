@@ -114,6 +114,7 @@ Códigos de error (`code` en el cuerpo de la respuesta):
 | `CREDENCIALES_INVALIDAS` | 401 | Contraseña incorrecta, usuario inexistente, desactivado o bloqueado por intentos. Es el mismo mensaje en todos los casos para no revelar cuál dato falló |
 | `CAMBIO_CONTRASENA_REQUERIDO` | 403 | La contraseña es correcta pero es temporal: hay que usar `/auth/temporary-password` |
 | `SIN_ROL` | 403 | La cuenta no tiene un rol de la app |
+| `PERFIL_INCOMPLETO` | 403 | La contraseña es correcta pero Keycloak considera la cuenta incompleta (por ejemplo, una cuenta antigua sin apellido; se corrige editando el usuario). La API deja el detalle en su consola |
 | `CONTRASENA_REPETIDA` | 400 | La nueva contraseña es igual a la temporal |
 | `SERVICIO_NO_DISPONIBLE` | 503 | Keycloak no responde |
 

@@ -130,14 +130,34 @@ describe('AuthService', () => {
     );
 
     it('avisa que hay que cambiar la contraseña temporal', async () => {
+      const findUserByEmail = vi
+        .fn()
+        .mockResolvedValue({
+          id: 'id-nuevo',
+          requiredActions: ['UPDATE_PASSWORD'],
+        });
       fetchMock.mockResolvedValueOnce(rejected('Account is not fully set up'));
 
-      const promise = createService().login({
+      const promise = createService({ findUserByEmail }).login({
         email: 'nuevo@example.com',
         password: 'Temp1234',
       });
 
       expect(await errorCode(promise)).toBe('CAMBIO_CONTRASENA_REQUERIDO');
+    });
+
+    it('si a la cuenta le faltan datos del perfil (p. ej. el apellido), no pide cambiar la contraseña', async () => {
+      const findUserByEmail = vi
+        .fn()
+        .mockResolvedValue({ id: 'id-nuevo', requiredActions: [] });
+      fetchMock.mockResolvedValueOnce(rejected('Account is not fully set up'));
+
+      const promise = createService({ findUserByEmail }).login({
+        email: 'nuevo@example.com',
+        password: 'Definitiva123',
+      });
+
+      expect(await errorCode(promise)).toBe('PERFIL_INCOMPLETO');
     });
 
     it('rechaza una cuenta sin rol de la app', async () => {

@@ -7,6 +7,7 @@
 | Roles del realm | `admin`, `coordinador`, `docente`, `docente_autorizado` |
 | Client `system-plus-front` | Público, con Direct access grants (lo usa la API para el formulario de inicio de sesión de System Plus) y flujo de código con PKCE (S256). Redirect URI y web origin: `http://localhost:4200`. Incluye el mapper que agrega `system-plus-api` al `aud` del token |
 | Bloqueo por intentos fallidos | Después de 5 intentos fallidos la cuenta se bloquea 1 minuto, y el tiempo crece hasta 15 minutos si sigue fallando |
+| Perfil de usuario | El apellido es obligatorio (lo exige Keycloak). Por eso System Plus pide nombre y apellido al registrar o editar un usuario |
 | Client `system-plus-api` | Confidencial, con cuenta de servicio. Es la que usa el backend para administrar usuarios; tiene los roles `manage-users`, `view-users`, `query-users` y `view-realm` de `realm-management` |
 | Usuarios de prueba | `admin@example.com`, `coordinador@example.com`, `docente@example.com` y `autorizado@example.com`, todos con la contraseña `12345678` |
 

@@ -103,6 +103,15 @@
                 </div>
               </div>
             }
+            @case ('PERFIL_INCOMPLETO') {
+              <div class="alert" role="alert">
+                <app-icon name="circle-alert" [size]="18" />
+                <div>
+                  <strong>Tu cuenta tiene datos incompletos</strong>
+                  <p>Pídele al administrador que revise tu cuenta y vuelve a intentarlo.</p>
+                </div>
+              </div>
+            }
             @case ('SESION_VENCIDA') {
               <div class="alert alert--info" role="status">
                 <app-icon name="info" [size]="18" />

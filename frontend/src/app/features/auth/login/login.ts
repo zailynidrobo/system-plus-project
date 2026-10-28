@@ -17,6 +17,7 @@ export type AvisoLogin =
   | 'CREDENCIALES_INVALIDAS'
   | 'SERVICIO_NO_DISPONIBLE'
   | 'SIN_ROL'
+  | 'PERFIL_INCOMPLETO'
   | 'SESION_VENCIDA'
   | 'CONTRASENA_REPETIDA';
 
@@ -24,8 +25,12 @@ const AVISOS_CONOCIDOS: readonly string[] = [
   'CREDENCIALES_INVALIDAS',
   'SERVICIO_NO_DISPONIBLE',
   'SIN_ROL',
+  'PERFIL_INCOMPLETO',
   'CONTRASENA_REPETIDA',
 ];
+
+/** Avisos que se muestran sin salir del paso "Crea tu contraseña". */
+const AVISOS_DEL_CAMBIO: readonly string[] = ['CONTRASENA_REPETIDA', 'SERVICIO_NO_DISPONIBLE'];
 
 @Component({
   selector: 'app-login',
@@ -180,8 +185,10 @@ export class Login {
         next: (usuario) => this.entrar(usuario),
         error: (error: unknown) => {
           this.cargando.set(false);
-          // Si la temporal ya no sirve, hay que volver a escribirla
-          if (error instanceof ApiError && error.code === 'CREDENCIALES_INVALIDAS') this.volver();
+          // Cualquier otro problema (la temporal ya no sirve, la cuenta está incompleta...) se
+          // explica en el inicio de sesión, para no dejar a la persona atrapada en este paso
+          const code = error instanceof ApiError ? error.code : '';
+          if (!AVISOS_DEL_CAMBIO.includes(code)) this.volver();
           this.mostrarAviso(error);
         },
       });

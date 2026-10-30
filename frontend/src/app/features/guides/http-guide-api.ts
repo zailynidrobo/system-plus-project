@@ -7,6 +7,7 @@ import { mapKeycloakRole } from '../../core/auth/role-mapping';
 import { AcademicModule, ModuleView } from '../../shared/models/academic-module';
 import { Guide, GuideEvent, GuideStatus, GuideView } from '../../shared/models/guide';
 import { GuideContent, GuideField } from '../../shared/models/guide-field';
+import { EstadoVersion, GuideVersionDetail, GuideVersionItem, HistorialVersiones } from '../../shared/models/guide-version';
 import { User } from '../../shared/models/user';
 import { AcademicIds, numeroDe } from '../academic-program/academic-ids';
 import { falla } from '../academic-program/http-errores';
@@ -49,6 +50,44 @@ interface GuideEventResponse {
   author: { id: string; name: string };
   createdAt: string;
 }
+
+// contrato de versiones, el back todavia no lo tiene 
+interface GuideVersionResponse {
+  version: string;
+  status: 'draft' | 'current' | 'previous';
+  description: string;
+  author: { id: string; name: string } | null;
+  createdAt: string;
+  isPublication: boolean;
+}
+
+interface GuideVersionListResponse {
+  items: GuideVersionResponse[];
+  summary: { registered: number; publications: number; editors: number; lastModifiedAt: string };
+}
+
+interface GuideVersionDetailResponse extends GuideVersionResponse {
+  structureVersion: number;
+  fields: GuideField[];
+  content: GuideContent;
+  publishedAt?: string;
+  publishedBy?: { id: string; name: string };
+}
+
+const ESTADOS_VERSION: Record<GuideVersionResponse['status'], EstadoVersion> = {
+  draft: 'Borrador',
+  current: 'Vigente',
+  previous: 'Anterior',
+};
+
+const aItemVersion = (v: GuideVersionResponse): GuideVersionItem => ({
+  version: v.version,
+  estado: ESTADOS_VERSION[v.status],
+  descripcion: v.description,
+  autor: v.author?.name ?? '',
+  fecha: v.createdAt,
+  publicacion: v.isPublication,
+});
 
 const ESTADOS: Record<GuideResponse['status'], GuideStatus> = {
   draft: 'Borrador',
@@ -120,6 +159,39 @@ export class HttpGuideApi {
           fecha: event.createdAt,
         })),
       ),
+      catchError(falla()),
+    );
+  }
+
+  versiones(id: number): Observable<HistorialVersiones> {
+    return this.ids.guia(id).pipe(
+      switchMap((uuid) => this.http.get<GuideVersionListResponse>(`${this.base}/${uuid}/versions`)),
+      map((r) => ({
+        items: r.items.map(aItemVersion),
+        resumen: {
+          registradas: r.summary.registered,
+          publicaciones: r.summary.publications,
+          editores: r.summary.editors,
+          ultimaModificacion: r.summary.lastModifiedAt,
+        },
+      })),
+      catchError(falla()),
+    );
+  }
+
+  version(id: number, version: string): Observable<GuideVersionDetail> {
+    return this.ids.guia(id).pipe(
+      switchMap((uuid) =>
+        this.http.get<GuideVersionDetailResponse>(`${this.base}/${uuid}/versions/${encodeURIComponent(version)}`),
+      ),
+      map((v) => ({
+        ...aItemVersion(v),
+        fields: v.fields,
+        content: v.content,
+        structureVersion: v.structureVersion,
+        publicadaEl: v.publishedAt ?? null,
+        publicadaPor: v.publishedBy?.name ?? null,
+      })),
       catchError(falla()),
     );
   }

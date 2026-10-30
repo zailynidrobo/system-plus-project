@@ -1,0 +1,108 @@
+@if (cargando()) {
+  <p class="ui-state">Cargando versión...</p>
+} @else if (error(); as e) {
+  <a class="ui-back" [routerLink]="['/guias', id, 'historial']"><app-icon name="arrow-left" [size]="13" /> Volver al historial</a>
+  <div class="ui-card" role="alert">
+    <p class="ui-help ui-help--error">{{ e }}</p>
+    <div class="ui-actions">
+      <button type="button" class="ui-btn ui-btn--outline" (click)="cargar()"><app-icon name="rotate-ccw" [size]="15" /> Reintentar</button>
+    </div>
+  </div>
+} @else if (actual(); as v) {
+  <header class="ui-page-head">
+    <div>
+      <h1>Versión {{ titulo(v) }} de la guía</h1>
+      <p>
+        @if (v.publicacion) {
+          Publicada el {{ fecha(v.publicadaEl) }} por {{ v.publicadaPor }}.
+        } @else {
+          Borrador guardado el {{ fecha(v.fecha) }} por {{ v.autor }}.
+        }
+      </p>
+      <a class="ui-back ui-back--inline" [routerLink]="['/guias', id, 'historial']"><app-icon name="arrow-left" [size]="13" /> Volver al historial</a>
+    </div>
+    @if (comparables().length) {
+      <div class="ui-page-head__actions">
+        <label class="ui-select">
+          <span class="comparar__texto">Comparar con:</span>
+          <select aria-label="Comparar con otra versión" (change)="comparar($any($event.target).value)">
+            <option value="" [selected]="comparandoCon() === ''">Ninguna</option>
+            @for (o of comparables(); track o.version) {
+              <option [value]="o.version" [selected]="o.version === comparandoCon()">
+                {{ o.version }}{{ o.estado === 'Vigente' ? ' (vigente)' : '' }}
+              </option>
+            }
+          </select>
+        </label>
+      </div>
+    }
+  </header>
+
+  @if (v.estado !== 'Vigente') {
+    <div class="ui-notice solo-lectura">
+      <app-icon name="lock" [size]="16" />
+      <div>
+        <strong>Estás viendo una versión anterior · solo lectura</strong>
+        <p>
+          Esta versión no se puede editar.
+          @if (vigente(); as vig) { La versión vigente es la {{ vig.version.replace('v', '') }}. }
+        </p>
+      </div>
+    </div>
+  }
+
+  <section class="ui-card comparacion" [class.is-loading]="cargandoComparacion()">
+    @if (lados(); as l) {
+      <div class="comparacion__cabecera" [class.comparacion__cabecera--una]="!l.derecha">
+        <span>Versión {{ titulo(l.izquierda) }} · {{ l.izquierda.estado }}</span>
+        @if (l.derecha; as d) {
+          <span class="comparacion__vigente" [class.comparacion__vigente--otra]="d.estado !== 'Vigente'">
+            Versión {{ titulo(d) }} · {{ d.estado }}
+          </span>
+        }
+      </div>
+
+      @for (f of filas(); track f.key) {
+        <div class="fila" [class.fila--una]="!l.derecha">
+          <article class="campo" [class.campo--antes]="f.cambio">
+            <header>
+              <strong>{{ f.label }}</strong>
+              @if (l.derecha) {
+                <span>{{ f.cambio ? l.izquierda.version : 'Sin cambios' }}</span>
+              }
+            </header>
+            @if (f.izquierda) { <p>{{ f.izquierda }}</p> } @else { <p class="campo__vacio">Sin diligenciar</p> }
+          </article>
+          @if (l.derecha) {
+            <article class="campo" [class.campo--despues]="f.cambio">
+              <header>
+                <strong>{{ f.label }}</strong>
+                <span>{{ f.cambio ? 'Modificado' : 'Sin cambios' }}</span>
+              </header>
+              @if (f.derecha) {
+                <p>{{ f.dif.inicio }}@if (f.cambio && f.dif.cambio) {<mark>{{ f.dif.cambio }}</mark>}{{ f.dif.fin }}</p>
+              } @else {
+                <p class="campo__vacio">Sin diligenciar</p>
+              }
+            </article>
+          }
+        </div>
+      }
+
+      <footer class="comparacion__pie">
+        <span>
+          <app-icon name="info" [size]="13" />
+          @if (l.derecha) {
+            {{ modificados() }} {{ modificados() === 1 ? 'campo modificado' : 'campos modificados' }} entre las dos versiones
+          } @else {
+            Elige otra versión para ver qué cambió.
+          }
+        </span>
+        <a class="ui-btn ui-btn--outline" [routerLink]="['/guias', id, 'historial']"><app-icon name="arrow-left" [size]="14" /> Volver al historial</a>
+      </footer>
+    }
+  </section>
+} @else {
+  <p class="ui-state">La versión que buscas no existe.</p>
+  <a class="ui-btn ui-btn--primary" [routerLink]="['/guias', id, 'historial']"><app-icon name="arrow-left" [size]="15" /> Volver al historial</a>
+}

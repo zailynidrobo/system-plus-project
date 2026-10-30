@@ -1,0 +1,94 @@
+<header class="ui-page-head">
+  <div>
+    <h1>Historial de la guía</h1>
+    <p>Revisa qué cambió en cada versión, cuándo y quién lo hizo.</p>
+    <a class="ui-back ui-back--inline" routerLink="/guias"><app-icon name="arrow-left" [size]="13" /> Volver a guías base</a>
+  </div>
+</header>
+
+@if (cargando()) {
+  <p class="ui-state">Cargando historial...</p>
+} @else if (error(); as e) {
+  <div class="ui-card" role="alert">
+    <p class="ui-help ui-help--error">{{ e }}</p>
+    <div class="ui-actions">
+      <button type="button" class="ui-btn ui-btn--outline" (click)="cargar()"><app-icon name="rotate-ccw" [size]="15" /> Reintentar</button>
+    </div>
+  </div>
+} @else if (guia(); as g) {
+  <div class="ui-layout">
+    <section class="ui-card historial">
+      <div class="ui-hero">
+        <span class="ui-tile ui-tile--md" [class.ui-tile--ok]="g.status === 'Publicada'" [class.ui-tile--warn]="g.status === 'Borrador'">
+          <app-icon name="file-text" [size]="19" />
+        </span>
+        <div class="ui-hero__info">
+          <strong>{{ g.title }}</strong>
+          <small>{{ g.code }}@if (g.competencyCode) { · {{ g.competencyCode }} }</small>
+        </div>
+        @if (g.status === 'Publicada') {
+          <span class="ui-pill ui-pill--ok"><i></i> Publicada · {{ g.version }}</span>
+        } @else {
+          <span class="ui-pill ui-pill--warn"><i></i> Borrador</span>
+        }
+      </div>
+
+      <nav class="pestanas" aria-label="Secciones de la guía">
+        <a [routerLink]="['/guias', g.id]">Contenido</a>
+        <span class="pestanas__activa" aria-current="page">Historial de versiones</span>
+        <a routerLink="/sugerencias">Sugerencias</a>
+      </nav>
+
+      @if (historial(); as h) {
+        @if (h.items.length === 0) {
+          <p class="ui-empty">Esta guía todavía no tiene versiones registradas.</p>
+        } @else {
+          <ol class="linea">
+            @for (v of h.items; track v.version) {
+              <li [class.linea__vigente]="v.estado === 'Vigente'">
+                <span class="linea__marca"></span>
+                <article class="version">
+                  <div class="version__cuerpo">
+                    <div class="version__titulo">
+                      <strong>{{ v.version }}</strong>
+                      @switch (v.estado) {
+                        @case ('Vigente') { <span class="ui-pill ui-pill--ok">Vigente</span> }
+                        @case ('Anterior') { <span class="ui-pill ui-pill--neutral">Anterior</span> }
+                        @default { <span class="ui-pill ui-pill--neutral">Borrador</span> }
+                      }
+                    </div>
+                    <p>{{ v.descripcion }}</p>
+                    <small>{{ fechaHora(v.fecha) }} · por {{ v.autor }}</small>
+                  </div>
+                  <a class="ui-btn ui-btn--outline ui-btn--sm" [routerLink]="['/guias', g.id, 'versiones', v.version]">
+                    <app-icon name="eye" [size]="14" /> Ver
+                  </a>
+                </article>
+              </li>
+            }
+          </ol>
+        }
+      }
+    </section>
+
+    <aside class="ui-side">
+      @if (historial(); as h) {
+        <section class="ui-side-card">
+          <h3 class="ui-side-title">Resumen</h3>
+          <div class="ui-kv"><span>Versiones registradas</span><strong>{{ h.resumen.registradas }}</strong></div>
+          <div class="ui-kv"><span>Publicaciones</span><strong>{{ h.resumen.publicaciones }}</strong></div>
+          <div class="ui-kv"><span>Editores</span><strong>{{ h.resumen.editores }}</strong></div>
+          <div class="ui-kv"><span>Última modificación</span><strong>{{ fecha(h.resumen.ultimaModificacion) }}</strong></div>
+        </section>
+      }
+      <section class="ui-side-note ui-side-note--info">
+        <app-icon name="history" [size]="18" />
+        <strong>Historial inalterable</strong>
+        <p>Cada cambio queda registrado automáticamente y no se puede borrar ni editar.</p>
+      </section>
+    </aside>
+  </div>
+} @else {
+  <p class="ui-state">La guía que buscas no existe.</p>
+  <a class="ui-btn ui-btn--primary" routerLink="/guias"><app-icon name="arrow-left" [size]="15" /> Volver a guías base</a>
+}

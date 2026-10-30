@@ -21,7 +21,7 @@
       <strong>Estructura v{{ g.version }} guardada</strong>
       <p>
         Las guías nuevas de {{ modulo()?.name }} usarán esta estructura y los borradores ya la adoptaron. Las guías publicadas conservan la suya.
-        <button type="button" class="ui-btn ui-btn--sm" (click)="crearGuia()">Crear una guía con esta estructura →</button>
+        <button type="button" class="ui-btn ui-btn--sm" (click)="crearGuia()">Crear una guía con esta estructura</button>
       </p>
     </div>
   </div>
@@ -173,7 +173,7 @@
         <button type="button" class="ui-switch" role="switch" [attr.aria-checked]="e.required" aria-label="Campo obligatorio" (click)="cambiarEditado({ required: !e.required })"></button>
       </div>
       <div class="ui-switch-row">
-        <div><strong>Editable por docentes</strong><small>En su versión adaptada (HE-04)</small></div>
+        <div><strong>Editable por docentes</strong><small>En su versión propia de la guía</small></div>
         <button type="button" class="ui-switch" role="switch" [attr.aria-checked]="e.teacherEditable !== false" aria-label="Editable por docentes" (click)="cambiarEditado({ teacherEditable: e.teacherEditable === false })"></button>
       </div>
 
@@ -249,7 +249,7 @@
       <div class="ui-actions">
         <button type="button" class="ui-btn ui-btn--outline" (click)="impacto.set(null)">Revisar cambios</button>
         <button type="button" class="ui-btn ui-btn--primary" (click)="confirmarGuardar()" [disabled]="guardando()">
-          <app-icon name="check" [size]="15" /> {{ guardando() ? 'Guardando…' : 'Entiendo, guardar estructura v' + imp.versionNueva }}
+          <app-icon name="check" [size]="15" /> {{ guardando() ? 'Guardando...' : 'Entiendo, guardar estructura v' + imp.versionNueva }}
         </button>
       </div>
     </section>

@@ -8,14 +8,17 @@ import { personaActual, vistaGuia, vistaModulo } from '../../core/mock/vistas';
 import { ApiError } from '../../shared/models/api-error';
 import { Guide, GuideEvent, GuideStatus, GuideView } from '../../shared/models/guide';
 import { GuideContent, GuideField, camposFaltantes } from '../../shared/models/guide-field';
+import { GuideVersionDetail, HistorialVersiones } from '../../shared/models/guide-version';
 import { User } from '../../shared/models/user';
 import { formatGuideCode, normalizeForComparison } from '../../shared/utils/curricular';
 import { ahoraIso } from '../../shared/utils/fechas';
+import { construirVersiones, resumirVersiones } from '../../shared/utils/versiones';
 
 export interface FiltroGuias {
   busqueda: string;
   moduleId: number | null;
   competencyId: number | null;
+  autor: string | null;
   estado: GuideStatus | 'TODOS';
   pagina: number;
   porPagina: number;
@@ -56,6 +59,7 @@ export class GuideApi {
         .map((g) => vistaGuia(this.db, g))
         .filter((g) => f.moduleId === null || g.moduleId === f.moduleId)
         .filter((g) => f.competencyId === null || g.competencyId === f.competencyId)
+        .filter((g) => f.autor === null || g.createdBy?.name === f.autor)
         .filter((g) => f.estado === 'TODOS' || g.status === f.estado)
         .filter((g) => !q || [g.title, g.code, g.moduleName].some((t) => normalizeForComparison(t).includes(q)))
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
@@ -81,6 +85,20 @@ export class GuideApi {
     return simular(this.ms, () =>
       this.db.eventosGuias.filter((e) => e.guideId === id).sort((a, b) => b.fecha.localeCompare(a.fecha)),
     );
+  }
+
+  // he-07 lista de versiones
+  versiones(id: number): Observable<HistorialVersiones> {
+    return simular(this.ms, () => resumirVersiones(this.versionesDe(id)));
+  }
+
+  // he-07 una version con su contenido
+  version(id: number, version: string): Observable<GuideVersionDetail> {
+    return simular(this.ms, () => {
+      const encontrada = this.versionesDe(id).find((v) => v.version === version);
+      if (!encontrada) throw new ApiError('NOT_FOUND');
+      return encontrada;
+    });
   }
 
   /** Vista previa del código de la próxima guía del módulo: GB-POO-04. */
@@ -153,7 +171,7 @@ export class GuideApi {
     });
   }
 
-  /** Borrador → Publicada: queda visible para los docentes del módulo con fecha y autor. */
+  /** Borrador -> Publicada: queda visible para los docentes del módulo con fecha y autor. */
   publicar(id: number): Observable<GuideView> {
     return simular(this.ms, () => {
       const actual = this.buscar(id);
@@ -163,6 +181,13 @@ export class GuideApi {
       this.registrar(id, 'Guía publicada');
       return this.guardar(id, { status: 'Publicada', version: 'v1.0', publishedAt: ahora, publishedBy: personaActual(this.auth) });
     });
+  }
+
+  private versionesDe(id: number): GuideVersionDetail[] {
+    const guia = this.buscar(id);
+    const eventos = this.db.eventosGuias.filter((e) => e.guideId === id);
+    const aprobadas = this.db.sugerencias.filter((s) => s.guideId === id && s.status === 'Aprobada');
+    return construirVersiones(guia, eventos, aprobadas);
   }
 
   private buscar(id: number): Guide {

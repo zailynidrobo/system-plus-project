@@ -1,5 +1,5 @@
 @if (aprobada(); as a) {
-  <!-- HE-05-HU-03 · Sugerencia aprobada (5003:831) -->
+  <!-- Sugerencia aprobada -->
   <header class="ui-page-head">
     <div>
       <h1>Sugerencia aprobada</h1>
@@ -25,7 +25,7 @@
         <span class="ui-tile ui-tile--xs ui-tile--ok"><app-icon name="file-text" [size]="15" /></span>
         <div class="flex">
           <strong>{{ a.guia.title }}</strong>
-          <small>{{ a.guia.code }} · {{ a.sugerencia.baseVersion }} → {{ a.guia.version }} · actualizada {{ hace(a.guia.updatedAt) }}</small>
+          <small>{{ a.guia.code }} · de {{ a.sugerencia.baseVersion }} a {{ a.guia.version }} · actualizada {{ hace(a.guia.updatedAt) }}</small>
         </div>
         <span class="ui-pill ui-pill--ok"><i></i> Publicada</span>
       </div>
@@ -47,19 +47,21 @@
         </div>
       </section>
       <section class="ui-side-card">
-        <h3 class="ui-side-title">Quién verá el cambio</h3>
+        <h3 class="ui-side-title">Notificaciones enviadas</h3>
         <ul class="ui-options verde">
           <li>
             <app-icon name="circle-check" [size]="15" />
-            <div><strong>{{ corto(a.sugerencia.teacherName) }}</strong><small>Verá su sugerencia como aprobada</small></div>
+            <div><strong>{{ corto(a.sugerencia.teacherName) }}</strong><small>Su sugerencia fue aprobada</small></div>
           </li>
-          <li>
-            <app-icon name="circle-check" [size]="15" />
-            <div>
-              <strong>{{ revision()?.docentesDelModulo }} docentes de {{ a.sugerencia.competencyPrefix }}</strong>
-              <small>Nueva versión {{ a.guia.version.replace('v', '') }} disponible en Guías base</small>
-            </div>
-          </li>
+          @if (a.notificados) {
+            <li>
+              <app-icon name="circle-check" [size]="15" />
+              <div>
+                <strong>{{ a.notificados }} {{ a.notificados === 1 ? 'docente' : 'docentes' }} de {{ a.sugerencia.competencyPrefix }}</strong>
+                <small>Nueva versión {{ a.guia.version.replace('v', '') }} disponible</small>
+              </div>
+            </li>
+          }
         </ul>
       </section>
     </aside>
@@ -87,7 +89,28 @@
       <div class="ui-kv-box">
         <div class="ui-kv"><span>Guía</span><strong>{{ s.guideCode }} · {{ s.moduleName }} · {{ s.baseVersion }}</strong></div>
         <div class="ui-kv"><span>Campo afectado</span><strong class="is-bold">{{ s.fieldLabel }}</strong></div>
+        @if (s.neededBy) {
+          <div class="ui-kv"><span>Fecha requerida</span><strong>{{ fechaRequerida(s.neededBy) }}</strong></div>
+        }
+        @if (plazo(s); as p) {
+          <div class="ui-kv">
+            <span>Plazo de respuesta</span>
+            <span class="ui-pill ui-pill--sm" [class.ui-pill--ok]="p.tono === 'ok'" [class.ui-pill--gold]="p.tono === 'aviso'" [class.ui-pill--off]="p.tono === 'vencida'">
+              <i></i> {{ p.texto }}
+            </span>
+          </div>
+        }
       </div>
+
+      @if (s.deadlineStatus === 'overdue') {
+        <div class="ui-notice ui-notice--gold">
+          <app-icon name="clock" [size]="16" />
+          <div>
+            <strong>Venció el plazo de respuesta</strong>
+            <p>La sugerencia sigue pendiente: todavía puedes aprobarla o rechazarla.</p>
+          </div>
+        </div>
+      }
 
       @let p = partes(s.currentValue, s.proposedValue);
       <div class="comparar">
@@ -156,7 +179,7 @@
           </li>
           <li>
             <app-icon name="users" [size]="15" />
-            <div><strong>{{ revision()?.docentesDelModulo }} docentes del módulo</strong><small>Verán la nueva versión en Guías base</small></div>
+            <div><strong>{{ revision()?.docentesDelModulo }} docentes del módulo</strong><small>Recibirán aviso de la nueva versión</small></div>
           </li>
           <li>
             <app-icon name="shield-check" [size]="15" />
@@ -185,5 +208,5 @@
 } @else if (noExiste()) {
   <section class="ui-card"><p class="ui-empty">La sugerencia que buscas no existe.</p></section>
 } @else {
-  <p class="ui-state">Cargando sugerencia…</p>
+  <p class="ui-state">Cargando sugerencia...</p>
 }

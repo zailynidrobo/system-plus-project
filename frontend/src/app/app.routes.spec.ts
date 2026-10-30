@@ -23,10 +23,10 @@ describe('Rutas: redirección por rol', () => {
   });
 
   it.each([
-    [CORREOS.admin, '/usuarios'],
-    [CORREOS.coordinador, '/modulos'],
-    [CORREOS.docente, '/mis-modulos'],
-    [CORREOS.autorizado, '/mis-modulos'],
+    [CORREOS.admin, '/inicio'],
+    [CORREOS.coordinador, '/inicio'],
+    [CORREOS.docente, '/inicio'],
+    [CORREOS.autorizado, '/inicio'],
   ])('%s entra a %s desde la ruta vacía', async (correo, destino) => {
     await entrarComo(correo);
     await harness.navigateByUrl('/');
@@ -42,6 +42,8 @@ describe('Rutas: redirección por rol', () => {
   it.each([
     [CORREOS.docente, '/sugerencias'],
     [CORREOS.docente, '/guias'],
+    [CORREOS.docente, '/guias/buscar'],
+    [CORREOS.docente, '/guias/2/historial'],
     [CORREOS.coordinador, '/mis-versiones'],
     [CORREOS.coordinador, '/mis-sugerencias'],
     [CORREOS.admin, '/sugerencias'],
@@ -55,6 +57,9 @@ describe('Rutas: redirección por rol', () => {
     [CORREOS.autorizado, '/mis-versiones'],
     [CORREOS.autorizado, '/mis-sugerencias'],
     [CORREOS.coordinador, '/sugerencias'],
+    [CORREOS.coordinador, '/guias/buscar'],
+    [CORREOS.coordinador, '/guias/2/historial'],
+    [CORREOS.coordinador, '/guias/2/versiones/v1.0'],
   ])('%s sí puede abrir %s', async (correo, ruta) => {
     await entrarComo(correo);
     await harness.navigateByUrl(ruta);
@@ -64,7 +69,7 @@ describe('Rutas: redirección por rol', () => {
   it('con sesión, /login redirige al inicio del rol', async () => {
     await entrarComo(CORREOS.coordinador);
     await harness.navigateByUrl('/login');
-    expect(urlActual()).toBe('/modulos');
+    expect(urlActual()).toBe('/inicio');
   });
 
   it('"Asignar rol" vive bajo Roles y permisos; la ruta anterior redirige', async () => {
@@ -76,7 +81,7 @@ describe('Rutas: redirección por rol', () => {
   it('una ruta desconocida lleva al inicio del rol', async () => {
     await entrarComo(CORREOS.admin);
     await harness.navigateByUrl('/no-existe');
-    expect(urlActual()).toBe('/usuarios');
+    expect(urlActual()).toBe('/inicio');
   });
 
   it('un cambio de rol se aplica en la siguiente navegación, sin volver a iniciar sesión', async () => {

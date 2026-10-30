@@ -68,7 +68,7 @@ export class VersionList {
   }
 
   etiqueta(v: TeacherVersionView, key: string | null): string {
-    return v.fields.find((f) => f.key === key)?.label.split(' ')[0] ?? '—';
+    return v.fields.find((f) => f.key === key)?.label.split(' ')[0] ?? '-';
   }
 
   hace(iso: string): string {

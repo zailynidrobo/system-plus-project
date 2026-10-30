@@ -25,7 +25,7 @@ import { Icon } from '../../../shared/ui/icon/icon';
           <div class="ui-kv">
             <span>Cambio de estado</span>
             <span class="ui-cell">
-              <span class="ui-pill ui-pill--warn">Borrador</span> → <span class="ui-pill ui-pill--ok"><i></i> Publicada</span>
+              <span class="ui-pill ui-pill--warn">Borrador</span> -> <span class="ui-pill ui-pill--ok"><i></i> Publicada</span>
             </span>
           </div>
         </div>
@@ -46,7 +46,7 @@ import { Icon } from '../../../shared/ui/icon/icon';
         <div class="ui-actions">
           <button type="button" class="ui-btn ui-btn--outline" (click)="cancelar.emit()">Seguir editando</button>
           <button type="button" class="ui-btn ui-btn--primary" [disabled]="!confirmado() || procesando()" (click)="confirmar.emit()">
-            <app-icon name="check" [size]="15" /> {{ procesando() ? 'Publicando…' : 'Sí, publicar guía' }}
+            <app-icon name="check" [size]="15" /> {{ procesando() ? 'Publicando...' : 'Sí, publicar guía' }}
           </button>
         </div>
         @if (!confirmado()) {

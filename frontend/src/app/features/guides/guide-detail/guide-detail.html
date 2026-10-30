@@ -9,7 +9,7 @@
     </div>
     @if (g.status === 'Borrador') {
       <div class="ui-page-head__actions">
-        <a class="ui-btn ui-btn--outline" [routerLink]="['/guias', g.id, 'editar']" [queryParams]="{ publicar: 1 }"><app-icon name="send" [size]="14" /> Publicar…</a>
+        <a class="ui-btn ui-btn--outline" [routerLink]="['/guias', g.id, 'editar']" [queryParams]="{ publicar: 1 }"><app-icon name="send" [size]="14" /> Publicar...</a>
         <a class="ui-btn ui-btn--primary" [routerLink]="['/guias', g.id, 'editar']"><app-icon name="pencil" [size]="15" /> Editar borrador</a>
       </div>
     }
@@ -58,6 +58,7 @@
           <div class="ui-kv"><span>Versión vigente</span><strong>{{ g.version }} · {{ fecha(g.updatedAt) }}</strong></div>
         </section>
       }
+      <app-support-materials [guideId]="g.id" [puedeSubir]="true" />
       <section class="ui-side-card" id="historial">
         <h3 class="ui-side-title"><app-icon name="history" [size]="15" /> Historial</h3>
         <ul class="ui-timeline">
@@ -71,6 +72,9 @@
             </li>
           }
         </ul>
+        <a class="ui-btn ui-btn--outline ui-btn--sm" [routerLink]="['/guias', g.id, 'historial']">
+          <app-icon name="history" [size]="14" /> Ver historial de versiones
+        </a>
       </section>
       <section class="ui-side-note ui-side-note--info">
         <app-icon name="sliders" [size]="18" />

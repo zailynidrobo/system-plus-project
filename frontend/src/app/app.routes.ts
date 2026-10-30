@@ -48,8 +48,13 @@ export const routes: Routes = [
       { path: 'guias', loadComponent: () => import('./features/guides/guide-list/guide-list').then((m) => m.GuideList), canActivate: [roleGuard], data: guias },
       { path: 'guias/nueva', loadComponent: () => import('./features/guides/guide-form/guide-form').then((m) => m.GuideForm), canActivate: [roleGuard], data: { ...guias, subtitulo: 'Nueva guía base' } },
       { path: 'guias/estructura', loadComponent: () => import('./features/guides/field-config/field-config').then((m) => m.FieldConfigPage), canActivate: [roleGuard], data: { ...guias, subtitulo: 'Configurar estructura' } },
+      // HE-06 · Buscar guías (filtros combinados). Va antes de guias/:id para que "buscar" no se lea como un id.
+      { path: 'guias/buscar', loadComponent: () => import('./features/guides/guide-search/guide-search').then((m) => m.GuideSearch), canActivate: [roleGuard], data: { ...guias, subtitulo: 'Buscar guías' } },
       { path: 'guias/:id', loadComponent: () => import('./features/guides/guide-detail/guide-detail').then((m) => m.GuideDetail), canActivate: [roleGuard], data: { ...guias, subtitulo: 'Guía base' } },
       { path: 'guias/:id/editar', loadComponent: () => import('./features/guides/guide-edit/guide-edit').then((m) => m.GuideEdit), canActivate: [roleGuard], data: { ...guias, subtitulo: 'Editar guía base' } },
+      // he-07 historial de versiones de la guia
+      { path: 'guias/:id/historial', loadComponent: () => import('./features/guides/guide-history/guide-history').then((m) => m.GuideHistory), canActivate: [roleGuard], data: { ...guias, subtitulo: 'Historial' } },
+      { path: 'guias/:id/versiones/:version', loadComponent: () => import('./features/guides/guide-version/guide-version').then((m) => m.GuideVersion), canActivate: [roleGuard], data: { ...guias, subtitulo: 'Versión' } },
 
       // HE-04 · Docente y Docente Autorizado
       { path: 'mis-modulos', loadComponent: () => import('./features/teacher-space/assigned-guides/assigned-guides').then((m) => m.AssignedGuides), canActivate: [roleGuard], data: guiasBase },
@@ -63,6 +68,9 @@ export const routes: Routes = [
       { path: 'mis-sugerencias/:id', loadComponent: () => import('./features/suggestions/my-suggestion/my-suggestion').then((m) => m.MySuggestion), canActivate: [roleGuard], data: misSugerencias },
       { path: 'sugerencias', loadComponent: () => import('./features/suggestions/suggestion-inbox/suggestion-inbox').then((m) => m.SuggestionInbox), canActivate: [roleGuard], data: sugerencias },
       { path: 'sugerencias/:id', loadComponent: () => import('./features/suggestions/suggestion-review/suggestion-review').then((m) => m.SuggestionReview), canActivate: [roleGuard], data: sugerencias },
+
+      // Inicio: resumen, tareas pendientes y atajos de cada rol
+      { path: 'inicio', loadComponent: () => import('./features/home/home').then((m) => m.Home), data: { titulo: 'Inicio' } },
 
       { path: 'sin-acceso', loadComponent: () => import('./features/auth/no-access/no-access').then((m) => m.NoAccess), data: { titulo: 'Sin acceso' } },
       { path: '', pathMatch: 'full', redirectTo: redirectToHome },

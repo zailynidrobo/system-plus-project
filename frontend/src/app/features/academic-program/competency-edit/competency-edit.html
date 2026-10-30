@@ -24,7 +24,7 @@
         <div class="ui-field">
           <label for="texto">Texto de la competencia *</label>
           <div class="ui-control" [class.ui-control--dup]="duplicada() !== null">
-            <textarea id="texto" formControlName="text" rows="3"></textarea>
+            <textarea id="texto" formControlName="text" rows="3" [attr.maxlength]="maximo"></textarea>
           </div>
           @if (duplicada() !== null) {
             <p class="ui-help ui-help--error">Ya existe una competencia con este texto en el módulo ({{ duplicada() }}).</p>
@@ -41,10 +41,11 @@
           } @else {
             <p class="ui-help">El código {{ c.code }} y la asociación con el módulo permanecen sin cambios.</p>
           }
+          <span class="ui-counter">{{ form.controls.text.value.length }}/{{ maximo }}</span>
         </div>
 
         <div class="ui-notice ui-notice--info">
-          <app-icon name="focus" [size]="18" />
+          <app-icon name="info" [size]="18" />
           <div>
             <strong>Edición aislada</strong>
             <p>Solo cambiará {{ c.code }}. Las demás competencias, el módulo y sus guías no serán modificados.</p>
@@ -58,7 +59,7 @@
         <div class="ui-actions">
           <button type="button" class="ui-btn" (click)="descartar()" [disabled]="!hayCambios()">Descartar cambios</button>
           <button type="submit" class="ui-btn ui-btn--primary" [disabled]="guardando() || !hayCambios()">
-            <app-icon name="save" [size]="16" /> {{ guardando() ? 'Guardando…' : 'Guardar cambio' }}
+            <app-icon name="save" [size]="16" /> {{ guardando() ? 'Guardando...' : 'Guardar cambio' }}
           </button>
         </div>
       </form>

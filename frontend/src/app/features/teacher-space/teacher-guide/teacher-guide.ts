@@ -1,5 +1,6 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Auth } from '../../../core/auth/auth';
 import { Miga } from '../../../core/layout/miga';
 import { ApiError } from '../../../shared/models/api-error';
 import { TeacherVersionView } from '../../../shared/models/teacher-version';
@@ -9,17 +10,19 @@ import { fechaCorta } from '../../../shared/utils/fechas';
 import { CreateVersionModal } from '../create-version-modal/create-version-modal';
 import { GuiaAsignada, TeacherApi } from '../teacher-api';
 import { SuggestionApi } from '../../suggestions/suggestion-api';
+import { SupportMaterials } from '../../guides/support-materials/support-materials';
 
 // Figma HE-04-HU-01-CA-02 · Consultar guía base en solo lectura (4002:328)
 @Component({
   selector: 'app-teacher-guide',
-  imports: [RouterLink, Icon, GuideContentView, CreateVersionModal],
+  imports: [RouterLink, Icon, GuideContentView, CreateVersionModal, SupportMaterials],
   templateUrl: './teacher-guide.html',
 })
 export class TeacherGuide {
   private api = inject(TeacherApi);
   private router = inject(Router);
   private miga = inject(Miga);
+  private auth = inject(Auth);
   private id = Number(inject(ActivatedRoute).snapshot.paramMap.get('id'));
 
   guia = signal<GuiaAsignada | null>(null);
@@ -29,6 +32,8 @@ export class TeacherGuide {
   pendientes = signal<string[]>([]);
 
   fecha = fechaCorta;
+  /** El docente autorizado puede subir materiales de apoyo a la guía. */
+  esAutorizado = computed(() => this.auth.user()?.rol === 'DOCENTE_AUTORIZADO');
 
   constructor() {
     this.api.obtenerGuia(this.id).subscribe({

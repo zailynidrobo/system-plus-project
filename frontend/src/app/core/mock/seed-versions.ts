@@ -6,7 +6,7 @@ interface SemillaVersion {
   guideCode: string;
   name: string;
   createdAt: string;
-  /** Campos adaptados: clave → [valor, fecha de guardado]. */
+  /** Campos adaptados: clave -> [valor, fecha de guardado]. */
   cambios: Record<string, [string, string]>;
 }
 

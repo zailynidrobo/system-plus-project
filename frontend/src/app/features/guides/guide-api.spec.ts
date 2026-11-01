@@ -119,4 +119,38 @@ describe('GuideApi (HE-03 guías base)', () => {
     const docentes = await firstValueFrom(api.docentesDelModulo(POO));
     expect(docentes.map((d) => d.nombre)).toEqual(['Julián Andrés Ospina', 'Paola Valencia', 'Santiago Gómez']);
   });
+
+  describe('historial de versiones (HE-07)', () => {
+    const GB_BD_02 = 5; // publicada y con una sugerencia aprobada
+
+    it('lista las versiones de la más reciente a la más antigua, con una sola vigente', async () => {
+      const h = await firstValueFrom(api.versiones(GB_BD_02));
+
+      expect(h.items.map((v) => v.version)).toEqual(['v2.1', 'v1.0', 'v0.1']);
+      expect(h.items.map((v) => v.estado)).toEqual(['Vigente', 'Anterior', 'Borrador']);
+      expect(h.resumen.registradas).toBe(3);
+      expect(h.resumen.publicaciones).toBe(2);
+      expect(h.resumen.editores).toBeGreaterThan(0);
+    });
+
+    it('cada versión conserva el contenido que tenía: la anterior no trae el cambio aprobado', async () => {
+      const anterior = await firstValueFrom(api.version(GB_BD_02, 'v1.0'));
+      const vigente = await firstValueFrom(api.version(GB_BD_02, 'v2.1'));
+
+      expect(anterior.content['recursos']).toBe('Manual de PostgreSQL.');
+      expect(vigente.content['recursos']).toBe('Manual de PostgreSQL. Guía de modelado entidad-relación.');
+      expect(anterior.content['objetivos']).toBe(vigente.content['objetivos']);
+    });
+
+    it('una guía en borrador solo tiene versiones de borrador', async () => {
+      const h = await firstValueFrom(api.versiones(GB_SIS_01));
+
+      expect(h.items.every((v) => v.estado === 'Borrador')).toBe(true);
+      expect(h.resumen.publicaciones).toBe(0);
+    });
+
+    it('una versión que no existe responde NOT_FOUND', async () => {
+      expect((await capturarError(api.version(GB_BD_02, 'v9.9'))).code).toBe('NOT_FOUND');
+    });
+  });
 });

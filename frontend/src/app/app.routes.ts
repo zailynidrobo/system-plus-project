@@ -52,6 +52,9 @@ export const routes: Routes = [
       { path: 'guias/buscar', loadComponent: () => import('./features/guides/guide-search/guide-search').then((m) => m.GuideSearch), canActivate: [roleGuard], data: { ...guias, subtitulo: 'Buscar guías' } },
       { path: 'guias/:id', loadComponent: () => import('./features/guides/guide-detail/guide-detail').then((m) => m.GuideDetail), canActivate: [roleGuard], data: { ...guias, subtitulo: 'Guía base' } },
       { path: 'guias/:id/editar', loadComponent: () => import('./features/guides/guide-edit/guide-edit').then((m) => m.GuideEdit), canActivate: [roleGuard], data: { ...guias, subtitulo: 'Editar guía base' } },
+      // he-07 historial de versiones de la guia
+      { path: 'guias/:id/historial', loadComponent: () => import('./features/guides/guide-history/guide-history').then((m) => m.GuideHistory), canActivate: [roleGuard], data: { ...guias, subtitulo: 'Historial' } },
+      { path: 'guias/:id/versiones/:version', loadComponent: () => import('./features/guides/guide-version/guide-version').then((m) => m.GuideVersion), canActivate: [roleGuard], data: { ...guias, subtitulo: 'Versión' } },
 
       // HE-04 · Docente y Docente Autorizado
       { path: 'mis-modulos', loadComponent: () => import('./features/teacher-space/assigned-guides/assigned-guides').then((m) => m.AssignedGuides), canActivate: [roleGuard], data: guiasBase },

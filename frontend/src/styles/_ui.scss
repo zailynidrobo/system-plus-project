@@ -202,6 +202,7 @@
 
 .ui-table {
   width: 100%;
+  min-width: 760px; // si la pantalla es mas chica la tabla se desliza de lado y no se aplasta
   border-collapse: collapse;
 
   th {

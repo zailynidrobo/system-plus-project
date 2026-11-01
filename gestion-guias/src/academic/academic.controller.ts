@@ -152,6 +152,63 @@ export class AcademicController {
     );
   }
 
+  @Get('guides/:id/versions')
+  @Roles('coordinador', 'docente', 'docente_autorizado')
+  findGuideVersions(
+    @Param('id') id: string,
+    @Req() request: { user: KeycloakJwtPayload },
+  ) {
+    return this.academicService.findGuideVersionsForUser(
+      id,
+      request.user.sub,
+      request.user.realm_access?.roles ?? [],
+    );
+  }
+
+  @Get('guides/:id/versions/:version')
+  @Roles('coordinador', 'docente', 'docente_autorizado')
+  findGuideVersion(
+    @Param('id') id: string,
+    @Param('version') version: string,
+    @Req() request: { user: KeycloakJwtPayload },
+  ) {
+    return this.academicService.findGuideVersionForUser(
+      id,
+      version,
+      request.user.sub,
+      request.user.realm_access?.roles ?? [],
+    );
+  }
+
+  @Get('guides/:id/versions/:version/export')
+  @Roles('coordinador', 'docente', 'docente_autorizado')
+  async exportGuideVersion(
+    @Param('id') id: string,
+    @Param('version') version: string,
+    @Query('format') format: string,
+    @Req() request: { user: KeycloakJwtPayload },
+    @Res() response: Response,
+  ) {
+    await this.academicService.findGuideVersionForUser(
+      id,
+      version,
+      request.user.sub,
+      request.user.realm_access?.roles ?? [],
+    );
+    const data = await this.academicService.getGuideVersionDocumentData(
+      id,
+      version,
+    );
+    const file = await this.exportDocument(data, format);
+    const extension = this.documentExtension(format);
+    response.setHeader('Content-Type', this.documentContentType(extension));
+    response.setHeader(
+      'Content-Disposition',
+      `attachment; filename="guia-${version}.${extension}"`,
+    );
+    response.send(file);
+  }
+
   @Post('guides/:id/support-materials')
   @Roles('coordinador', 'docente_autorizado')
   @UseInterceptors(

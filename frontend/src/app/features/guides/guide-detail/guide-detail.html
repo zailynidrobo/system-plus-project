@@ -5,12 +5,42 @@
     <div>
       <h1>{{ g.status === 'Publicada' ? 'Guía publicada' : 'Guía en borrador' }}</h1>
       <p>Consulta el contenido oficial de la guía base y su trazabilidad.</p>
-      <a class="ui-back ui-back--inline" routerLink="/guias"><app-icon name="arrow-left" [size]="13" /> Volver a guías base</a>
+      <a class="ui-back ui-back--inline" routerLink="/guias"
+        ><app-icon name="arrow-left" [size]="13" /> Volver a guías base</a
+      >
     </div>
     @if (g.status === 'Borrador') {
       <div class="ui-page-head__actions">
-        <a class="ui-btn ui-btn--outline" [routerLink]="['/guias', g.id, 'editar']" [queryParams]="{ publicar: 1 }"><app-icon name="send" [size]="14" /> Publicar...</a>
-        <a class="ui-btn ui-btn--primary" [routerLink]="['/guias', g.id, 'editar']"><app-icon name="pencil" [size]="15" /> Editar borrador</a>
+        <a
+          class="ui-btn ui-btn--outline"
+          [routerLink]="['/guias', g.id, 'editar']"
+          [queryParams]="{ publicar: 1 }"
+          ><app-icon name="send" [size]="14" /> Publicar...</a
+        >
+        <a class="ui-btn ui-btn--primary" [routerLink]="['/guias', g.id, 'editar']"
+          ><app-icon name="pencil" [size]="15" /> Editar borrador</a
+        >
+      </div>
+    } @else {
+      <div class="ui-page-head__actions">
+        <button
+          type="button"
+          class="ui-btn ui-btn--outline"
+          (click)="exportar('pdf')"
+          [disabled]="!!exportando()"
+        >
+          <app-icon name="file-text" [size]="14" />
+          {{ exportando() === 'pdf' ? 'Generando PDF...' : 'Ver PDF' }}
+        </button>
+        <button
+          type="button"
+          class="ui-btn ui-btn--outline"
+          (click)="exportar('docx')"
+          [disabled]="!!exportando()"
+        >
+          <app-icon name="download" [size]="14" />
+          {{ exportando() === 'docx' ? 'Generando DOCX...' : 'Descargar DOCX' }}
+        </button>
       </div>
     }
   </header>
@@ -18,14 +48,23 @@
   <div class="ui-layout">
     <section class="ui-card">
       <div class="ui-hero ui-hero--divided">
-        <span class="ui-tile ui-tile--md" [class.ui-tile--ok]="g.status === 'Publicada'" [class.ui-tile--warn]="g.status === 'Borrador'">
+        <span
+          class="ui-tile ui-tile--md"
+          [class.ui-tile--ok]="g.status === 'Publicada'"
+          [class.ui-tile--warn]="g.status === 'Borrador'"
+        >
           <app-icon name="file-text" [size]="19" />
         </span>
         <div class="ui-hero__info">
           <strong>{{ g.title }}</strong>
           <small>
-            {{ g.code }} · {{ g.moduleName }} · {{ g.competencyCode }}@if (g.competencyDeleted) { (competencia eliminada) }
-            @if (g.status === 'Publicada') { · Versión {{ g.version.replace('v', '') }} }
+            {{ g.code }} · {{ g.moduleName }} · {{ g.competencyCode }}
+            @if (g.competencyDeleted) {
+              (competencia eliminada)
+            }
+            @if (g.status === 'Publicada') {
+              · Versión {{ g.version.replace('v', '') }}
+            }
           </small>
         </div>
         @if (g.status === 'Publicada') {
@@ -40,7 +79,10 @@
           <app-icon name="lock" [size]="16" />
           <div>
             <strong>Documento institucional protegido</strong>
-            <p>Las guías publicadas no se editan directamente. Los cambios llegan por sugerencias de los docentes y su aprobación.</p>
+            <p>
+              Las guías publicadas no se editan directamente. Los cambios llegan por sugerencias de
+              los docentes y su aprobación.
+            </p>
           </div>
         </div>
       }
@@ -52,10 +94,18 @@
       @if (g.status === 'Publicada') {
         <section class="ui-side-card">
           <small class="ui-label ui-label--ok">Registro de publicación</small>
-          <div class="ui-kv"><span>Publicada por</span><strong>{{ g.publishedBy?.name }}</strong></div>
-          <div class="ui-kv"><span>Fecha</span><strong>{{ fecha(g.publishedAt) }}</strong></div>
-          <div class="ui-kv"><span>Hora</span><strong>{{ hora(g.publishedAt) }}</strong></div>
-          <div class="ui-kv"><span>Versión vigente</span><strong>{{ g.version }} · {{ fecha(g.updatedAt) }}</strong></div>
+          <div class="ui-kv">
+            <span>Publicada por</span><strong>{{ g.publishedBy?.name }}</strong>
+          </div>
+          <div class="ui-kv">
+            <span>Fecha</span><strong>{{ fecha(g.publishedAt) }}</strong>
+          </div>
+          <div class="ui-kv">
+            <span>Hora</span><strong>{{ hora(g.publishedAt) }}</strong>
+          </div>
+          <div class="ui-kv">
+            <span>Versión vigente</span><strong>{{ g.version }} · {{ fecha(g.updatedAt) }}</strong>
+          </div>
         </section>
       }
       <app-support-materials [guideId]="g.id" [puedeSubir]="true" />
@@ -79,11 +129,15 @@
       <section class="ui-side-note ui-side-note--info">
         <app-icon name="sliders" [size]="18" />
         <strong>Estructura v{{ g.structureVersion }}</strong>
-        <p>{{ g.fields.length }} campos. La guía conserva la estructura con la que se diligenció.</p>
+        <p>
+          {{ g.fields.length }} campos. La guía conserva la estructura con la que se diligenció.
+        </p>
       </section>
     </aside>
   </div>
 } @else {
   <p class="ui-state">La guía que buscas no existe.</p>
-  <a class="ui-btn ui-btn--primary" routerLink="/guias"><app-icon name="arrow-left" [size]="15" /> Volver a guías base</a>
+  <a class="ui-btn ui-btn--primary" routerLink="/guias"
+    ><app-icon name="arrow-left" [size]="15" /> Volver a guías base</a
+  >
 }

@@ -2,6 +2,7 @@
   "realm": "system-plus",
   "displayName": "System Plus",
   "enabled": true,
+  "accessTokenLifespan": 86400,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
   "registrationAllowed": false,

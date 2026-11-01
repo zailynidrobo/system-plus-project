@@ -7,7 +7,12 @@ import { mapKeycloakRole } from '../../core/auth/role-mapping';
 import { AcademicModule, ModuleView } from '../../shared/models/academic-module';
 import { Guide, GuideEvent, GuideStatus, GuideView } from '../../shared/models/guide';
 import { GuideContent, GuideField } from '../../shared/models/guide-field';
-import { EstadoVersion, GuideVersionDetail, GuideVersionItem, HistorialVersiones } from '../../shared/models/guide-version';
+import {
+  EstadoVersion,
+  GuideVersionDetail,
+  GuideVersionItem,
+  HistorialVersiones,
+} from '../../shared/models/guide-version';
 import { User } from '../../shared/models/user';
 import { AcademicIds, numeroDe } from '../academic-program/academic-ids';
 import { falla } from '../academic-program/http-errores';
@@ -51,7 +56,7 @@ interface GuideEventResponse {
   createdAt: string;
 }
 
-// contrato de versiones, el back todavia no lo tiene 
+// Contrato compartido con los endpoints de historial de versiones.
 interface GuideVersionResponse {
   version: string;
   status: 'draft' | 'current' | 'previous';
@@ -103,8 +108,7 @@ export class HttpGuideApi {
   private base = `${environment.apiUrl}/academic/guides`;
 
   listar(filtro: FiltroGuias): Observable<PaginaGuias> {
-    const moduleId$ =
-      filtro.moduleId === null ? of(null) : this.ids.modulo(filtro.moduleId);
+    const moduleId$ = filtro.moduleId === null ? of(null) : this.ids.modulo(filtro.moduleId);
     const competencyId$ =
       filtro.competencyId === null ? of(null) : this.ids.competencia(filtro.competencyId);
     return forkJoin({ moduleId: moduleId$, competencyId: competencyId$ }).pipe(
@@ -135,9 +139,7 @@ export class HttpGuideApi {
   }
 
   resumen(): Observable<ResumenGuias> {
-    return this.http
-      .get<ResumenGuias>(`${this.base}/summary`)
-      .pipe(catchError(falla()));
+    return this.http.get<ResumenGuias>(`${this.base}/summary`).pipe(catchError(falla()));
   }
 
   obtener(id: number): Observable<GuideView> {
@@ -182,7 +184,9 @@ export class HttpGuideApi {
   version(id: number, version: string): Observable<GuideVersionDetail> {
     return this.ids.guia(id).pipe(
       switchMap((uuid) =>
-        this.http.get<GuideVersionDetailResponse>(`${this.base}/${uuid}/versions/${encodeURIComponent(version)}`),
+        this.http.get<GuideVersionDetailResponse>(
+          `${this.base}/${uuid}/versions/${encodeURIComponent(version)}`,
+        ),
       ),
       map((v) => ({
         ...aItemVersion(v),
@@ -192,6 +196,30 @@ export class HttpGuideApi {
         publicadaEl: v.publishedAt ?? null,
         publicadaPor: v.publishedBy?.name ?? null,
       })),
+      catchError(falla()),
+    );
+  }
+
+  exportarVersion(id: number, version: string, formato: 'pdf' | 'docx'): Observable<Blob> {
+    return this.ids.guia(id).pipe(
+      switchMap((uuid) =>
+        this.http.get(`${this.base}/${uuid}/versions/${encodeURIComponent(version)}/export`, {
+          params: { format: formato },
+          responseType: 'blob',
+        }),
+      ),
+      catchError(falla()),
+    );
+  }
+
+  exportar(id: number, formato: 'pdf' | 'docx'): Observable<Blob> {
+    return this.ids.guia(id).pipe(
+      switchMap((uuid) =>
+        this.http.get(`${this.base}/${uuid}/export`, {
+          params: { format: formato },
+          responseType: 'blob',
+        }),
+      ),
       catchError(falla()),
     );
   }
@@ -216,9 +244,9 @@ export class HttpGuideApi {
             `${environment.apiUrl}/academic/modules/${uuid}/teachers`,
           ),
           // GET /users es solo del administrador: la lista de docentes para coordinación es otra ruta.
-          teachers: this.http.get<{ id: string; name: string; email: string; role: string | null }[]>(
-            `${environment.apiUrl}/academic/teachers`,
-          ),
+          teachers: this.http.get<
+            { id: string; name: string; email: string; role: string | null }[]
+          >(`${environment.apiUrl}/academic/teachers`),
         }),
       ),
       map(({ teacherIds, teachers }) => {
@@ -359,8 +387,8 @@ export class HttpGuideApi {
       updatedAt: response.updatedAt,
       updatedBy: persona(response.updatedBy) ?? fallback,
       publishedAt: response.publishedAt ?? null,
-      publishedBy: persona(response.publishedBy) ??
-        (response.status === 'published' ? fallback : null),
+      publishedBy:
+        persona(response.publishedBy) ?? (response.status === 'published' ? fallback : null),
     };
     return {
       ...guide,

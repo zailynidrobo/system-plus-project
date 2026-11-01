@@ -1,0 +1,72 @@
+.solo-lectura { margin-bottom: 18px; border: 1px solid #ecdca8; }
+
+.comparar__texto { font-size: 13px; color: var(--color-text-figma); white-space: nowrap; }
+
+.comparacion {
+  gap: 12px;
+  &.is-loading { opacity: 0.6; transition: opacity 0.15s; }
+
+  &__cabecera {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-muted-figma);
+
+    &--una { grid-template-columns: 1fr; }
+  }
+
+  &__vigente { color: var(--color-success-figma); &--otra { color: var(--color-muted-figma); } }
+
+  &__pie {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+    padding-top: 16px;
+    border-top: 1px solid var(--color-border-figma);
+    font-size: 11px;
+    color: var(--color-muted-figma);
+
+    span { display: inline-flex; align-items: center; gap: 6px; }
+  }
+}
+
+.fila {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+
+  &--una { grid-template-columns: 1fr; }
+
+  @media (max-width: 900px) { grid-template-columns: 1fr; }
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border-figma);
+  border-radius: 8px;
+  background: #fff;
+
+  header { display: flex; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--color-muted-figma); }
+  strong { font-size: 13px; font-weight: 500; color: var(--color-text-figma); }
+  p { margin: 0; font-size: 12px; line-height: 1.5; color: var(--color-text-figma); white-space: pre-line; }
+  &__vacio { color: var(--color-muted-figma); font-style: italic; }
+
+  &--antes { background: var(--color-danger-bg-figma); border-color: #f0cdc8; header { color: var(--color-danger-figma); } }
+  &--despues { background: var(--color-success-bg-figma); border-color: #bfe3cf; header { color: var(--color-success-figma); } }
+}
+
+mark {
+  padding: 0 2px;
+  border-radius: 3px;
+  background: #b6e3c8;
+  color: inherit;
+}

@@ -21,6 +21,7 @@ export class GuideDetail {
   guia = signal<GuideView | null>(null);
   historial = signal<GuideEvent[]>([]);
   cargando = signal(true);
+  exportando = signal<'pdf' | 'docx' | null>(null);
 
   fecha = fechaCorta;
   hora = hora;
@@ -35,5 +36,29 @@ export class GuideDetail {
       error: () => this.cargando.set(false),
     });
     this.api.historial(this.id).subscribe({ next: (h) => this.historial.set(h), error: () => {} });
+  }
+
+  exportar(formato: 'pdf' | 'docx'): void {
+    if (this.exportando()) return;
+    this.exportando.set(formato);
+    this.api.exportar(this.id, formato).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const enlace = document.createElement('a');
+        enlace.href = url;
+        if (formato === 'pdf') {
+          enlace.target = '_blank';
+          enlace.rel = 'noopener noreferrer';
+        } else {
+          enlace.download = `guia-${this.guia()?.version ?? 'vigente'}.docx`;
+        }
+        enlace.click();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        this.exportando.set(null);
+      },
+      error: () => {
+        this.exportando.set(null);
+      },
+    });
   }
 }

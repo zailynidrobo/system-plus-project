@@ -31,6 +31,7 @@ import {
   PersonalizedGuideVersion,
 } from './academic.entities.js';
 import { AcademicGuideRecord } from './entities/academic-guide-record.entity.js';
+import { AcademicGuideVersionRecord } from './entities/academic-guide-version-record.entity.js';
 import { GuideEventRecord } from './entities/guide-event-record.entity.js';
 import { GuideFieldConfigRecord } from './entities/guide-field-config-record.entity.js';
 import { ModuleTeacherAssignmentRecord } from './entities/module-teacher-assignment-record.entity.js';
@@ -318,6 +319,17 @@ export class AcademicService implements OnModuleInit {
         authorName: actor.name,
         createdAt: now,
       });
+      await this.saveGuideVersion(
+        manager,
+        guide,
+        'draft',
+        'Guía creada como borrador',
+        {
+          id: guide.createdById ?? actor.id,
+          name: guide.createdByName ?? actor.name,
+        },
+        now,
+      );
       return guide;
     });
     return this.mapGuide(guide, false);
@@ -416,6 +428,14 @@ export class AcademicService implements OnModuleInit {
         actor,
         guide.updatedAt,
       );
+      await this.saveGuideVersion(
+        manager,
+        saved,
+        'draft',
+        events.length ? events.join(', ') : 'Borrador actualizado',
+        actor,
+        guide.updatedAt,
+      );
       return saved;
     });
     return this.toGuide(guide);
@@ -451,6 +471,14 @@ export class AcademicService implements OnModuleInit {
         actor,
         guide.publishedAt,
       );
+      await this.saveGuideVersion(
+        manager,
+        saved,
+        'current',
+        'Guía publicada',
+        actor,
+        guide.publishedAt,
+      );
       return saved;
     });
     return this.toGuide(guide);
@@ -473,6 +501,65 @@ export class AcademicService implements OnModuleInit {
       author: { id: event.authorId, name: event.authorName },
       createdAt: event.createdAt.toISOString(),
     }));
+  }
+
+  async findGuideVersionsForUser(id: string, userId: string, roles: string[]) {
+    const guide = await this.findGuideForUser(id, userId, roles);
+    const records = await this.guideVersions().find({
+      where: { guideId: id },
+      order: { createdAt: 'DESC' },
+    });
+    const versions = records.length
+      ? records
+      : [this.legacyGuideVersion(guide)];
+    return {
+      items: versions.map((version) =>
+        this.mapGuideVersionItem(
+          version,
+          this.statusForVersion(version, guide),
+        ),
+      ),
+      summary: {
+        registered: versions.length,
+        publications: versions.filter((version) => version.isPublication)
+          .length,
+        editors: new Set(
+          versions
+            .map((version) => version.authorId)
+            .filter((authorId): authorId is string => Boolean(authorId)),
+        ).size,
+        lastModifiedAt: versions[0].createdAt.toISOString(),
+      },
+    };
+  }
+
+  async findGuideVersionForUser(
+    id: string,
+    version: string,
+    userId: string,
+    roles: string[],
+  ) {
+    await this.findGuideForUser(id, userId, roles);
+    const record = await this.guideVersions().findOneBy({
+      guideId: id,
+      version,
+    });
+    if (record) {
+      const guide = await this.getGuideOrFail(id);
+      return this.mapGuideVersionDetail(
+        record,
+        this.statusForVersion(record, guide),
+      );
+    }
+
+    const guide = await this.getGuideOrFail(id);
+    if (
+      guide.version === version ||
+      (guide.status === 'draft' && version === 'v0')
+    ) {
+      return this.mapGuideVersionDetail(this.legacyGuideVersion(guide));
+    }
+    throw new NotFoundException('Versión no encontrada');
   }
 
   async assignTeacherToModule(moduleId: string, teacherId: string) {
@@ -517,7 +604,8 @@ export class AcademicService implements OnModuleInit {
     userId: string,
     roles: string[],
   ) {
-    if (query.moduleId !== undefined) await this.getModuleOrFail(query.moduleId);
+    if (query.moduleId !== undefined)
+      await this.getModuleOrFail(query.moduleId);
     if (roles.includes('coordinador')) return this.listGuides(query);
     if (!this.isTeacher(roles)) {
       throw new ForbiddenException('No tienes permiso para consultar guías');
@@ -532,7 +620,10 @@ export class AcademicService implements OnModuleInit {
     const assignedModuleIds = new Set(
       assignments.map((assignment) => assignment.moduleId),
     );
-    if (query.moduleId !== undefined && !assignedModuleIds.has(query.moduleId)) {
+    if (
+      query.moduleId !== undefined &&
+      !assignedModuleIds.has(query.moduleId)
+    ) {
       throw new ForbiddenException('No tienes asignado este módulo');
     }
     if (assignedModuleIds.size === 0) {
@@ -555,12 +646,14 @@ export class AcademicService implements OnModuleInit {
       const assignments = await this.moduleTeacherAssignments.findBy({
         teacherId: userId,
       });
-      const assignedModuleIds = assignments.map((assignment) => assignment.moduleId);
+      const assignedModuleIds = assignments.map(
+        (assignment) => assignment.moduleId,
+      );
       visibleGuides = assignedModuleIds.length
-        ? (await this.guides.findBy({
+        ? await this.guides.findBy({
             moduleId: In(assignedModuleIds),
             status: 'published',
-          }))
+          })
         : [];
     } else {
       throw new ForbiddenException('No tienes permiso para consultar guías');
@@ -568,8 +661,10 @@ export class AcademicService implements OnModuleInit {
     return {
       total: visibleGuides.length,
       modulos: new Set(visibleGuides.map((guide) => guide.moduleId)).size,
-      publicadas: visibleGuides.filter((guide) => guide.status === 'published').length,
-      borradores: visibleGuides.filter((guide) => guide.status === 'draft').length,
+      publicadas: visibleGuides.filter((guide) => guide.status === 'published')
+        .length,
+      borradores: visibleGuides.filter((guide) => guide.status === 'draft')
+        .length,
     };
   }
 
@@ -618,7 +713,11 @@ export class AcademicService implements OnModuleInit {
     return { page, pageSize };
   }
 
-  private parsePositiveInteger(value: string | undefined, fallback: number, name: string) {
+  private parsePositiveInteger(
+    value: string | undefined,
+    fallback: number,
+    name: string,
+  ) {
     if (value === undefined) return fallback;
     if (!/^[1-9]\d*$/.test(value)) {
       throw new BadRequestException(`${name} debe ser un entero positivo`);
@@ -765,6 +864,41 @@ export class AcademicService implements OnModuleInit {
     };
   }
 
+  async getGuideVersionDocumentData(
+    id: string,
+    version: string,
+  ): Promise<GuideDocumentData> {
+    const guide = await this.getGuideOrFail(id);
+    const record = await this.guideVersions().findOneBy({
+      guideId: id,
+      version,
+    });
+    const snapshot = record ?? this.legacyGuideVersion(guide);
+    if (!record && snapshot.version !== version) {
+      throw new NotFoundException('Versión no encontrada');
+    }
+    return {
+      template: 'base',
+      title: 'GUÍA BASE DEL MÓDULO',
+      subtitle: `Plantilla A · ${guide.title} · ${version}`,
+      metadata: [
+        { label: 'Módulo', value: guide.moduleName },
+        {
+          label: 'Competencia',
+          value: guide.competencyName ?? 'No especificada',
+        },
+        { label: 'Versión', value: version },
+        { label: 'Estado', value: snapshot.status },
+        {
+          label: 'Fecha de publicación',
+          value: snapshot.publishedAt?.toISOString() ?? 'No publicada',
+        },
+      ],
+      fields: snapshot.fields,
+      content: snapshot.content,
+    };
+  }
+
   async getPersonalizedVersionDocumentData(
     id: string,
     teacherId: string,
@@ -863,7 +997,9 @@ export class AcademicService implements OnModuleInit {
       );
     }
     for (const key of Object.keys(dto.content)) {
-      const field = this.teacherFields(version).find((candidate) => candidate.key === key);
+      const field = this.teacherFields(version).find(
+        (candidate) => candidate.key === key,
+      );
       if (field?.teacherEditable === false) {
         throw badRequest(
           'FIELD_NOT_EDITABLE',
@@ -935,18 +1071,151 @@ export class AcademicService implements OnModuleInit {
     return guide;
   }
 
+  private guideVersions(): Repository<AcademicGuideVersionRecord> {
+    return this.dataSource.getRepository(AcademicGuideVersionRecord);
+  }
+
+  private async saveGuideVersion(
+    manager: EntityManager,
+    guide: AcademicGuideRecord,
+    status: 'draft' | 'current',
+    description: string,
+    author: GuideActor,
+    createdAt: Date,
+  ) {
+    const existing = await manager.findOneBy(AcademicGuideVersionRecord, {
+      guideId: guide.id,
+      version: guide.version,
+    });
+    await manager.save(AcademicGuideVersionRecord, {
+      id: existing?.id ?? randomUUID(),
+      guideId: guide.id,
+      version: guide.version,
+      status,
+      description,
+      authorId: author.id,
+      authorName: author.name,
+      createdAt,
+      isPublication: status === 'current',
+      structureVersion: guide.structureVersion,
+      fields: guide.fields,
+      content: guide.content,
+      publishedAt: guide.publishedAt,
+      publishedById: guide.publishedById,
+      publishedByName: guide.publishedByName,
+    });
+  }
+
+  private legacyGuideVersion(
+    guide: AcademicGuide | AcademicGuideRecord,
+  ): AcademicGuideVersionRecord {
+    const isRecord = (
+      value: AcademicGuide | AcademicGuideRecord,
+    ): value is AcademicGuideRecord => 'publishedById' in value;
+    const isPublished = guide.status === 'published';
+    const publishedBy = !isRecord(guide)
+      ? guide.publishedBy
+      : guide.publishedById && guide.publishedByName
+        ? { id: guide.publishedById, name: guide.publishedByName }
+        : undefined;
+    const updatedBy = !isRecord(guide)
+      ? guide.updatedBy
+      : guide.updatedById && guide.updatedByName
+        ? { id: guide.updatedById, name: guide.updatedByName }
+        : undefined;
+    const createdBy = !isRecord(guide)
+      ? guide.createdBy
+      : guide.createdById && guide.createdByName
+        ? { id: guide.createdById, name: guide.createdByName }
+        : undefined;
+    const author = isPublished
+      ? (publishedBy ?? updatedBy ?? createdBy)
+      : (updatedBy ?? createdBy);
+    return {
+      id: randomUUID(),
+      guideId: guide.id,
+      version: guide.version,
+      status: isPublished ? 'current' : 'draft',
+      description: isPublished
+        ? 'Guía publicada'
+        : 'Guía guardada como borrador',
+      authorId: author?.id ?? null,
+      authorName: author?.name ?? null,
+      createdAt: new Date(guide.updatedAt),
+      isPublication: isPublished,
+      structureVersion: guide.structureVersion,
+      fields: guide.fields,
+      content: guide.content,
+      publishedAt: guide.publishedAt ? new Date(guide.publishedAt) : null,
+      publishedById: isRecord(guide)
+        ? guide.publishedById
+        : (guide.publishedBy?.id ?? null),
+      publishedByName: isRecord(guide)
+        ? guide.publishedByName
+        : (guide.publishedBy?.name ?? null),
+    };
+  }
+
+  private statusForVersion(
+    record: AcademicGuideVersionRecord,
+    guide: AcademicGuide | AcademicGuideRecord,
+  ): AcademicGuideVersionRecord['status'] {
+    if (guide.status === 'published') {
+      return record.version === guide.version ? 'current' : 'previous';
+    }
+    return record.version === guide.version ? 'draft' : record.status;
+  }
+
+  private mapGuideVersionItem(
+    record: AcademicGuideVersionRecord,
+    status: AcademicGuideVersionRecord['status'] = record.status,
+  ) {
+    return {
+      version: record.version,
+      status,
+      description: record.description,
+      author:
+        record.authorId && record.authorName
+          ? { id: record.authorId, name: record.authorName }
+          : null,
+      createdAt: record.createdAt.toISOString(),
+      isPublication: record.isPublication,
+    };
+  }
+
+  private mapGuideVersionDetail(
+    record: AcademicGuideVersionRecord,
+    status: AcademicGuideVersionRecord['status'] = record.status,
+  ) {
+    return {
+      ...this.mapGuideVersionItem(record, status),
+      structureVersion: record.structureVersion,
+      fields: record.fields,
+      content: record.content,
+      publishedAt: record.publishedAt?.toISOString(),
+      publishedBy:
+        record.publishedById && record.publishedByName
+          ? { id: record.publishedById, name: record.publishedByName }
+          : null,
+    };
+  }
+
   /**
    * Módulos que el docente puede consultar y cuántas guías publicadas de otros módulos no puede ver.
    * El docente autorizado tiene acceso a todos los módulos.
    */
   async findAssignmentsForTeacher(teacherId: string, roles: string[] = []) {
     const moduleIds = this.isAuthorizedTeacher(roles)
-      ? (await this.modules.find({ select: { id: true } })).map((module) => module.id)
+      ? (await this.modules.find({ select: { id: true } })).map(
+          (module) => module.id,
+        )
       : (await this.moduleTeacherAssignments.findBy({ teacherId })).map(
           (assignment) => assignment.moduleId,
         );
     const published = await this.guides.findBy({ status: 'published' });
-    const hidden = published.filter((guide) => !moduleIds.includes(guide.moduleId));
+    const hidden = published.filter(
+      (guide) => !moduleIds.includes(guide.moduleId),
+    );
     return {
       moduleIds,
       hidden: {
@@ -989,7 +1258,10 @@ export class AcademicService implements OnModuleInit {
     if (name === undefined) return null;
     const clean = name.trim().replace(/\s+/g, ' ');
     if (!clean) {
-      throw badRequest('NAME_REQUIRED', 'El nombre de la versión es obligatorio');
+      throw badRequest(
+        'NAME_REQUIRED',
+        'El nombre de la versión es obligatorio',
+      );
     }
     if (clean.length > 150) {
       throw badRequest(
@@ -1168,15 +1440,18 @@ export class AcademicService implements OnModuleInit {
       structureVersion: record.structureVersion,
       version: record.version,
       status: record.status,
-      createdBy: record.createdById && record.createdByName
-        ? { id: record.createdById, name: record.createdByName }
-        : undefined,
-      updatedBy: record.updatedById && record.updatedByName
-        ? { id: record.updatedById, name: record.updatedByName }
-        : undefined,
-      publishedBy: record.publishedById && record.publishedByName
-        ? { id: record.publishedById, name: record.publishedByName }
-        : undefined,
+      createdBy:
+        record.createdById && record.createdByName
+          ? { id: record.createdById, name: record.createdByName }
+          : undefined,
+      updatedBy:
+        record.updatedById && record.updatedByName
+          ? { id: record.updatedById, name: record.updatedByName }
+          : undefined,
+      publishedBy:
+        record.publishedById && record.publishedByName
+          ? { id: record.publishedById, name: record.publishedByName }
+          : undefined,
       createdAt: record.createdAt.toISOString(),
       updatedAt: record.updatedAt.toISOString(),
       publishedAt: record.publishedAt?.toISOString(),
@@ -1320,7 +1595,10 @@ export class AcademicService implements OnModuleInit {
   }
 
   /** Sin formulario docente configurado por coordinación, el docente ve los campos de la guía base. */
-  private teacherFields(record: { fields: GuideField[]; baseFields: GuideField[] }) {
+  private teacherFields(record: {
+    fields: GuideField[];
+    baseFields: GuideField[];
+  }) {
     return record.fields.length > 0 ? record.fields : record.baseFields;
   }
 

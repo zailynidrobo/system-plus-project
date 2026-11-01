@@ -9,6 +9,7 @@ import { randomUUID } from 'node:crypto';
 import { DataSource, FindOptionsWhere, Repository } from 'typeorm';
 import { AcademicService } from './academic.service.js';
 import { AcademicGuideRecord } from './entities/academic-guide-record.entity.js';
+import { AcademicGuideVersionRecord } from './entities/academic-guide-version-record.entity.js';
 import { GuideEventRecord } from './entities/guide-event-record.entity.js';
 import {
   CurricularModule,
@@ -21,7 +22,11 @@ import { PersonalizedGuideVersionRecord } from './entities/personalized-guide-ve
 import { GuideSupportMaterialRecord } from './entities/guide-support-material-record.entity.js';
 
 /** Quien sube materiales en las pruebas de HE-03. */
-const COORDINADOR = { id: 'coord-1', name: 'Coordinación', roles: ['coordinador'] };
+const COORDINADOR = {
+  id: 'coord-1',
+  name: 'Coordinación',
+  roles: ['coordinador'],
+};
 
 function memoryRepository<T extends { id: string }>() {
   const records: T[] = [];
@@ -87,7 +92,10 @@ function memoryRepository<T extends { id: string }>() {
         });
       const total = filtered.length;
       const start = options.skip ?? 0;
-      return [filtered.slice(start, start + (options.take ?? total)), total] as const;
+      return [
+        filtered.slice(start, start + (options.take ?? total)),
+        total,
+      ] as const;
     },
     findOne: async (options: {
       where: FindOptionsWhere<T>;
@@ -145,6 +153,7 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
     Repository<GuideEventRecord>,
   ];
   let dataSource: DataSource;
+  let versionRepository: Repository<AcademicGuideVersionRecord>;
 
   beforeEach(() => {
     repositories = [
@@ -157,12 +166,14 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
       memoryRepository<GuideSupportMaterialRecord>(),
       memoryRepository<GuideEventRecord>(),
     ];
+    versionRepository = memoryRepository<AcademicGuideVersionRecord>();
     const repositoryFor = (entity: Function) => {
       if (entity === CurricularModule) return repositories[0];
       if (entity === Competency) return repositories[1];
       if (entity === GuideFieldConfigRecord) return repositories[2];
       if (entity === AcademicGuideRecord) return repositories[3];
       if (entity === GuideEventRecord) return repositories[7];
+      if (entity === AcademicGuideVersionRecord) return versionRepository;
       throw new Error(`Unexpected entity: ${entity.name}`);
     };
     const manager = {
@@ -185,6 +196,10 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
       transaction: <T>(
         callback: (transactionManager: typeof manager) => Promise<T>,
       ) => callback(manager),
+      getRepository: (entity: Function) => {
+        if (entity === AcademicGuideVersionRecord) return versionRepository;
+        throw new Error(`Unexpected repository: ${entity.name}`);
+      },
     } as unknown as DataSource;
     service = new AcademicService(...repositories, dataSource);
   });
@@ -739,14 +754,14 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
     await service.publishGuide(guide.id);
     await service.assignTeacherToModule(module.id, 'authorized-1');
 
-    const page = await service.findGuidesForUser(
-      {},
-      'authorized-1',
-      ['docente_autorizado'],
-    );
+    const page = await service.findGuidesForUser({}, 'authorized-1', [
+      'docente_autorizado',
+    ]);
     expect(page.total).toBe(1);
     await expect(
-      service.findGuideForUser(guide.id, 'authorized-1', ['docente_autorizado']),
+      service.findGuideForUser(guide.id, 'authorized-1', [
+        'docente_autorizado',
+      ]),
     ).resolves.toMatchObject({ id: guide.id });
   });
 
@@ -836,7 +851,9 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
     const created = await service.createGuide(
       {
         moduleId: module.id,
-        competencyId: (await repositories[1].findOneBy({ moduleId: module.id }))!.id,
+        competencyId: (await repositories[1].findOneBy({
+          moduleId: module.id,
+        }))!.id,
         content: {},
       },
       { id: 'creator-1', name: 'Juliana Díaz' },
@@ -919,23 +936,31 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
       criterios: 'Entrega del material.',
     });
     const pdf = Buffer.from('%PDF-1.7\ncontenido de prueba');
-    const uploadedPdf = await service.addGuideSupportMaterial(guide.id, {
-      originalname: 'lectura.pdf',
-      mimetype: 'application/pdf',
-      buffer: pdf,
-      size: pdf.length,
-    }, COORDINADOR);
+    const uploadedPdf = await service.addGuideSupportMaterial(
+      guide.id,
+      {
+        originalname: 'lectura.pdf',
+        mimetype: 'application/pdf',
+        buffer: pdf,
+        size: pdf.length,
+      },
+      COORDINADOR,
+    );
 
     const archive = new JSZip();
     archive.file('word/document.xml', '<document />');
     const docx = await archive.generateAsync({ type: 'nodebuffer' });
-    const uploadedDocx = await service.addGuideSupportMaterial(guide.id, {
-      originalname: 'actividad.docx',
-      mimetype:
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      buffer: docx,
-      size: docx.length,
-    }, COORDINADOR);
+    const uploadedDocx = await service.addGuideSupportMaterial(
+      guide.id,
+      {
+        originalname: 'actividad.docx',
+        mimetype:
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        buffer: docx,
+        size: docx.length,
+      },
+      COORDINADOR,
+    );
 
     await service.assignTeacherToModule(module.id, 'teacher-1');
     await expect(
@@ -991,20 +1016,28 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
     const guide = await createGuide(module);
 
     await expect(
-      service.addGuideSupportMaterial(guide.id, {
-        originalname: 'archivo.pdf',
-        mimetype: 'application/pdf',
-        buffer: Buffer.from('no es PDF'),
-        size: 9,
-      }, COORDINADOR),
+      service.addGuideSupportMaterial(
+        guide.id,
+        {
+          originalname: 'archivo.pdf',
+          mimetype: 'application/pdf',
+          buffer: Buffer.from('no es PDF'),
+          size: 9,
+        },
+        COORDINADOR,
+      ),
     ).rejects.toThrow('El archivo no tiene un formato PDF válido');
     await expect(
-      service.addGuideSupportMaterial(guide.id, {
-        originalname: 'archivo.exe',
-        mimetype: 'application/octet-stream',
-        buffer: Buffer.from('MZ'),
-        size: 2,
-      }, COORDINADOR),
+      service.addGuideSupportMaterial(
+        guide.id,
+        {
+          originalname: 'archivo.exe',
+          mimetype: 'application/octet-stream',
+          buffer: Buffer.from('MZ'),
+          size: 2,
+        },
+        COORDINADOR,
+      ),
     ).rejects.toThrow('Solo se permiten archivos PDF o DOCX');
   });
   it('el docente autorizado sube materiales a guías publicadas y solo borra los suyos', async () => {
@@ -1023,25 +1056,51 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
       buffer: pdf,
       size: pdf.length,
     };
-    const autorizado = { id: 'auth-1', name: 'Paola', roles: ['docente_autorizado'] };
+    const autorizado = {
+      id: 'auth-1',
+      name: 'Paola',
+      roles: ['docente_autorizado'],
+    };
 
     await expect(
       service.addGuideSupportMaterial(guide.id, archivo, autorizado),
     ).rejects.toThrow('Guía publicada no encontrada');
     await service.publishGuide(guide.id);
 
-    const delCoordinador = await service.addGuideSupportMaterial(guide.id, archivo, COORDINADOR);
-    const propio = await service.addGuideSupportMaterial(guide.id, archivo, autorizado);
+    const delCoordinador = await service.addGuideSupportMaterial(
+      guide.id,
+      archivo,
+      COORDINADOR,
+    );
+    const propio = await service.addGuideSupportMaterial(
+      guide.id,
+      archivo,
+      autorizado,
+    );
     expect(propio.uploadedBy).toEqual({ id: 'auth-1', name: 'Paola' });
 
     await expect(
-      service.removeGuideSupportMaterial(guide.id, delCoordinador.id, 'auth-1', ['docente_autorizado']),
+      service.removeGuideSupportMaterial(
+        guide.id,
+        delCoordinador.id,
+        'auth-1',
+        ['docente_autorizado'],
+      ),
     ).rejects.toThrow(ForbiddenException);
-    await service.removeGuideSupportMaterial(guide.id, propio.id, 'auth-1', ['docente_autorizado']);
-    await service.removeGuideSupportMaterial(guide.id, delCoordinador.id, 'coord-1', ['coordinador']);
+    await service.removeGuideSupportMaterial(guide.id, propio.id, 'auth-1', [
+      'docente_autorizado',
+    ]);
+    await service.removeGuideSupportMaterial(
+      guide.id,
+      delCoordinador.id,
+      'coord-1',
+      ['coordinador'],
+    );
 
     expect(
-      await service.findGuideSupportMaterialsForUser(guide.id, 'coord-1', ['coordinador']),
+      await service.findGuideSupportMaterialsForUser(guide.id, 'coord-1', [
+        'coordinador',
+      ]),
     ).toHaveLength(0);
   });
 
@@ -1056,13 +1115,19 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
     });
     await service.publishGuide(guide.id);
 
-    await expect(service.findGuideForUser(guide.id, 'teacher-9', ['docente'])).rejects.toThrow(
-      ForbiddenException,
-    );
-    expect((await service.findGuideForUser(guide.id, 'auth-9', ['docente_autorizado'])).id).toBe(
-      guide.id,
-    );
-    const asignaciones = await service.findAssignmentsForTeacher('auth-9', ['docente_autorizado']);
+    await expect(
+      service.findGuideForUser(guide.id, 'teacher-9', ['docente']),
+    ).rejects.toThrow(ForbiddenException);
+    expect(
+      (
+        await service.findGuideForUser(guide.id, 'auth-9', [
+          'docente_autorizado',
+        ])
+      ).id,
+    ).toBe(guide.id);
+    const asignaciones = await service.findAssignmentsForTeacher('auth-9', [
+      'docente_autorizado',
+    ]);
     expect(asignaciones.moduleIds).toContain(module.id);
     expect(asignaciones.hidden.total).toBe(0);
   });

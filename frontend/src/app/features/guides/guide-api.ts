@@ -61,7 +61,11 @@ export class GuideApi {
         .filter((g) => f.competencyId === null || g.competencyId === f.competencyId)
         .filter((g) => f.autor === null || g.createdBy?.name === f.autor)
         .filter((g) => f.estado === 'TODOS' || g.status === f.estado)
-        .filter((g) => !q || [g.title, g.code, g.moduleName].some((t) => normalizeForComparison(t).includes(q)))
+        .filter(
+          (g) =>
+            !q ||
+            [g.title, g.code, g.moduleName].some((t) => normalizeForComparison(t).includes(q)),
+        )
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
       const inicio = (f.pagina - 1) * f.porPagina;
       return { items: filtradas.slice(inicio, inicio + f.porPagina), total: filtradas.length };
@@ -83,7 +87,9 @@ export class GuideApi {
 
   historial(id: number): Observable<GuideEvent[]> {
     return simular(this.ms, () =>
-      this.db.eventosGuias.filter((e) => e.guideId === id).sort((a, b) => b.fecha.localeCompare(a.fecha)),
+      this.db.eventosGuias
+        .filter((e) => e.guideId === id)
+        .sort((a, b) => b.fecha.localeCompare(a.fecha)),
     );
   }
 
@@ -101,6 +107,32 @@ export class GuideApi {
     });
   }
 
+  exportarVersion(id: number, version: string, formato: 'pdf' | 'docx'): Observable<Blob> {
+    return simular(
+      this.ms,
+      () =>
+        new Blob([`Documento de la versión ${version}`], {
+          type:
+            formato === 'pdf'
+              ? 'application/pdf'
+              : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        }),
+    );
+  }
+
+  exportar(id: number, formato: 'pdf' | 'docx'): Observable<Blob> {
+    return simular(
+      this.ms,
+      () =>
+        new Blob([`Documento vigente de la guía ${id}`], {
+          type:
+            formato === 'pdf'
+              ? 'application/pdf'
+              : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        }),
+    );
+  }
+
   /** Vista previa del código de la próxima guía del módulo: GB-POO-04. */
   siguienteCodigo(moduleId: number): Observable<string> {
     return simular(this.ms, () => this.codigoSiguiente(moduleId));
@@ -109,7 +141,9 @@ export class GuideApi {
   /** Docentes asignados al módulo: verán la guía cuando se publique. */
   docentesDelModulo(moduleId: number): Observable<User[]> {
     return simular(this.ms, () => {
-      const ids = new Set(this.db.asignaciones.filter((a) => a.moduleId === moduleId).map((a) => a.teacherId));
+      const ids = new Set(
+        this.db.asignaciones.filter((a) => a.moduleId === moduleId).map((a) => a.teacherId),
+      );
       return this.db.usuarios.filter((u) => ids.has(u.id)).map(({ contrasena: _, ...u }) => u);
     });
   }
@@ -122,7 +156,8 @@ export class GuideApi {
     return simular(this.ms, () => {
       const modulo = this.db.modulos.find((m) => m.id === d.moduleId);
       if (!modulo) throw new ApiError('NOT_FOUND');
-      if (!vistaModulo(this.db, modulo).availableForGuides) throw new ApiError('MODULE_NOT_AVAILABLE');
+      if (!vistaModulo(this.db, modulo).availableForGuides)
+        throw new ApiError('MODULE_NOT_AVAILABLE');
       this.validarCompetencia(d.moduleId, d.competencyId);
       const { config } = estructuraVigente(this.db, d.moduleId, d.competencyId);
       const estructura = config.fields;
@@ -155,7 +190,10 @@ export class GuideApi {
   }
 
   /** Solo las guías en Borrador se editan; no afecta a ninguna guía publicada. */
-  actualizar(id: number, d: { competencyId: number; content: GuideContent }): Observable<GuideView> {
+  actualizar(
+    id: number,
+    d: { competencyId: number; content: GuideContent },
+  ): Observable<GuideView> {
     return simular(this.ms, () => {
       const actual = this.buscar(id);
       if (actual.status !== 'Borrador') throw new ApiError('GUIDE_NOT_EDITABLE');
@@ -165,7 +203,8 @@ export class GuideApi {
       const content = limpiarContenido(actual.fields, d.content);
       if (d.competencyId !== actual.competencyId) this.registrar(id, 'Competencia actualizada');
       for (const f of actual.fields) {
-        if ((content[f.key] ?? null) !== (actual.content[f.key] ?? null)) this.registrar(id, `${f.label} editado`);
+        if ((content[f.key] ?? null) !== (actual.content[f.key] ?? null))
+          this.registrar(id, `${f.label} editado`);
       }
       return this.guardar(id, { competencyId: d.competencyId, content });
     });
@@ -179,14 +218,21 @@ export class GuideApi {
       this.validarObligatorios(actual.fields, actual.content);
       const ahora = ahoraIso();
       this.registrar(id, 'Guía publicada');
-      return this.guardar(id, { status: 'Publicada', version: 'v1.0', publishedAt: ahora, publishedBy: personaActual(this.auth) });
+      return this.guardar(id, {
+        status: 'Publicada',
+        version: 'v1.0',
+        publishedAt: ahora,
+        publishedBy: personaActual(this.auth),
+      });
     });
   }
 
   private versionesDe(id: number): GuideVersionDetail[] {
     const guia = this.buscar(id);
     const eventos = this.db.eventosGuias.filter((e) => e.guideId === id);
-    const aprobadas = this.db.sugerencias.filter((s) => s.guideId === id && s.status === 'Aprobada');
+    const aprobadas = this.db.sugerencias.filter(
+      (s) => s.guideId === id && s.status === 'Aprobada',
+    );
     return construirVersiones(guia, eventos, aprobadas);
   }
 
@@ -200,7 +246,9 @@ export class GuideApi {
     const modulo = this.db.modulos.find((m) => m.id === moduleId);
     if (!modulo) throw new ApiError('NOT_FOUND');
     const prefijo = `GB-${modulo.competencyPrefix}-`;
-    const usados = this.db.guias.filter((g) => g.code.startsWith(prefijo)).map((g) => Number(g.code.slice(prefijo.length)));
+    const usados = this.db.guias
+      .filter((g) => g.code.startsWith(prefijo))
+      .map((g) => Number(g.code.slice(prefijo.length)));
     return formatGuideCode(modulo.competencyPrefix, Math.max(0, ...usados) + 1);
   }
 
@@ -211,7 +259,8 @@ export class GuideApi {
 
   private validarObligatorios(fields: GuideField[], content: GuideContent): void {
     const faltan = camposFaltantes(fields, content);
-    if (faltan.length) throw new ApiError('REQUIRED_FIELDS_MISSING', { campos: faltan.map((f) => f.label) });
+    if (faltan.length)
+      throw new ApiError('REQUIRED_FIELDS_MISSING', { campos: faltan.map((f) => f.label) });
   }
 
   private registrar(guideId: number, titulo: string): void {
@@ -222,7 +271,12 @@ export class GuideApi {
   }
 
   private guardar(id: number, cambios: Partial<Guide>): GuideView {
-    const actualizada: Guide = { ...this.buscar(id), ...cambios, updatedAt: ahoraIso(), updatedBy: personaActual(this.auth) };
+    const actualizada: Guide = {
+      ...this.buscar(id),
+      ...cambios,
+      updatedAt: ahoraIso(),
+      updatedBy: personaActual(this.auth),
+    };
     this.db.guias = this.db.guias.map((g) => (g.id === id ? actualizada : g));
     return vistaGuia(this.db, actualizada);
   }

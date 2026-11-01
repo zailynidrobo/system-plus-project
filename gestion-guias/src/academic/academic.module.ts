@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CurricularModule } from '../academic-program/entities/curricular-module.entity.js';
 import { Competency } from '../academic-program/entities/competency.entity.js';
 import { AcademicGuideRecord } from './entities/academic-guide-record.entity.js';
+import { AcademicGuideVersionRecord } from './entities/academic-guide-version-record.entity.js';
 import { GuideFieldConfigRecord } from './entities/guide-field-config-record.entity.js';
 import { ModuleTeacherAssignmentRecord } from './entities/module-teacher-assignment-record.entity.js';
 import { PersonalizedGuideVersionRecord } from './entities/personalized-guide-version-record.entity.js';
@@ -25,6 +26,7 @@ import { TypeOrmGuideStatsProvider } from './typeorm-guide-stats.provider.js';
       Competency,
       GuideFieldConfigRecord,
       AcademicGuideRecord,
+      AcademicGuideVersionRecord,
       PersonalizedGuideVersionRecord,
       ModuleTeacherAssignmentRecord,
       GuideSupportMaterialRecord,

@@ -78,7 +78,6 @@
           <th>USUARIO</th>
           <th>ROL ACTIVO</th>
           <th>ESTADO</th>
-          <th>ÚLTIMO ACCESO</th>
           <th class="right">ACCIONES</th>
         </tr>
       </thead>
@@ -102,25 +101,30 @@
                 <span class="pill pill--off"><i></i> Desactivado</span>
               }
             </td>
-            <td class="muted">{{ u.ultimoAcceso }}</td>
             <td class="right">
               <a class="action" [routerLink]="['/usuarios', u.id, 'editar']" title="Editar usuario" aria-label="Editar usuario">
                <app-icon name="pencil" [size]="16" />
               </a>
-              @if (u.activo) {
+              @if (u.activo && !esUnoMismo(u)) {
                <a class="action action--danger" [routerLink]="['/usuarios', u.id, 'desactivar']" title="Desactivar usuario" aria-label="Desactivar usuario">
                 <app-icon name="user-x" [size]="16" />
                </a>
-             } @else {
-  <button type="button" class="action action--danger" disabled title="El usuario ya está desactivado" aria-label="Usuario ya desactivado">
-    <app-icon name="user-x" [size]="16" />
-  </button>
-             }
+              } @else {
+                <button
+                  type="button"
+                  class="action action--danger"
+                  disabled
+                  [title]="u.activo ? 'No puedes desactivar tu propia cuenta' : 'El usuario ya está desactivado'"
+                  [attr.aria-label]="u.activo ? 'No puedes desactivar tu propia cuenta' : 'Usuario ya desactivado'"
+                >
+                  <app-icon name="user-x" [size]="16" />
+                </button>
+              }
             </td>
           </tr>
         } @empty {
           <tr>
-            <td colspan="5" class="empty">
+            <td colspan="4" class="empty">
               {{ cargando() ? 'Cargando usuarios...' : 'No se encontraron usuarios.' }}
             </td>
           </tr>

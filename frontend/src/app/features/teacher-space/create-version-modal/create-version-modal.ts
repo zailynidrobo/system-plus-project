@@ -82,7 +82,7 @@ export function nombreSugerido(guia: GuiaAsignada, hoy = new Date()): string {
         <div class="ui-actions">
           <button type="button" class="ui-btn ui-btn--outline ui-btn--md" (click)="cancelar.emit()">Cancelar</button>
           <button type="button" class="ui-btn ui-btn--primary ui-btn--md" [disabled]="creando()" (click)="crear()">
-            <app-icon name="copy" [size]="15" /> {{ creando() ? 'Creando…' : 'Crear mi versión' }}
+            <app-icon name="copy" [size]="15" /> {{ creando() ? 'Creando...' : 'Crear mi versión' }}
           </button>
         </div>
       </section>

@@ -24,7 +24,7 @@ export class AcademicGuideRecord {
   @Column({ type: 'uuid', nullable: true })
   competencyId: string | null;
 
-  /** Código y texto de la competencia al crear la guía (`COMP-POO-01 · …`); el texto puede ser largo. */
+  /** Código y texto de la competencia al crear la guía (`COMP-POO-01 · ...`); el texto puede ser largo. */
   @Column({ type: 'text', nullable: true })
   competencyName: string | null;
 

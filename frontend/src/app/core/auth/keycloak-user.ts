@@ -11,7 +11,7 @@ export interface TokenKeycloak {
 }
 
 /**
- * Access token de Keycloak → usuario de la app.
+ * Access token de Keycloak -> usuario de la app.
  * Devuelve null si no hay token o si el usuario no tiene ningún rol de la app
  * (admin, coordinador, docente o docente_autorizado).
  */

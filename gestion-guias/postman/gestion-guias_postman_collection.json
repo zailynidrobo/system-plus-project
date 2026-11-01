@@ -105,6 +105,62 @@
     {
       "key": "updatedUserRole",
       "value": "coordinador"
+    },
+    {
+      "key": "teacher2Username",
+      "value": ""
+    },
+    {
+      "key": "teacher2Password",
+      "value": ""
+    },
+    {
+      "key": "teacher2Token",
+      "value": ""
+    },
+    {
+      "key": "teacher2Sub",
+      "value": ""
+    },
+    {
+      "key": "he05ModuleId",
+      "value": ""
+    },
+    {
+      "key": "he05CompetencyId",
+      "value": ""
+    },
+    {
+      "key": "he05GuideId",
+      "value": ""
+    },
+    {
+      "key": "he05GuideCode",
+      "value": ""
+    },
+    {
+      "key": "he05SuggestionId",
+      "value": ""
+    },
+    {
+      "key": "he05Suggestion2Id",
+      "value": ""
+    },
+    {
+      "key": "he05RejectId",
+      "value": ""
+    },
+    {
+      "key": "he05NotificationId",
+      "value": ""
+    },
+    {
+      "key": "he05NeededBy",
+      "value": ""
+    },
+    {
+      "key": "he05NeededByShort",
+      "value": ""
     }
   ],
   "item": [
@@ -291,7 +347,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Módulo Postman Sesiones\",\n  \"description\": \"Módulo temporal para verificar edición y versiones de guías\"\n}",
+              "raw": "{\n  \"name\": \"Módulo Postman Sesiones {{$timestamp}}\",\n  \"description\": \"Módulo temporal para verificar edición y versiones de guías\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -428,7 +484,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"moduleId\": \"{{moduleId}}\",\n  \"title\": \"Guía de prueba Postman\",\n  \"content\": {\n    \"objective\": \"Comprender el tema mediante una actividad práctica\",\n    \"duration\": 2\n  }\n}",
+              "raw": "{\n  \"moduleId\": \"{{moduleId}}\",\n  \"competencyId\": \"{{competencyId}}\",\n  \"title\": \"Guía de prueba Postman\",\n  \"content\": {\n    \"objective\": \"Comprender el tema mediante una actividad práctica\",\n    \"duration\": 2\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -440,7 +496,7 @@
         },
         {
           "name": "Adjuntar material de apoyo PDF o DOCX",
-          "description": "Como coordinador, selecciona un PDF o DOCX en el campo file. El archivo se almacena sin edición en PostgreSQL (máximo 10 MB).",
+          "description": "Como coordinador, sube un PDF o DOCX en el campo file (máximo 10 MB); el archivo se guarda sin edición en PostgreSQL. Por defecto usa postman/fixtures/material-apoyo.pdf: con Newman, ejecuta con --working-dir postman; en Postman, elige el archivo si no lo encuentra.",
           "event": [
             {
               "listen": "test",
@@ -472,7 +528,7 @@
                 {
                   "key": "file",
                   "type": "file",
-                  "src": []
+                  "src": "fixtures/material-apoyo.pdf"
                 }
               ]
             },
@@ -1271,6 +1327,1461 @@
         }
       ],
       "description": "Requiere haber ejecutado antes \"Obtener token docente y guardar sub\" en la carpeta 00, porque la prueba de 403 usa teacherToken."
+    },
+    {
+      "name": "08 - HE-05 Sugerencias",
+      "description": "HE-05: el docente sugiere cambios a una guía base publicada y el coordinador los aprueba o rechaza; incluye la campana de notificaciones. Crea su propio módulo, guía y asignaciones, así que se puede repetir. Requiere la carpeta 00 (coordinatorToken, teacherToken y teacherSub) y las variables teacher2Username y teacher2Password de un usuario con rol docente_autorizado (en el realm de desarrollo, autorizado@example.com). Las contraseñas no se guardan en la colección: pásalas por el entorno o con --env-var.",
+      "item": [
+        {
+          "name": "Obtener token docente autorizado y guardar sub",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Keycloak devuelve el token del docente autorizado', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.access_token).to.be.a('string').and.not.empty;",
+                  "  pm.collectionVariables.set('teacher2Token', body.access_token);",
+                  "  const payload = JSON.parse(atob(body.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));",
+                  "  pm.expect(payload.realm_access.roles).to.include('docente_autorizado');",
+                  "  pm.collectionVariables.set('teacher2Sub', payload.sub);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{clientId}}"
+                },
+                {
+                  "key": "username",
+                  "value": "{{teacher2Username}}"
+                },
+                {
+                  "key": "password",
+                  "value": "{{teacher2Password}}"
+                },
+                {
+                  "key": "scope",
+                  "value": "openid"
+                }
+              ]
+            },
+            "url": "{{keycloakTokenUrl}}"
+          }
+        },
+        {
+          "name": "Preparar: programa académico",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Programa disponible', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const programs = pm.response.json();",
+                  "  pm.expect(programs.length).to.be.above(0);",
+                  "  pm.collectionVariables.set('programId', programs[0].id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/programs"
+          }
+        },
+        {
+          "name": "Preparar: crear módulo HE-05",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Módulo creado', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.collectionVariables.set('he05ModuleId', pm.response.json().id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sugerencias Postman {{$timestamp}}\",\n  \"description\": \"Módulo temporal para probar HE-05\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/programs/{{programId}}/modules"
+          }
+        },
+        {
+          "name": "Preparar: asociar competencia",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Competencia creada', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.collectionVariables.set('he05CompetencyId', pm.response.json().id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Evalúa soluciones de software con evidencias\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/modules/{{he05ModuleId}}/competencies"
+          }
+        },
+        {
+          "name": "Preparar: campos de la guía base",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Campos configurados', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().fields.map((f) => f.key)).to.eql(['criterios', 'recursos']);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fields\": [\n    {\n      \"key\": \"criterios\",\n      \"label\": \"Criterios de evaluación\",\n      \"type\": \"textarea\",\n      \"required\": true,\n      \"maxLength\": 500\n    },\n    {\n      \"key\": \"recursos\",\n      \"label\": \"Recursos y bibliografía\",\n      \"type\": \"textarea\",\n      \"required\": false\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/academic/modules/{{he05ModuleId}}/guide-fields"
+          }
+        },
+        {
+          "name": "Preparar: crear guía borrador",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Guía borrador creada', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.status).to.eql('draft');",
+                  "  pm.collectionVariables.set('he05GuideId', body.id);",
+                  "  pm.collectionVariables.set('he05GuideCode', body.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"moduleId\": \"{{he05ModuleId}}\",\n  \"competencyId\": \"{{he05CompetencyId}}\",\n  \"content\": {\n    \"criterios\": \"Evidencia de producto: aplicación CRUD.\",\n    \"recursos\": \"Documentación oficial de Java SE.\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/academic/guides"
+          }
+        },
+        {
+          "name": "Preparar: publicar guía (v1.0)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Guía publicada en v1.0', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().version).to.eql('v1.0');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/guides/{{he05GuideId}}/publish"
+          }
+        },
+        {
+          "name": "Preparar: asignar el módulo al docente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Docente asignado', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().assigned).to.eql(true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/modules/{{he05ModuleId}}/teachers/{{teacherSub}}"
+          }
+        },
+        {
+          "name": "Preparar: asignar el módulo al docente autorizado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Docente autorizado asignado', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().teacherId).to.eql(pm.collectionVariables.get('teacher2Sub'));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/modules/{{he05ModuleId}}/teachers/{{teacher2Sub}}"
+          }
+        },
+        {
+          "name": "HU-01 · Crear sugerencia (docente)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const bogotaToday = new Date(Date.now() - 5 * 3600 * 1000);",
+                  "const plusDays = (days) => new Date(bogotaToday.getTime() + days * 86400000).toISOString().slice(0, 10);",
+                  "pm.collectionVariables.set('he05NeededBy', plusDays(14));",
+                  "pm.collectionVariables.set('he05NeededByShort', plusDays(13));"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Sugerencia creada como pendiente', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "  const s = pm.response.json();",
+                  "  pm.expect(s.code).to.match(/^SUG-\\d{3,}$/);",
+                  "  pm.expect(s.status).to.eql('pending');",
+                  "  pm.expect(s.fieldKey).to.eql('criterios');",
+                  "  pm.expect(s.fieldLabel).to.eql('Criterios de evaluación');",
+                  "  pm.expect(s.teacherId).to.eql(pm.collectionVariables.get('teacherSub'));",
+                  "  pm.expect(s.teacherName).to.be.a('string').and.not.empty;",
+                  "  pm.expect(s.currentValue).to.eql('Evidencia de producto: aplicación CRUD.');",
+                  "  pm.expect(s.baseVersion).to.eql('v1.0');",
+                  "  pm.expect(s.neededBy).to.eql(pm.collectionVariables.get('he05NeededBy'));",
+                  "  pm.expect(new Date(s.dueAt).getTime()).to.be.above(new Date(s.dueSoonAt).getTime());",
+                  "  pm.expect(s.deadlineStatus).to.eql('on_time');",
+                  "  pm.expect(s.businessDaysLeft).to.be.a('number');",
+                  "  pm.expect(s.guideCode).to.eql(pm.collectionVariables.get('he05GuideCode'));",
+                  "  pm.expect(s.summary).to.include('Agrega');",
+                  "});",
+                  "pm.collectionVariables.set('he05SuggestionId', pm.response.json().id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teacherToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fieldKey\": \"criterios\",\n  \"proposedValue\": \"Evidencia de producto: aplicación CRUD. Evidencia de desempeño: sustentación oral de 10 minutos.\",\n  \"justification\": \"La sustentación permite evaluar la comprensión real del estudiante.\",\n  \"neededBy\": \"{{he05NeededBy}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/academic/guides/{{he05GuideId}}/suggestions"
+          }
+        },
+        {
+          "name": "HU-01 · Error: otra pendiente sobre el mismo campo (409 SUGGESTION_ALREADY_PENDING)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const bogotaToday = new Date(Date.now() - 5 * 3600 * 1000);",
+                  "const plusDays = (days) => new Date(bogotaToday.getTime() + days * 86400000).toISOString().slice(0, 10);",
+                  "pm.collectionVariables.set('he05NeededBy', plusDays(14));",
+                  "pm.collectionVariables.set('he05NeededByShort', plusDays(13));"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Responde 409 SUGGESTION_ALREADY_PENDING', function () {",
+                  "  pm.response.to.have.status(409);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.statusCode).to.eql(409);",
+                  "  pm.expect(body.code).to.eql('SUGGESTION_ALREADY_PENDING');",
+                  "  pm.expect(body.message).to.be.a('string').and.not.empty;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teacherToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fieldKey\": \"criterios\",\n  \"proposedValue\": \"Otra redacción de los criterios de evaluación.\",\n  \"justification\": \"Segunda propuesta sobre el mismo campo, que debe rechazarse.\",\n  \"neededBy\": \"{{he05NeededBy}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/academic/guides/{{he05GuideId}}/suggestions"
+          }
+        },
+        {
+          "name": "HU-01 · Error: menos de 14 días de anticipación (400 NOTICE_TOO_SHORT)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const bogotaToday = new Date(Date.now() - 5 * 3600 * 1000);",
+                  "const plusDays = (days) => new Date(bogotaToday.getTime() + days * 86400000).toISOString().slice(0, 10);",
+                  "pm.collectionVariables.set('he05NeededBy', plusDays(14));",
+                  "pm.collectionVariables.set('he05NeededByShort', plusDays(13));"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Responde 400 NOTICE_TOO_SHORT', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.statusCode).to.eql(400);",
+                  "  pm.expect(body.code).to.eql('NOTICE_TOO_SHORT');",
+                  "  pm.expect(body.message).to.be.a('string').and.not.empty;",
+                  "  pm.expect(body.message).to.include('14 días de anticipación');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teacherToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fieldKey\": \"recursos\",\n  \"proposedValue\": \"Documentación oficial de Java SE. Curso de UML.\",\n  \"justification\": \"El curso de UML sirve como refuerzo autónomo.\",\n  \"neededBy\": \"{{he05NeededByShort}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/academic/guides/{{he05GuideId}}/suggestions"
+          }
+        },
+        {
+          "name": "HU-01 · Error: propuesta igual al contenido actual (400 NO_CHANGES)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const bogotaToday = new Date(Date.now() - 5 * 3600 * 1000);",
+                  "const plusDays = (days) => new Date(bogotaToday.getTime() + days * 86400000).toISOString().slice(0, 10);",
+                  "pm.collectionVariables.set('he05NeededBy', plusDays(14));",
+                  "pm.collectionVariables.set('he05NeededByShort', plusDays(13));"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Responde 400 NO_CHANGES', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.statusCode).to.eql(400);",
+                  "  pm.expect(body.code).to.eql('NO_CHANGES');",
+                  "  pm.expect(body.message).to.be.a('string').and.not.empty;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teacherToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fieldKey\": \"recursos\",\n  \"proposedValue\": \"Documentación oficial de Java SE.\",\n  \"justification\": \"Esta propuesta no cambia nada del campo actual.\",\n  \"neededBy\": \"{{he05NeededBy}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/academic/guides/{{he05GuideId}}/suggestions"
+          }
+        },
+        {
+          "name": "HU-01 · Crear sugerencia sobre el mismo campo (docente autorizado)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const bogotaToday = new Date(Date.now() - 5 * 3600 * 1000);",
+                  "const plusDays = (days) => new Date(bogotaToday.getTime() + days * 86400000).toISOString().slice(0, 10);",
+                  "pm.collectionVariables.set('he05NeededBy', plusDays(14));",
+                  "pm.collectionVariables.set('he05NeededByShort', plusDays(13));"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('El segundo docente también puede sugerir sobre ese campo', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "  const s = pm.response.json();",
+                  "  pm.expect(s.status).to.eql('pending');",
+                  "  pm.expect(s.teacherId).to.eql(pm.collectionVariables.get('teacher2Sub'));",
+                  "  pm.expect(s.currentValue).to.eql('Evidencia de producto: aplicación CRUD.');",
+                  "});",
+                  "pm.collectionVariables.set('he05Suggestion2Id', pm.response.json().id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teacher2Token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fieldKey\": \"criterios\",\n  \"proposedValue\": \"Rúbrica con tres niveles de desempeño.\",\n  \"justification\": \"Una rúbrica hace más objetiva la calificación del producto.\",\n  \"neededBy\": \"{{he05NeededBy}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/academic/guides/{{he05GuideId}}/suggestions"
+          }
+        },
+        {
+          "name": "HU-01 · Crear sugerencia para rechazar (docente)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const bogotaToday = new Date(Date.now() - 5 * 3600 * 1000);",
+                  "const plusDays = (days) => new Date(bogotaToday.getTime() + days * 86400000).toISOString().slice(0, 10);",
+                  "pm.collectionVariables.set('he05NeededBy', plusDays(14));",
+                  "pm.collectionVariables.set('he05NeededByShort', plusDays(13));"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Sugerencia creada', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(pm.response.json().status).to.eql('pending');",
+                  "});",
+                  "pm.collectionVariables.set('he05RejectId', pm.response.json().id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teacherToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fieldKey\": \"recursos\",\n  \"proposedValue\": \"Documentación oficial de Java SE. Curso gratuito de Java en línea.\",\n  \"justification\": \"El curso sirve como refuerzo autónomo para quienes no traen bases.\",\n  \"neededBy\": \"{{he05NeededBy}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/academic/guides/{{he05GuideId}}/suggestions"
+          }
+        },
+        {
+          "name": "HU-01 · Mis sugerencias (docente)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Lista solo las propias, las más recientes primero', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const list = pm.response.json();",
+                  "  const ids = list.map((s) => s.id);",
+                  "  pm.expect(ids).to.include(pm.collectionVariables.get('he05SuggestionId'));",
+                  "  pm.expect(ids).to.include(pm.collectionVariables.get('he05RejectId'));",
+                  "  pm.expect(ids).to.not.include(pm.collectionVariables.get('he05Suggestion2Id'));",
+                  "  list.forEach((s) => pm.expect(s.teacherId).to.eql(pm.collectionVariables.get('teacherSub')));",
+                  "  pm.expect(ids.indexOf(pm.collectionVariables.get('he05RejectId'))).to.be.below(ids.indexOf(pm.collectionVariables.get('he05SuggestionId')));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teacherToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/suggestions/mine"
+          }
+        },
+        {
+          "name": "HU-01 · Error: detalle de una sugerencia ajena (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Responde 404 NOT_FOUND', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.statusCode).to.eql(404);",
+                  "  pm.expect(body.code).to.eql('NOT_FOUND');",
+                  "  pm.expect(body.message).to.be.a('string').and.not.empty;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teacher2Token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/suggestions/mine/{{he05SuggestionId}}"
+          }
+        },
+        {
+          "name": "HU-02 · Bandeja de pendientes de la guía (coordinador)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Lista las pendientes de la guía, las más antiguas primero', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const list = pm.response.json();",
+                  "  pm.expect(list.map((s) => s.id)).to.eql([",
+                  "    pm.collectionVariables.get('he05SuggestionId'),",
+                  "    pm.collectionVariables.get('he05Suggestion2Id'),",
+                  "    pm.collectionVariables.get('he05RejectId'),",
+                  "  ]);",
+                  "  list.forEach((s) => {",
+                  "    pm.expect(s.status).to.eql('pending');",
+                  "    pm.expect(s.neededBy).to.match(/^\\d{4}-\\d{2}-\\d{2}$/);",
+                  "    pm.expect(['on_time', 'due_soon', 'overdue']).to.include(s.deadlineStatus);",
+                  "  });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/suggestions?status=pending&guideId={{he05GuideId}}&order=asc"
+          }
+        },
+        {
+          "name": "HU-02 · Resumen por estado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Devuelve los contadores', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  ['pending', 'approved', 'rejected', 'dueSoon', 'overdue'].forEach((key) => pm.expect(body[key]).to.be.a('number'));",
+                  "  pm.expect(body.pending).to.be.at.least(3);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/suggestions/summary"
+          }
+        },
+        {
+          "name": "HU-02 · Guías con sugerencias (filtro)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Incluye la guía de prueba', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const guide = pm.response.json().find((g) => g.id === pm.collectionVariables.get('he05GuideId'));",
+                  "  pm.expect(guide).to.be.an('object');",
+                  "  pm.expect(guide.code).to.eql(pm.collectionVariables.get('he05GuideCode'));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/suggestions/guides"
+          }
+        },
+        {
+          "name": "HU-02 · Detalle para revisar",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Trae el valor vigente y el impacto', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.id).to.eql(pm.collectionVariables.get('he05SuggestionId'));",
+                  "  pm.expect(body.review.currentGuideValue).to.eql('Evidencia de producto: aplicación CRUD.');",
+                  "  pm.expect(body.review.moduleTeachers).to.eql(2);",
+                  "  pm.expect(body.review.teacherVersions).to.eql(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/suggestions/{{he05SuggestionId}}"
+          }
+        },
+        {
+          "name": "Campana · Alertas del coordinador",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Muestra las pendientes con los datos de la guía', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.unread).to.be.at.least(3);",
+                  "  pm.expect(body.unread).to.eql(body.items.length);",
+                  "  const alert = body.items.find((item) => item.suggestionId === pm.collectionVariables.get('he05SuggestionId'));",
+                  "  pm.expect(alert.type).to.be.oneOf(['SUGGESTION_OVERDUE', 'SUGGESTION_DUE_SOON', 'SUGGESTION_PENDING']);",
+                  "  pm.expect(alert.read).to.eql(false);",
+                  "  pm.expect(alert.message).to.eql('nueva, recibida hoy');",
+                  "  pm.expect(alert.guide.id).to.eql(pm.collectionVariables.get('he05GuideId'));",
+                  "  pm.expect(alert.guide.version).to.eql('v1.0');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/notifications"
+          }
+        },
+        {
+          "name": "HU-02 · Error: el docente no ve la bandeja (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Un docente no puede usar rutas de coordinador (403)', function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teacherToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/suggestions"
+          }
+        },
+        {
+          "name": "HU-03 · Error: el docente no puede aprobar (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Un docente no puede usar rutas de coordinador (403)', function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teacherToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/suggestions/{{he05SuggestionId}}/approve"
+          }
+        },
+        {
+          "name": "HU-03 · Aprobar sugerencia",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('La guía pasa a v1.1 con el cambio', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.suggestion.status).to.eql('approved');",
+                  "  pm.expect(body.suggestion.resultingVersion).to.eql('v1.1');",
+                  "  pm.expect(body.suggestion.decidedAt).to.be.a('string');",
+                  "  pm.expect(body.suggestion.decidedByName).to.be.a('string').and.not.empty;",
+                  "  pm.expect(body.guide.id).to.eql(pm.collectionVariables.get('he05GuideId'));",
+                  "  pm.expect(body.guide.version).to.eql('v1.1');",
+                  "  pm.expect(body.guide.content.criterios).to.include('sustentación oral');",
+                  "  pm.expect(body.notifications).to.eql({ author: 1, newVersion: 1 });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/suggestions/{{he05SuggestionId}}/approve"
+          }
+        },
+        {
+          "name": "HU-03 · Error: aprobar otra vez (409 SUGGESTION_ALREADY_DECIDED)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Responde 409 SUGGESTION_ALREADY_DECIDED', function () {",
+                  "  pm.response.to.have.status(409);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.statusCode).to.eql(409);",
+                  "  pm.expect(body.code).to.eql('SUGGESTION_ALREADY_DECIDED');",
+                  "  pm.expect(body.message).to.be.a('string').and.not.empty;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/suggestions/{{he05SuggestionId}}/approve"
+          }
+        },
+        {
+          "name": "HU-03 · Error: el campo ya cambió (409 GUIDE_CHANGED)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Responde 409 GUIDE_CHANGED', function () {",
+                  "  pm.response.to.have.status(409);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.statusCode).to.eql(409);",
+                  "  pm.expect(body.code).to.eql('GUIDE_CHANGED');",
+                  "  pm.expect(body.message).to.be.a('string').and.not.empty;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/suggestions/{{he05Suggestion2Id}}/approve"
+          }
+        },
+        {
+          "name": "HU-03 · Historial de la guía",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Registra el evento de la sugerencia aprobada', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const titles = pm.response.json().map((event) => event.title);",
+                  "  pm.expect(titles.some((title) => /^Sugerencia SUG-\\d+ aprobada · Criterios de evaluación \\(v1\\.1\\)$/.test(title))).to.eql(true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/guides/{{he05GuideId}}/events"
+          }
+        },
+        {
+          "name": "HU-04 · Error: retroalimentación corta (400 FEEDBACK_TOO_SHORT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Responde 400 FEEDBACK_TOO_SHORT', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.statusCode).to.eql(400);",
+                  "  pm.expect(body.code).to.eql('FEEDBACK_TOO_SHORT');",
+                  "  pm.expect(body.message).to.be.a('string').and.not.empty;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Requiere más sustento pedagógico\",\n  \"feedback\": \"Muy corta.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/academic/suggestions/{{he05RejectId}}/reject"
+          }
+        },
+        {
+          "name": "HU-04 · Rechazar con retroalimentación",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Queda rechazada con motivo y retroalimentación', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const s = pm.response.json();",
+                  "  pm.expect(s.status).to.eql('rejected');",
+                  "  pm.expect(s.rejectReason).to.eql('Requiere más sustento pedagógico');",
+                  "  pm.expect(s.feedback).to.have.length.of.at.least(30);",
+                  "  pm.expect(s.resultingVersion).to.eql(null);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Requiere más sustento pedagógico\",\n  \"feedback\": \"Gracias por la propuesta. Por ahora la bibliografía institucional es suficiente.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/academic/suggestions/{{he05RejectId}}/reject"
+          }
+        },
+        {
+          "name": "HU-04 · Rechazar la sugerencia desactualizada",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Se rechaza para que se envíe sobre el texto vigente', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().status).to.eql('rejected');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Otro motivo\",\n  \"feedback\": \"El campo cambió con otra sugerencia aprobada. Envíala de nuevo sobre el texto vigente.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/academic/suggestions/{{he05Suggestion2Id}}/reject"
+          }
+        },
+        {
+          "name": "HU-04 · Error: rechazar otra vez (409 SUGGESTION_ALREADY_DECIDED)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Responde 409 SUGGESTION_ALREADY_DECIDED', function () {",
+                  "  pm.response.to.have.status(409);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.statusCode).to.eql(409);",
+                  "  pm.expect(body.code).to.eql('SUGGESTION_ALREADY_DECIDED');",
+                  "  pm.expect(body.message).to.be.a('string').and.not.empty;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Otro motivo\",\n  \"feedback\": \"Este segundo rechazo no debe aplicarse porque ya se decidió.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/academic/suggestions/{{he05RejectId}}/reject"
+          }
+        },
+        {
+          "name": "HU-04 · El docente ve el motivo en Mis sugerencias",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Muestra motivo y retroalimentación', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const s = pm.response.json();",
+                  "  pm.expect(s.status).to.eql('rejected');",
+                  "  pm.expect(s.rejectReason).to.eql('Requiere más sustento pedagógico');",
+                  "  pm.expect(s.feedback).to.include('bibliografía institucional');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teacherToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/suggestions/mine/{{he05RejectId}}"
+          }
+        },
+        {
+          "name": "Campana · Notificaciones del docente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Recibe la aprobación y el rechazo, sin leer', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  const approved = body.items.find((item) => item.type === 'SUGGESTION_APPROVED' && item.suggestionId === pm.collectionVariables.get('he05SuggestionId'));",
+                  "  const rejected = body.items.find((item) => item.type === 'SUGGESTION_REJECTED' && item.suggestionId === pm.collectionVariables.get('he05RejectId'));",
+                  "  pm.expect(approved.read).to.eql(false);",
+                  "  pm.expect(approved.guide.version).to.eql('v1.1');",
+                  "  pm.expect(rejected.message).to.include('Requiere más sustento pedagógico');",
+                  "  pm.expect(body.unread).to.be.at.least(2);",
+                  "  pm.collectionVariables.set('he05NotificationId', approved.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teacherToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/notifications"
+          }
+        },
+        {
+          "name": "Campana · Nueva versión para el otro docente del módulo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('El docente autorizado recibe GUIDE_NEW_VERSION', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const item = pm.response.json().items.find((n) => n.type === 'GUIDE_NEW_VERSION' && n.guide && n.guide.id === pm.collectionVariables.get('he05GuideId'));",
+                  "  pm.expect(item).to.be.an('object');",
+                  "  pm.expect(item.title).to.eql('Nueva versión v1.1 de ' + pm.collectionVariables.get('he05GuideCode') + ' disponible');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teacher2Token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/notifications"
+          }
+        },
+        {
+          "name": "Campana · Error: marcar como leída una ajena (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Responde 404 NOT_FOUND', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.statusCode).to.eql(404);",
+                  "  pm.expect(body.code).to.eql('NOT_FOUND');",
+                  "  pm.expect(body.message).to.be.a('string').and.not.empty;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teacher2Token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/notifications/{{he05NotificationId}}/read"
+          }
+        },
+        {
+          "name": "Campana · Marcar una como leída",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Queda leída', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const item = pm.response.json();",
+                  "  pm.expect(item.id).to.eql(pm.collectionVariables.get('he05NotificationId'));",
+                  "  pm.expect(item.read).to.eql(true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teacherToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/notifications/{{he05NotificationId}}/read"
+          }
+        },
+        {
+          "name": "Campana · Marcar todas como leídas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Devuelve cuántas marcó', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().updated).to.be.a('number').and.at.least(1);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teacherToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/notifications/read-all"
+          }
+        },
+        {
+          "name": "Campana · Sin pendientes por leer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('El contador queda en 0', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.unread).to.eql(0);",
+                  "  body.items.forEach((item) => pm.expect(item.read).to.eql(true));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teacherToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/academic/notifications"
+          }
+        }
+      ]
     }
   ]
 }

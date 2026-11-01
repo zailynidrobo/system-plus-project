@@ -8,6 +8,11 @@ export class ListGuidesQuery {
   search?: string;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  author?: string;
+
+  @IsOptional()
   @IsUUID()
   moduleId?: string;
 

@@ -12,7 +12,7 @@ export class Program {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  /** Prefijo usado en los códigos de módulo: TS → TS-MOD-01. */
+  /** Prefijo usado en los códigos de módulo: TS -> TS-MOD-01. */
   @Column({ type: 'varchar', length: 10, unique: true })
   code: string;
 

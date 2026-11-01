@@ -91,7 +91,7 @@
           <div class="ui-actions">
             <a class="ui-btn" [routerLink]="['/modulos', m.id]">Cancelar</a>
             <button type="button" class="ui-btn ui-btn--danger" (click)="confirmar()" [disabled]="procesando()">
-              <app-icon name="book-x" [size]="16" /> {{ procesando() ? 'Inhabilitando…' : 'Sí, inhabilitar módulo' }}
+              <app-icon name="book-x" [size]="16" /> {{ procesando() ? 'Inhabilitando...' : 'Sí, inhabilitar módulo' }}
             </button>
           </div>
         } @else {

@@ -1,6 +1,6 @@
 import { usuarioDesdeToken } from './keycloak-user';
 
-describe('usuarioDesdeToken (token de Keycloak → usuario)', () => {
+describe('usuarioDesdeToken (token de Keycloak -> usuario)', () => {
   const base = {
     sub: '3936408e-cc51-4435-96a2-c3dbe4f30381',
     email: 'Admin@Example.com',

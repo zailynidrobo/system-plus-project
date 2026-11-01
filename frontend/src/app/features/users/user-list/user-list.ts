@@ -3,6 +3,8 @@ import { Role, ROLE_LABELS, User } from '../../../shared/models/user';
 import { Icon } from '../../../shared/ui/icon/icon';
 import { ResumenUsuarios, UserApi } from '../user-api';
 import { RouterLink } from '@angular/router';
+import { Auth } from '../../../core/auth/auth';
+import { esMismoUsuario } from '../mismo-usuario';
 
 const POR_PAGINA = 6;
 type EstadoFiltro = 'TODOS' | 'ACTIVO' | 'DESACTIVADO';
@@ -15,6 +17,9 @@ type EstadoFiltro = 'TODOS' | 'ACTIVO' | 'DESACTIVADO';
 })
 export class UserList {
   private api = inject(UserApi);
+  private auth = inject(Auth);
+
+  esUnoMismo = (u: User) => esMismoUsuario(this.auth.user(), u);
 
   labels = ROLE_LABELS;
   roles = (Object.keys(ROLE_LABELS) as Role[]).map((r) => ({ value: r, label: ROLE_LABELS[r] }));

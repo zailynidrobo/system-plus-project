@@ -44,7 +44,7 @@ describe('HttpCompetencyApi', () => {
 
   afterEach(() => http.verify());
 
-  /** Rehace lo que haría la página al recargar: programa → módulos → competencias del módulo. */
+  /** Rehace lo que haría la página al recargar: programa -> módulos -> competencias del módulo. */
   const conocerModulo = () => {
     http.expectOne(`${URL}/programs`).flush([{ id: PROGRAMA_ID }]);
     http.expectOne(`${URL}/programs/${PROGRAMA_ID}/modules`).flush([{ id: MODULO_ID }]);

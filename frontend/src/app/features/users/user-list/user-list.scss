@@ -27,11 +27,11 @@
 /* ---------- Tarjetas de resumen ---------- */
 .stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 20px;
 
-  @media (max-width: 900px) { grid-template-columns: 1fr; }
+  @media (max-width: 900px) { grid-template-columns: minmax(0, 1fr); }
 }
 
 .stat {
@@ -211,6 +211,8 @@ td {
   &:hover { background: #f4f5fa; }
 
   &--danger { color: var(--color-danger); border-color: #f1c9c4; }
+
+  &:disabled { opacity: 0.4; cursor: not-allowed; background: #fff; }
 }
 
 .pager {

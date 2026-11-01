@@ -1,5 +1,5 @@
 @if (creada(); as g) {
-  <!-- HE-03-HU-01-CA-02 · Guardada como borrador -->
+  <!-- Guía guardada como borrador -->
   <header class="ui-page-head">
     <div>
       <h1>Registro completado</h1>
@@ -28,7 +28,7 @@
         <span class="ui-pill ui-pill--warn"><i></i> Borrador</span>
       </div>
 
-      <p class="ui-flow"><strong>● Borrador</strong> <span>→</span> Publicada</p>
+      <p class="ui-flow">Estado actual: <strong>Borrador</strong>. Cuando la publiques pasará a <strong>Publicada</strong>.</p>
 
       <div class="ui-notice ui-notice--info">
         <app-icon name="lock" [size]="16" />
@@ -52,7 +52,7 @@
     </section>
 
     <p class="ui-success__trace">
-      <i class="ui-dot"></i> Registro HE-03-{{ g.code }} · Creado por {{ g.createdBy?.name }} · Hoy,
+      Creada por {{ g.createdBy?.name }} · Hoy,
       {{ hora(g.createdAt) }}
     </p>
   </div>
@@ -172,7 +172,7 @@
           <a class="ui-btn" routerLink="/guias">Cancelar</a>
           <button type="submit" class="ui-btn ui-btn--primary" [disabled]="guardando()">
             <app-icon name="save" [size]="15" />
-            {{ guardando() ? 'Guardando…' : 'Guardar borrador' }}
+            {{ guardando() ? 'Guardando...' : 'Guardar borrador' }}
           </button>
         </div>
       </form>

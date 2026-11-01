@@ -14,7 +14,7 @@ import { ProgramsController } from './controllers/programs.controller.js';
 import { CurricularModulesController } from './controllers/curricular-modules.controller.js';
 import { CompetenciesController } from './controllers/competencies.controller.js';
 
-/** HE-02 — Gestión del programa académico (componente "Programa, módulos y competencias"). */
+/** HE-02 - Gestión del programa académico (componente "Programa, módulos y competencias"). */
 @Module({
   imports: [
     TypeOrmModule.forFeature([

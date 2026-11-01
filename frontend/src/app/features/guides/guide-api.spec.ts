@@ -103,13 +103,15 @@ describe('GuideApi (HE-03 guías base)', () => {
     expect((await capturarError(api.publicar(GB_SIS_01))).code).toBe('REQUIRED_FIELDS_MISSING');
   });
 
-  it('lista con filtros por módulo, estado y búsqueda, y resume los totales', async () => {
-    const borradores = await firstValueFrom(api.listar({ busqueda: '', moduleId: null, competencyId: null, estado: 'Borrador', pagina: 1, porPagina: 50 }));
-    const poo = await firstValueFrom(api.listar({ busqueda: 'gb-poo', moduleId: POO, competencyId: null, estado: 'TODOS', pagina: 1, porPagina: 50 }));
+  it('lista con filtros por módulo, estado, autor y búsqueda, y resume los totales', async () => {
+    const borradores = await firstValueFrom(api.listar({ busqueda: '', moduleId: null, competencyId: null, autor: null, estado: 'Borrador', pagina: 1, porPagina: 50 }));
+    const poo = await firstValueFrom(api.listar({ busqueda: 'gb-poo', moduleId: POO, competencyId: null, autor: null, estado: 'TODOS', pagina: 1, porPagina: 50 }));
+    const porAutor = await firstValueFrom(api.listar({ busqueda: '', moduleId: null, competencyId: null, autor: 'Laura Muñoz', estado: 'TODOS', pagina: 1, porPagina: 50 }));
     const resumen = await firstValueFrom(api.resumen());
 
     expect(borradores.items.map((g) => g.code)).toEqual(['GB-SIS-01']);
     expect(poo.total).toBe(3);
+    expect(porAutor.total).toBe(8);
     expect(resumen).toEqual({ total: 8, modulos: 6, publicadas: 7, borradores: 1 });
   });
 

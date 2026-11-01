@@ -7,7 +7,7 @@ describe('Menú lateral por rol', () => {
     const nav = navPara('ADMINISTRADOR');
     expect(nav.seccion).toBe('Administración');
     expect(etiquetas('ADMINISTRADOR')).toEqual(['Inicio', 'Usuarios', 'Roles y permisos', 'Auditoría']);
-    expect(nav.items.filter((i) => i.route).map((i) => i.route)).toEqual(['/usuarios', '/roles']);
+    expect(nav.items.filter((i) => i.route).map((i) => i.route)).toEqual(['/inicio', '/usuarios', '/roles']);
   });
 
   it('Coordinador: Gestión académica con Programa académico y Sugerencias (con contador)', () => {
@@ -23,12 +23,12 @@ describe('Menú lateral por rol', () => {
     expect(navPara('DOCENTE').seccion).toBe('Mi espacio docente');
     expect(etiquetas('DOCENTE')).toEqual(['Inicio', 'Guías base', 'Mis versiones', 'Mis sugerencias']);
     expect(navPara('DOCENTE').recuadro).toBe('modulos');
-    expect(navPara('DOCENTE').items.filter((i) => i.route).map((i) => i.route)).toEqual(['/mis-modulos', '/mis-versiones', '/mis-sugerencias']);
+    expect(navPara('DOCENTE').items.filter((i) => i.route).map((i) => i.route)).toEqual(['/inicio', '/mis-modulos', '/mis-versiones', '/mis-sugerencias']);
   });
 
-  it('"Inicio" y "Reportes" quedan deshabilitados (no tienen HU)', () => {
+  it('"Inicio" lleva al resumen de cada rol; "Reportes" sigue deshabilitado', () => {
     const coordinador = navPara('COORDINADOR').items;
-    expect(coordinador.find((i) => i.label === 'Inicio')?.route).toBeNull();
+    expect(coordinador.find((i) => i.label === 'Inicio')?.route).toBe('/inicio');
     expect(coordinador.find((i) => i.label === 'Reportes')?.route).toBeNull();
   });
 });

@@ -13,7 +13,7 @@ describe('Reglas curriculares (mismo contrato que el backend)', () => {
     ['Redes y conectividad', 'RC'],
     ['Seguridad informática y soporte técnico', 'SIST'],
     ['Redes', 'RED'],
-  ])('sigla de "%s" → %s', (nombre, sigla) => {
+  ])('sigla de "%s" -> %s', (nombre, sigla) => {
     expect(buildCompetencyPrefix(nombre)).toBe(sigla);
   });
 

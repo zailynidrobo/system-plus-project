@@ -1,5 +1,9 @@
 import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import { Roles } from '../auth/roles.decorator.js';
+import {
+  CurrentUser,
+  type AuthenticatedUser,
+} from '../auth/current-user.decorator.js';
 import { UsersService } from './users.service.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
@@ -31,12 +35,16 @@ export class UsersController {
   }
 
   @Patch(':id/deactivate')
-  deactivate(@Param('id') id: string) {
-    return this.users.deactivate(id);
+  deactivate(@Param('id') id: string, @CurrentUser() actor: AuthenticatedUser) {
+    return this.users.deactivate(id, actor.id);
   }
 
   @Patch(':id/role')
-  updateRole(@Param('id') id: string, @Body() dto: UpdateRoleDto) {
-    return this.users.updateRole(id, dto);
+  updateRole(
+    @Param('id') id: string,
+    @Body() dto: UpdateRoleDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.users.updateRole(id, dto, actor.id);
   }
 }

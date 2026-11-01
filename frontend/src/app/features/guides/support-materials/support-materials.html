@@ -1,0 +1,45 @@
+<section class="ui-side-card materiales">
+  <h3><app-icon name="files" [size]="15" /> Materiales de apoyo</h3>
+
+  @if (cargando()) {
+    <p class="materiales__vacio">Cargando...</p>
+  } @else {
+    @for (m of materiales(); track m.id) {
+      <div class="materiales__fila">
+        <app-icon name="file-text" [size]="16" />
+        <div class="materiales__info">
+          <strong>{{ m.fileName }}</strong>
+          <small>{{ tamano(m.size) }}@if (m.uploadedBy) { · {{ m.uploadedBy.name }} }</small>
+        </div>
+        <button type="button" class="ui-icon-btn" (click)="descargar(m)" title="Descargar" aria-label="Descargar {{ m.fileName }}">
+          <app-icon name="arrow-down" [size]="14" />
+        </button>
+        @if (puedeBorrar(m)) {
+          <button type="button" class="ui-icon-btn ui-icon-btn--danger" (click)="eliminar(m)" title="Eliminar" aria-label="Eliminar {{ m.fileName }}">
+            <app-icon name="trash-2" [size]="14" />
+          </button>
+        }
+      </div>
+    } @empty {
+      <p class="materiales__vacio">Esta guía todavía no tiene materiales de apoyo.</p>
+    }
+  }
+
+  @if (error()) {
+    <p class="ui-help ui-help--error" role="alert">{{ error() }}</p>
+  }
+
+  @if (puedeSubir()) {
+    <label class="ui-btn ui-btn--outline ui-btn--sm materiales__subir" [class.materiales__subir--ocupado]="subiendo()">
+      <app-icon name="plus" [size]="14" />
+      {{ subiendo() ? 'Subiendo...' : 'Subir archivo' }}
+      <input
+        type="file"
+        accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        [disabled]="subiendo()"
+        (change)="elegir($event)"
+      />
+    </label>
+    <small class="materiales__nota">PDF o DOCX, máximo 10 MB.</small>
+  }
+</section>

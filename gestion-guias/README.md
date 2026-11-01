@@ -268,6 +268,58 @@ server and `soffice` must be available on `PATH` (`soffice.com` on Windows). Set
 `soffice.com` so the API waits for the conversion to finish. The source template files are copied
 into `dist` during builds and are never modified by an export.
 
+## HE-05 — Sugerencias de cambio y notificaciones
+
+Implementado en [src/suggestions](src/suggestions). El detalle de reglas, valores por defecto y pendientes por confirmar está en [`docs/he05-sugerencias.md`](../docs/he05-sugerencias.md).
+
+Un docente asignado al módulo propone el cambio de un campo de una guía publicada, con una fecha requerida de al menos 14 días. Coordinación responde en 5 a 8 días hábiles (sin festivos de Colombia): aprueba (la guía sube de versión menor) o rechaza con motivo y retroalimentación. Una sugerencia vencida sigue pendiente y se puede decidir igual.
+
+### Endpoints
+
+| HU | Método y ruta | Rol | Descripción |
+| --- | --- | --- | --- |
+| HU-01 | `POST /academic/guides/:guideId/suggestions` | docente, docente_autorizado | `{ fieldKey, proposedValue, justification, neededBy }` → 201 con la sugerencia (`SUG-NNN`, `pending`, `dueSoonAt`, `dueAt`) |
+| HU-01 | `GET /academic/suggestions/mine`, `GET /academic/suggestions/mine/:id` | docente, docente_autorizado | Mis sugerencias (las más recientes primero) y una propia (404 si es ajena) |
+| HU-02 | `GET /academic/suggestions?status=&moduleId=&guideId=&order=asc\|desc&deadline=` | coordinador | Bandeja. `status`: `pending`, `approved`, `rejected`, `all`. `deadline`: `on_time`, `due_soon`, `overdue` |
+| HU-02 | `GET /academic/suggestions/summary` | coordinador | `{ pending, approved, rejected, dueSoon, overdue }` |
+| HU-02 | `GET /academic/suggestions/guides` | coordinador | Guías con sugerencias (filtro) |
+| HU-02 | `GET /academic/suggestions/:id` | coordinador | Detalle + `review: { currentGuideValue, moduleTeachers, teacherVersions }` |
+| HU-03 | `PATCH /academic/suggestions/:id/approve` | coordinador | `{ suggestion, guide, notifications }`. 409 `SUGGESTION_ALREADY_DECIDED`, `GUIDE_NOT_PUBLISHED`, `GUIDE_CHANGED` |
+| HU-04 | `PATCH /academic/suggestions/:id/reject` | coordinador | `{ reason, feedback }`. 400 `REASON_REQUIRED`, `FEEDBACK_TOO_SHORT`, `FEEDBACK_TOO_LONG` |
+| Campana | `GET /academic/notifications` | cualquier usuario con sesión | `{ unread, items }`: alertas de pendientes (coordinador), notificaciones guardadas (docente), vacía (admin) |
+| Campana | `PATCH /academic/notifications/:id/read`, `PATCH /academic/notifications/read-all` | docente, docente_autorizado | Marcar como leídas (solo las propias) |
+
+Errores de HU-01: `NOT_FOUND`, `GUIDE_NOT_ASSIGNED` (403), `FIELD_NOT_FOUND`, `NO_CHANGES`, `PROPOSAL_REQUIRED`, `INVALID_OPTION`, `VALUE_TOO_LONG`, `INVALID_NUMBER`, `INVALID_DATE`, `JUSTIFICATION_REQUIRED`, `JUSTIFICATION_TOO_SHORT`, `NEEDED_BY_REQUIRED`, `NEEDED_BY_INVALID`, `NOTICE_TOO_SHORT` y `SUGGESTION_ALREADY_PENDING` (409, también garantizado por un índice único parcial). Todos con el formato `{ statusCode, error, code, message }`.
+
+### Configuración
+
+Los plazos se pueden cambiar en `.env` (por defecto 5, 8 y 14). Un valor inválido detiene el arranque.
+
+```
+SUGGESTION_DUE_SOON_BUSINESS_DAYS=5
+SUGGESTION_DUE_BUSINESS_DAYS=8
+SUGGESTION_MIN_NOTICE_DAYS=14
+```
+
+Las tablas `academic_guide_suggestions` y `user_notifications` se crean con `DB_SYNCHRONIZE=true`.
+
+### Probar con Postman o Newman
+
+La carpeta **08 - HE-05 Sugerencias** de [`postman/gestion-guias_postman_collection.json`](postman/gestion-guias_postman_collection.json) usa los tokens de la carpeta 00 y un segundo docente (`teacher2Username` / `teacher2Password`, el usuario `docente_autorizado` del realm). Crea su propio módulo y guía, así que se puede repetir. Hay un entorno de ejemplo sin contraseñas en [`postman/gestion-guias.local.postman_environment.example.json`](postman/gestion-guias.local.postman_environment.example.json).
+
+Para pedir tokens con contraseña, el client del entorno (`clientId`) necesita **Direct Access Grants**. El realm de `keycloak/` no lo trae activado en ningún client: en tu Keycloak local, actívalo en *Clients → system-plus-front → Settings → Capability config → Direct access grants* (solo en desarrollo).
+
+Con Keycloak, PostgreSQL y la API corriendo:
+
+```powershell
+npx newman run postman/gestion-guias_postman_collection.json `
+  -e postman/gestion-guias.local.postman_environment.example.json --working-dir postman `
+  --folder "00 - Autenticación Keycloak" --folder "01 - Configuración de prueba (coordinador)" --folder "08 - HE-05 Sugerencias" `
+  --env-var coordinatorPassword=<clave> --env-var teacherPassword=<clave> --env-var teacher2Password=<clave>
+```
+
+`--working-dir postman` es para que la carpeta 01 encuentre el PDF de prueba (`postman/fixtures/material-apoyo.pdf`). La carpeta 01 usa un nombre de módulo con la hora, así que también se puede repetir.
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.

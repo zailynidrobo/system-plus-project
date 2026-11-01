@@ -174,6 +174,8 @@ export class TeacherApi {
   }
 
   private idsAsignados(): Set<number> {
+    // El docente autorizado consulta las guías de todos los módulos.
+    if (this.auth.user()?.rol === 'DOCENTE_AUTORIZADO') return new Set(this.db.modulos.map((m) => m.id));
     const docenteId = this.auth.user()?.id;
     return new Set(
       this.db.asignaciones.filter((a) => a.teacherId === docenteId).map((a) => a.moduleId),

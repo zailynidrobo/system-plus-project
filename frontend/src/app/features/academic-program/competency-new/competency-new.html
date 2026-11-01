@@ -51,7 +51,7 @@
           <div class="ui-field">
             <label for="texto">Texto de la competencia *</label>
             <div class="ui-control" [class.ui-control--dup]="duplicada() !== null">
-              <textarea id="texto" formControlName="text" rows="3" [readonly]="creada() !== null"></textarea>
+              <textarea id="texto" formControlName="text" rows="3" [attr.maxlength]="maximo" [readonly]="creada() !== null"></textarea>
             </div>
             @if (duplicada() !== null) {
               <p class="ui-help ui-help--error">Ya existe una competencia con este texto en el módulo ({{ duplicada() }}).</p>
@@ -68,6 +68,7 @@
             } @else {
               <p class="ui-help">Redacta el resultado en infinitivo y describe una capacidad observable.</p>
             }
+            <span class="ui-counter">{{ form.controls.text.value.length }}/{{ maximo }}</span>
           </div>
         </div>
 
@@ -90,7 +91,7 @@
           } @else {
             <a class="ui-btn" [routerLink]="['/modulos', moduleId]">Cancelar</a>
             <button type="submit" class="ui-btn ui-btn--primary" [disabled]="guardando() || m.status !== 'active'">
-              <app-icon name="link" [size]="16" /> {{ guardando() ? 'Asociando…' : 'Asociar competencia' }}
+              <app-icon name="link" [size]="16" /> {{ guardando() ? 'Asociando...' : 'Asociar competencia' }}
             </button>
           }
         </div>
@@ -113,7 +114,7 @@
       </section>
 
       <div class="ui-notice ui-notice--ok">
-        <app-icon name="sparkles" [size]="18" />
+        <app-icon name="circle-check" [size]="18" />
         <div>
           <strong>Resultado inmediato</strong>
           <p>Ya puede seleccionarse al crear una nueva guía del módulo.</p>

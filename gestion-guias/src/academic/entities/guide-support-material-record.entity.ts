@@ -21,6 +21,13 @@ export class GuideSupportMaterialRecord {
   @Column({ type: 'bytea', select: false })
   data: Buffer;
 
+  /** Quién subió el archivo (vacío en los materiales cargados antes de guardar este dato). */
+  @Column({ type: 'uuid', nullable: true })
+  uploadedById: string | null;
+
+  @Column({ type: 'varchar', length: 150, nullable: true })
+  uploadedByName: string | null;
+
   @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 }

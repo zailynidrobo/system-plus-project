@@ -1,0 +1,70 @@
+.inicio {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+
+  @media (max-width: 1100px) { grid-template-columns: minmax(0, 1fr); }
+
+  &__tareas,
+  &__atajos { gap: 12px; }
+
+  &__tarea {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--color-border-figma);
+    border-radius: 10px;
+    color: var(--color-text-figma);
+    font-size: 14px;
+    text-decoration: none;
+
+    &:hover { background: var(--color-surface-2); }
+  }
+
+  &__texto { flex: 1; min-width: 0; }
+
+  &__estado {
+    flex-shrink: 0;
+    min-width: 84px;
+    padding: 2px 10px;
+    border-radius: 10px;
+    background: var(--color-chip);
+    color: var(--color-primary);
+    font-size: 11px;
+    text-align: center;
+
+    &[data-estado='Pendiente'] { background: var(--color-notice); color: #8a6d2b; }
+    &[data-estado='Asignada'] { background: var(--color-success-bg-figma); color: var(--color-success-figma); }
+  }
+
+  &__vacio {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 13px;
+    color: var(--color-muted-figma);
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 10px;
+  }
+
+  &__atajo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border: 1px solid var(--color-border-figma);
+    border-radius: 10px;
+    color: var(--color-text-figma);
+    font-size: 13px;
+    text-decoration: none;
+
+    &:hover { border-color: var(--color-primary); background: var(--color-surface-2); }
+  }
+}

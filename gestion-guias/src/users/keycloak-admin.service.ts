@@ -164,7 +164,7 @@ export class KeycloakAdminService {
 
   // ---- Conexión con Keycloak ----
 
-  /** `KEYCLOAK_ISSUER_URL` (<url>/realms/<realm>) → direcciones del token y de la API de administración. */
+  /** `KEYCLOAK_ISSUER_URL` (<url>/realms/<realm>) -> direcciones del token y de la API de administración. */
   private get endpoints() {
     const issuer = this.config.get<string>('KEYCLOAK_ISSUER_URL')?.replace(/\/+$/, '');
     const match = issuer ? /^(.*)\/realms\/([^/]+)$/.exec(issuer) : null;

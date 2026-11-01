@@ -2,14 +2,13 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Miga } from '../../../core/layout/miga';
 import { ApiError } from '../../../shared/models/api-error';
-import { GuideView } from '../../../shared/models/guide';
 import { GuideValue } from '../../../shared/models/guide-field';
 import { SuggestionView } from '../../../shared/models/suggestion';
 import { ConfirmModal } from '../../../shared/ui/confirm-modal/confirm-modal';
 import { Icon } from '../../../shared/ui/icon/icon';
 import { fechaCorta, haceCuanto, hora } from '../../../shared/utils/fechas';
-import { partesDelCambio, siguienteVersion } from '../../../shared/utils/sugerencias';
-import { RevisionSugerencia, SuggestionApi } from '../suggestion-api';
+import { fechaDeCalendario, partesDelCambio, siguienteVersion, textoPlazo } from '../../../shared/utils/sugerencias';
+import { Aprobacion, RevisionSugerencia, SuggestionApi } from '../suggestion-api';
 import { PILL_ESTADO, iniciales, nombreCorto } from '../estado-sugerencia';
 import { AvisoDecision } from '../suggestion-inbox/suggestion-inbox';
 import { RejectModal } from './reject-modal';
@@ -40,7 +39,7 @@ export class SuggestionReview {
   procesando = signal(false);
   error = signal('');
   /** Resultado de aprobar en esta visita (pantalla "Sugerencia aprobada"). */
-  aprobada = signal<{ sugerencia: SuggestionView; guia: GuideView } | null>(null);
+  aprobada = signal<Aprobacion | null>(null);
 
   pill = PILL_ESTADO;
   iniciales = iniciales;
@@ -49,6 +48,8 @@ export class SuggestionReview {
   hora = hora;
   hace = haceCuanto;
   partes = partesDelCambio;
+  plazo = textoPlazo;
+  fechaRequerida = fechaDeCalendario;
 
   s = computed(() => this.revision()?.sugerencia ?? null);
   versionNueva = computed(() => {

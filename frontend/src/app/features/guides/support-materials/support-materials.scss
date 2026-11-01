@@ -1,0 +1,33 @@
+.materiales {
+  gap: 10px;
+
+  &__fila {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--color-primary);
+  }
+
+  &__info {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+
+    strong { font-size: 13px; font-weight: 500; color: var(--color-text-figma); }
+    small { font-size: 11px; color: var(--color-muted-figma); }
+  }
+
+  &__vacio { margin: 0; font-size: 12px; color: var(--color-muted-figma); }
+
+  &__subir {
+    position: relative;
+    align-self: flex-start;
+
+    input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+    &--ocupado { opacity: 0.6; pointer-events: none; }
+  }
+
+  &__nota { font-size: 11px; color: var(--color-muted-figma); }
+}

@@ -6,8 +6,8 @@ const USER_KEY = 'athena_user';
 
 @Injectable({ providedIn: 'root' })
 export class TokenStorage {
-  // persistente = true → localStorage (sigue al cerrar el navegador)
-  // persistente = false → sessionStorage (se borra al cerrar la pestaña)
+  // persistente = true -> localStorage (sigue al cerrar el navegador)
+  // persistente = false -> sessionStorage (se borra al cerrar la pestaña)
   saveSession(token: string, user: User, persistente: boolean): void {
     this.clear();
     const store = persistente ? localStorage : sessionStorage;

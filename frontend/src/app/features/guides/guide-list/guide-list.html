@@ -4,6 +4,9 @@
     <p>Crea, ajusta y publica las guías oficiales de cada módulo del Técnico en Sistemas.</p>
   </div>
   <div class="ui-page-head__actions">
+    <a class="ui-btn ui-btn--outline" routerLink="/guias/buscar"
+      ><app-icon name="search" [size]="16" /> Buscar guías</a
+    >
     <a class="ui-btn ui-btn--outline" routerLink="/guias/estructura"
       ><app-icon name="sliders" [size]="16" /> Configurar estructura</a
     >
@@ -50,7 +53,7 @@
       <app-icon name="search" [size]="16" />
       <input
         type="search"
-        placeholder="Buscar guía, código o módulo…"
+        placeholder="Buscar guía, código o módulo..."
         aria-label="Buscar guía, código o módulo"
         [value]="filtro().busqueda"
         (input)="cambiar({ busqueda: $any($event.target).value })"
@@ -83,6 +86,17 @@
           </select>
         </label>
       }
+      <label class="ui-select">
+        <select
+          aria-label="Filtrar por autor"
+          (change)="cambiar({ autor: $any($event.target).value || null })"
+        >
+          <option value="">Autor: Todos</option>
+          @for (autor of autores(); track autor) {
+            <option [value]="autor">Autor: {{ autor }}</option>
+          }
+        </select>
+      </label>
       <label class="ui-select">
         <select
           aria-label="Filtrar por estado"

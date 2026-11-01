@@ -38,7 +38,7 @@ El proyecto se organiza en cinco épicas (HE). Cada una tiene sus historias de u
 | **HE-02** Programa académico | Coordinador Académico | Módulos curriculares y competencias, con historial de versiones | Conectado al backend | PostgreSQL |
 | **HE-03** Guías de aprendizaje | Coordinador Académico | Guías base, estructura de campos, publicación, material de apoyo y descarga en Word o PDF | Conectado al backend | PostgreSQL |
 | **HE-04** Espacio docente | Docente / Docente Autorizado | Consultar guías asignadas y crear versiones propias | Con datos simulados | PostgreSQL |
-| **HE-05** Sugerencias | Docente y Coordinador | Proponer cambios a una guía y aprobarlos o rechazarlos | Con datos simulados | Pendiente |
+| **HE-05** Sugerencias | Docente y Coordinador | Proponer cambios a una guía y aprobarlos o rechazarlos, con plazos y notificaciones ([detalle](docs/he05-sugerencias.md)) | Conectado al backend | PostgreSQL |
 
 «Con datos simulados» significa que la pantalla funciona completa, pero con datos de prueba en memoria que se pierden al recargar la página. El detalle de cada HU del frontend está en [`docs/verificacion-front-HE01-HE05.md`](docs/verificacion-front-HE01-HE05.md).
 

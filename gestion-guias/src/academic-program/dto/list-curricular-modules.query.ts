@@ -27,7 +27,7 @@ export class ListCurricularModulesQuery {
   @IsIn(['asc', 'desc'], { message: 'order debe ser asc o desc' })
   order?: 'asc' | 'desc';
 
-  /** 'true' → solo módulos activos con al menos una competencia (selector de nuevas guías). */
+  /** 'true' -> solo módulos activos con al menos una competencia (selector de nuevas guías). */
   @IsOptional()
   @IsIn(['true', 'false'], {
     message: 'availableForGuides debe ser true o false',

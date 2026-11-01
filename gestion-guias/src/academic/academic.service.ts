@@ -49,6 +49,11 @@ import { CreateGuideDto } from './dto/create-guide.dto.js';
 import { UpdateGuideDto } from './dto/update-guide.dto.js';
 import { UpdatePersonalizedGuideVersionDto } from './dto/update-personalized-guide-version.dto.js';
 import { DEFAULT_GUIDE_FIELDS } from './default-guide-fields.js';
+import {
+  GuideValueProblem,
+  checkGuideFieldValue,
+  isEmptyGuideValue,
+} from './guide-field-value.js';
 import { ListGuidesQuery } from './dto/list-guides.query.js';
 
 @Injectable()
@@ -517,6 +522,10 @@ export class AcademicService implements OnModuleInit {
     if (!this.isTeacher(roles)) {
       throw new ForbiddenException('No tienes permiso para consultar guías');
     }
+    // El docente autorizado consulta las guías publicadas de todos los módulos.
+    if (this.isAuthorizedTeacher(roles)) {
+      return this.listGuides(query, { status: 'published' });
+    }
     const assignments = await this.moduleTeacherAssignments.findBy({
       teacherId: userId,
     });
@@ -540,6 +549,8 @@ export class AcademicService implements OnModuleInit {
     let visibleGuides: AcademicGuideRecord[];
     if (roles.includes('coordinador')) {
       visibleGuides = await this.guides.find();
+    } else if (this.isAuthorizedTeacher(roles)) {
+      visibleGuides = await this.guides.findBy({ status: 'published' });
     } else if (this.isTeacher(roles)) {
       const assignments = await this.moduleTeacherAssignments.findBy({
         teacherId: userId,
@@ -570,6 +581,13 @@ export class AcademicService implements OnModuleInit {
     const filters: FindOptionsWhere<AcademicGuideRecord> = {
       ...(query.moduleId ? { moduleId: query.moduleId } : {}),
       ...(query.competencyId ? { competencyId: query.competencyId } : {}),
+      ...(query.author
+        ? {
+            createdByName: ILike(
+              `%${query.author.trim().replace(/[\\%_]/g, '\\$&')}%`,
+            ),
+          }
+        : {}),
       ...(query.status ? { status: query.status } : {}),
       ...access,
     };
@@ -620,13 +638,16 @@ export class AcademicService implements OnModuleInit {
         'No tienes permiso para consultar esta guía',
       );
     }
-    await this.assertTeacherCanAccessModule(guide.moduleId, userId);
+    if (!this.isAuthorizedTeacher(roles)) {
+      await this.assertTeacherCanAccessModule(guide.moduleId, userId);
+    }
     if (guide.status !== 'published') {
       throw new NotFoundException('Guía publicada no encontrada');
     }
     return this.toGuide(guide);
   }
 
+  /** Suben materiales la coordinación (cualquier guía) y el docente autorizado (guías publicadas). */
   async addGuideSupportMaterial(
     guideId: string,
     file: {
@@ -635,8 +656,9 @@ export class AcademicService implements OnModuleInit {
       buffer: Buffer;
       size: number;
     },
+    uploader: { id: string; name: string; roles: string[] },
   ) {
-    await this.getGuideOrFail(guideId);
+    await this.findGuideForUser(guideId, uploader.id, uploader.roles);
     const material = await this.validateSupportMaterial(file);
     const record = await this.guideSupportMaterials.save({
       id: randomUUID(),
@@ -645,9 +667,33 @@ export class AcademicService implements OnModuleInit {
       contentType: material.contentType,
       size: file.size,
       data: file.buffer,
+      uploadedById: uploader.id,
+      uploadedByName: uploader.name,
       createdAt: new Date(),
     });
     return this.toGuideSupportMaterial(record);
+  }
+
+  /** La coordinación borra cualquier material; el docente autorizado, solo los que él subió. */
+  async removeGuideSupportMaterial(
+    guideId: string,
+    materialId: string,
+    userId: string,
+    roles: string[],
+  ) {
+    await this.findGuideForUser(guideId, userId, roles);
+    const record = await this.guideSupportMaterials.findOneBy({
+      id: materialId,
+      guideId,
+    });
+    if (!record) throw new NotFoundException('Material de apoyo no encontrado');
+    if (!roles.includes('coordinador') && record.uploadedById !== userId) {
+      throw new ForbiddenException(
+        'Solo puedes eliminar los materiales que subiste',
+      );
+    }
+    await this.guideSupportMaterials.delete({ id: materialId });
+    return { id: materialId, deleted: true };
   }
 
   async findGuideSupportMaterialsForUser(
@@ -665,6 +711,8 @@ export class AcademicService implements OnModuleInit {
         fileName: true,
         contentType: true,
         size: true,
+        uploadedById: true,
+        uploadedByName: true,
         createdAt: true,
       },
     });
@@ -745,6 +793,7 @@ export class AcademicService implements OnModuleInit {
     baseGuideId: string,
     teacherId: string,
     name?: string,
+    roles: string[] = [],
   ) {
     const guide = await this.getGuideOrFail(baseGuideId);
     if (guide.status !== 'published') {
@@ -752,7 +801,9 @@ export class AcademicService implements OnModuleInit {
         'Solo se puede personalizar una guía publicada',
       );
     }
-    await this.assertTeacherCanAccessModule(guide.moduleId, teacherId);
+    if (!this.isAuthorizedTeacher(roles)) {
+      await this.assertTeacherCanAccessModule(guide.moduleId, teacherId);
+    }
     const versionName = await this.validateVersionName(name, teacherId);
     const now = new Date();
     const version = await this.personalizedVersions.save({
@@ -884,12 +935,16 @@ export class AcademicService implements OnModuleInit {
     return guide;
   }
 
-  /** Módulos asignados al docente y cuántas guías publicadas de otros módulos no puede ver. */
-  async findAssignmentsForTeacher(teacherId: string) {
-    const assignments = await this.moduleTeacherAssignments.findBy({
-      teacherId,
-    });
-    const moduleIds = assignments.map((assignment) => assignment.moduleId);
+  /**
+   * Módulos que el docente puede consultar y cuántas guías publicadas de otros módulos no puede ver.
+   * El docente autorizado tiene acceso a todos los módulos.
+   */
+  async findAssignmentsForTeacher(teacherId: string, roles: string[] = []) {
+    const moduleIds = this.isAuthorizedTeacher(roles)
+      ? (await this.modules.find({ select: { id: true } })).map((module) => module.id)
+      : (await this.moduleTeacherAssignments.findBy({ teacherId })).map(
+          (assignment) => assignment.moduleId,
+        );
     const published = await this.guides.findBy({ status: 'published' });
     const hidden = published.filter((guide) => !moduleIds.includes(guide.moduleId));
     return {
@@ -921,6 +976,10 @@ export class AcademicService implements OnModuleInit {
 
   private isTeacher(roles: string[]) {
     return roles.includes('docente') || roles.includes('docente_autorizado');
+  }
+
+  private isAuthorizedTeacher(roles: string[]) {
+    return roles.includes('docente_autorizado');
   }
 
   private async validateVersionName(
@@ -1172,6 +1231,9 @@ export class AcademicService implements OnModuleInit {
       fileName: record.fileName,
       contentType: record.contentType,
       size: record.size,
+      uploadedBy: record.uploadedById
+        ? { id: record.uploadedById, name: record.uploadedByName ?? '' }
+        : null,
       createdAt: record.createdAt.toISOString(),
     };
   }
@@ -1301,11 +1363,7 @@ export class AcademicService implements OnModuleInit {
 
     for (const field of fields) {
       const value = content[field.key];
-      const empty =
-        value === undefined ||
-        value === null ||
-        (typeof value === 'string' && value.trim().length === 0);
-      if (empty) {
+      if (isEmptyGuideValue(value)) {
         if (requireRequired && field.required) {
           throw new BadRequestException(
             `El campo '${field.label}' es obligatorio para publicar`,
@@ -1319,32 +1377,15 @@ export class AcademicService implements OnModuleInit {
         continue;
       }
 
-      if (field.type === 'number') {
-        if (typeof value !== 'number' || !Number.isFinite(value)) {
-          throw new BadRequestException(
-            `El campo '${field.label}' debe ser numérico`,
-          );
-        }
-      } else if (typeof value !== 'string') {
-        throw new BadRequestException(
-          `El campo '${field.label}' debe ser texto`,
-        );
-      } else if (
-        field.maxLength !== undefined &&
-        value.length > field.maxLength
-      ) {
-        throw new BadRequestException(
-          `El campo '${field.label}' no puede superar ${field.maxLength} caracteres`,
-        );
-      } else if (field.type === 'date' && Number.isNaN(Date.parse(value))) {
-        throw new BadRequestException(
-          `El campo '${field.label}' debe contener una fecha válida`,
-        );
-      } else if (field.type === 'select' && !field.options?.includes(value)) {
-        throw new BadRequestException(
-          `El valor del campo '${field.label}' no está entre las opciones`,
-        );
-      }
+      const messages: Record<GuideValueProblem, string> = {
+        NOT_NUMBER: `El campo '${field.label}' debe ser numérico`,
+        NOT_TEXT: `El campo '${field.label}' debe ser texto`,
+        TOO_LONG: `El campo '${field.label}' no puede superar ${field.maxLength} caracteres`,
+        INVALID_DATE: `El campo '${field.label}' debe contener una fecha válida`,
+        INVALID_OPTION: `El valor del campo '${field.label}' no está entre las opciones`,
+      };
+      const problem = checkGuideFieldValue(field, value);
+      if (problem) throw new BadRequestException(messages[problem]);
     }
   }
 }

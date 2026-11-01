@@ -306,6 +306,26 @@ describe('UsersService (HE-01 sobre Keycloak)', () => {
 
       expect((await service.deactivate(created.id)).isActive).toBe(false);
     });
+
+    it('un administrador no puede desactivarse a sí mismo', async () => {
+      const admin = await service.create({ name: 'Admin', email: 'admin@example.com', role: Role.ADMIN });
+
+      await expect(service.deactivate(admin.id, admin.id)).rejects.toBeInstanceOf(BadRequestException);
+      expect((await service.findOne(admin.id)).isActive).toBe(true);
+    });
+
+    it('no deja desactivar al último administrador activo', async () => {
+      const admin = await service.create({ name: 'Admin', email: 'admin@example.com', role: Role.ADMIN });
+
+      await expect(service.deactivate(admin.id, 'otro')).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('sí deja desactivar a un administrador si queda otro activo', async () => {
+      const a = await service.create({ name: 'Admin A', email: 'a@example.com', role: Role.ADMIN });
+      const b = await service.create({ name: 'Admin B', email: 'b@example.com', role: Role.ADMIN });
+
+      expect((await service.deactivate(b.id, a.id)).isActive).toBe(false);
+    });
   });
 
   describe('updateRole (HU-04)', () => {
@@ -326,6 +346,22 @@ describe('UsersService (HE-01 sobre Keycloak)', () => {
       await expect(
         service.updateRole('no-existe', { role: Role.ADMIN }),
       ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('un administrador no puede cambiarse su propio rol', async () => {
+      const admin = await service.create({ name: 'Admin', email: 'admin@example.com', role: Role.ADMIN });
+
+      await expect(
+        service.updateRole(admin.id, { role: Role.DOCENTE }, admin.id),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('no deja quitar el rol al último administrador activo', async () => {
+      const admin = await service.create({ name: 'Admin', email: 'admin@example.com', role: Role.ADMIN });
+
+      await expect(
+        service.updateRole(admin.id, { role: Role.DOCENTE }, 'otro'),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
   });
 });

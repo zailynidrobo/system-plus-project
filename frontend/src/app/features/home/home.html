@@ -1,0 +1,57 @@
+<header class="ui-page-head">
+  <div>
+    <h1>Hola, {{ primerNombre() }}</h1>
+    <p>Este es el resumen de tu trabajo como {{ rol() }}.</p>
+  </div>
+</header>
+
+@if (error()) {
+  <p class="ui-help ui-help--error" role="alert">No pudimos cargar el resumen. Recarga la página para intentarlo de nuevo.</p>
+}
+
+<section class="ui-stats">
+  @for (i of resumen()?.indicadores ?? []; track i.titulo) {
+    <article class="ui-stat">
+      <span class="ui-tile" [class.ui-tile--ok]="i.tono === 'ok'" [class.ui-tile--warn]="i.tono === 'warn'">
+        <app-icon [name]="i.icono" [size]="18" />
+      </span>
+      <div>
+        <small>{{ i.titulo }}</small>
+        <strong>{{ i.valor }}</strong><em>{{ i.detalle }}</em>
+      </div>
+    </article>
+  }
+</section>
+
+<div class="inicio">
+  <section class="ui-card inicio__tareas">
+    <h2>Tareas pendientes</h2>
+    @if (!resumen() && !error()) {
+      <p class="inicio__vacio">Cargando...</p>
+    } @else {
+      @for (t of resumen()?.tareas ?? []; track t.texto) {
+        <a class="inicio__tarea" [routerLink]="t.ruta">
+          <span class="inicio__estado" [attr.data-estado]="t.estado">{{ t.estado }}</span>
+          <span class="inicio__texto">{{ t.texto }}</span>
+          <app-icon name="chevron-right" [size]="16" />
+        </a>
+      } @empty {
+        <p class="inicio__vacio">
+          <app-icon name="circle-check" [size]="16" /> No tienes tareas pendientes.
+        </p>
+      }
+    }
+  </section>
+
+  <section class="ui-card inicio__atajos">
+    <h2>Atajos</h2>
+    <nav class="inicio__grid" aria-label="Atajos">
+      @for (a of atajos(); track a.ruta) {
+        <a class="inicio__atajo" [routerLink]="a.ruta">
+          <span class="ui-tile ui-tile--sm"><app-icon [name]="a.icon" [size]="16" /></span>
+          {{ a.label }}
+        </a>
+      }
+    </nav>
+  </section>
+</div>

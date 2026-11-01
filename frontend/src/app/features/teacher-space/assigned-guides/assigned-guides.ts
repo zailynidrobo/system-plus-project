@@ -23,10 +23,10 @@ export class AssignedGuides {
   fecha = fechaCorta;
   icono = iconoModulo;
 
-  /** "Redes y conectividad, Fundamentos de programación…" (máximo tres nombres). */
+  /** "Redes y conectividad, Fundamentos de programación..." (máximo tres nombres). */
   otrosModulos = computed(() => {
     const nombres = this.datos()?.ocultas.modulos ?? [];
-    return nombres.slice(0, 3).join(', ') + (nombres.length > 3 ? '…' : '');
+    return nombres.slice(0, 3).join(', ') + (nombres.length > 3 ? '...' : '');
   });
 
   constructor() {

@@ -21,7 +21,7 @@
     <app-icon name="search" [size]="16" />
     <input
       type="search"
-      placeholder="Buscar en mis guías…"
+      placeholder="Buscar en mis guías..."
       aria-label="Buscar en mis guías"
       [value]="filtro().busqueda"
       (input)="cambiar({ busqueda: $any($event.target).value })"
@@ -38,7 +38,7 @@
 </div>
 
 @if (cargando() && !datos()) {
-  <p class="ui-state">Cargando guías…</p>
+  <p class="ui-state">Cargando guías...</p>
 } @else if (datos(); as d) {
   @if (d.guias.length === 0) {
     <section class="ui-card">

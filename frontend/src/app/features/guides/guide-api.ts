@@ -16,6 +16,7 @@ export interface FiltroGuias {
   busqueda: string;
   moduleId: number | null;
   competencyId: number | null;
+  autor: string | null;
   estado: GuideStatus | 'TODOS';
   pagina: number;
   porPagina: number;
@@ -56,6 +57,7 @@ export class GuideApi {
         .map((g) => vistaGuia(this.db, g))
         .filter((g) => f.moduleId === null || g.moduleId === f.moduleId)
         .filter((g) => f.competencyId === null || g.competencyId === f.competencyId)
+        .filter((g) => f.autor === null || g.createdBy?.name === f.autor)
         .filter((g) => f.estado === 'TODOS' || g.status === f.estado)
         .filter((g) => !q || [g.title, g.code, g.moduleName].some((t) => normalizeForComparison(t).includes(q)))
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
@@ -153,7 +155,7 @@ export class GuideApi {
     });
   }
 
-  /** Borrador → Publicada: queda visible para los docentes del módulo con fecha y autor. */
+  /** Borrador -> Publicada: queda visible para los docentes del módulo con fecha y autor. */
   publicar(id: number): Observable<GuideView> {
     return simular(this.ms, () => {
       const actual = this.buscar(id);

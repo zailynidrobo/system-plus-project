@@ -20,7 +20,7 @@
       @switch (s.status) {
         @case ('Pendiente') {
           <h2>Sugerencia registrada</h2>
-          <p class="texto">Coordinación académica la verá en su bandeja de sugerencias. La decisión aparecerá aquí y en Mis sugerencias.</p>
+          <p class="texto">Coordinación recibirá una notificación para revisarla. Te avisaremos cuando haya una decisión.</p>
         }
         @case ('Aprobada') {
           <h2>Guía base actualizada a la versión {{ s.resultingVersion?.replace('v', '') }}</h2>
@@ -51,11 +51,22 @@
         </div>
       }
 
+      @if (s.neededBy || s.status === 'Pendiente') {
+        <p class="ui-flow">
+          @if (s.neededBy) {
+            Fecha requerida: <strong>{{ fechaRequerida(s.neededBy) }}</strong>
+          }
+          @if (plazo(s); as p) {
+            · Respuesta: <strong [class.off]="p.tono === 'vencida'">{{ p.texto }}</strong>
+          }
+        </p>
+      }
+
       <p class="ui-flow">
         @if (s.status === 'Pendiente') {
-          <strong>● Pendiente</strong><span>→</span>Aprobada / Rechazada
+          Estado: <strong>Pendiente</strong>. La coordinación la aprobará o rechazará.
         } @else {
-          Pendiente<span>→</span><strong [class.ok]="s.status === 'Aprobada'" [class.off]="s.status === 'Rechazada'">● {{ s.status }}</strong>
+          Estado: <strong [class.ok]="s.status === 'Aprobada'" [class.off]="s.status === 'Rechazada'">{{ s.status }}</strong>
         }
       </p>
 
@@ -88,5 +99,5 @@
     <p class="ui-empty">Esta sugerencia no existe o pertenece a otro docente.</p>
   </section>
 } @else {
-  <p class="ui-state">Cargando sugerencia…</p>
+  <p class="ui-state">Cargando sugerencia...</p>
 }

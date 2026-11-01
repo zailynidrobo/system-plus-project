@@ -5,10 +5,10 @@
     <div class="brand__circle"></div>
 
     <header class="brand__logo">
-      <span class="logo-box">A+</span>
+      <img class="logo-img" src="logo-system-plus.svg" alt="System Plus, Red Nacional de Educación" />
       <div>
         <strong>System Plus Piendamó</strong>
-        <small>AthenaDev · Intranet académica</small>
+        <small>Intranet de guías académicas</small>
       </div>
     </header>
 
@@ -26,7 +26,7 @@
       </ul>
     </div>
 
-    <footer class="brand__footer">© 2026 System Plus Piendamó · AthenaDev</footer>
+    <footer class="brand__footer">© 2026 System Plus Piendamó</footer>
   </aside>
 
   <section class="panel">
@@ -68,7 +68,7 @@
               </button>
             }
             @default {
-              <p class="card__subtitle">Te estamos llevando al inicio de sesión institucional…</p>
+              <p class="card__subtitle">Te estamos llevando al inicio de sesión institucional...</p>
               <button type="button" class="submit" [disabled]="cargando()" (click)="irAKeycloak()">
                 <app-icon name="log-in" [size]="18" />
                 Ir al inicio de sesión
@@ -138,7 +138,7 @@
 
         <button type="submit" class="submit" [disabled]="cargando()">
           <app-icon name="log-in" [size]="18" />
-          {{ cargando() ? 'Ingresando...' : 'Ingresar a AthenaDev' }}
+          {{ cargando() ? 'Ingresando...' : 'Ingresar' }}
         </button>
 
         <p class="secure">

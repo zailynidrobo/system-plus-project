@@ -12,9 +12,9 @@ interface CuerpoError {
 
 /**
  * Convierte un error HTTP del backend en el ApiError que esperan las pantallas.
- *  · Si el backend manda `code` (NOT_FOUND, INVALID_STATUS, MODULE_NAME_DUPLICATED…) se usa tal cual.
- *  · Sin `code`: 404 → NOT_FOUND, 400 → VALIDATION_ERROR (con los mensajes), 401/403 → SIN_PERMISO.
- *  · Cualquier otro caso (sin conexión, 5xx) → ERROR_DE_SERVIDOR.
+ *  · Si el backend manda `code` (NOT_FOUND, INVALID_STATUS, MODULE_NAME_DUPLICATED...) se usa tal cual.
+ *  · Sin `code`: 404 -> NOT_FOUND, 400 -> VALIDATION_ERROR (con los mensajes), 401/403 -> SIN_PERMISO.
+ *  · Cualquier otro caso (sin conexión, 5xx) -> ERROR_DE_SERVIDOR.
  *
  * `aModulo` convierte el módulo existente de un MODULE_NAME_DUPLICATED al formato del front.
  */

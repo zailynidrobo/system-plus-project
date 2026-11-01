@@ -1,9 +1,15 @@
 @if (cargando()) {
   <p class="state">Cargando usuario...</p>
 } @else if (usuario(); as u) {
-  @if (!u.activo && !hecho()) {
+  @if (esUnoMismo()) {
+    <h1 class="title">No puedes desactivar tu propia cuenta</h1>
+    <p class="subtitle">Para evitar que el sistema se quede sin administrador, otra persona con rol de administrador debe hacerlo.</p>
+    <a class="btn-primary" routerLink="/usuarios">
+      <app-icon name="arrow-left" [size]="16" /> Volver a usuarios
+    </a>
+  } @else if (!u.activo && !hecho()) {
     <h1 class="title">Usuario ya desactivado</h1>
-    <p class="subtitle">{{ u.nombre }} ya no tiene acceso a AthenaDev.</p>
+    <p class="subtitle">{{ u.nombre }} ya no tiene acceso a la intranet.</p>
     <a class="btn-primary" routerLink="/usuarios">
       <app-icon name="arrow-left" [size]="16" /> Volver a usuarios
     </a>
@@ -11,14 +17,14 @@
     <h1 class="title">Desactivar usuario</h1>
     <p class="subtitle">Revoca el acceso sin eliminar el historial ni los datos institucionales.</p>
 
-    <div class="layout">
+    <div class="layout layout--single">
       <section class="card">
         @if (!hecho()) {
           <header class="card__head">
             <span class="head-icon"><app-icon name="user-x" [size]="26" /></span>
             <div>
               <h2>¿Desactivar a {{ u.nombre }}?</h2>
-              <p>Esta acción revocará su acceso a AthenaDev de forma inmediata.</p>
+              <p>Esta acción revocará su acceso a la intranet de forma inmediata.</p>
             </div>
           </header>
         } @else {
@@ -56,26 +62,19 @@
               <span class="effects__icon"><app-icon name="database" [size]="16" /></span>
               Su perfil, historial académico y registros se conservarán.
             </li>
-            <li>
-              <span class="effects__icon"><app-icon name="history" [size]="16" /></span>
-              La desactivación quedará registrada para auditoría.
-            </li>
           </ul>
 
           <div class="notice">
             <app-icon name="circle-alert" [size]="18" />
             <div>
-              <strong>No se realizará borrado físico</strong>
-              <p>
-                La cuenta podrá reactivarse posteriormente. Ningún dato académico o histórico será
-                eliminado.
-              </p>
+              <strong>La cuenta no se elimina</strong>
+              <p>Solo se bloquea el ingreso. Sus datos y guías se conservan.</p>
             </div>
           </div>
 
           @if (error()) {
             <p class="error" role="alert">
-              No pudimos desactivar al usuario. Inténtalo de nuevo en unos minutos.
+              {{ error() }}
             </p>
           }
 
@@ -95,28 +94,6 @@
         }
       </section>
 
-      <aside class="side">
-        <section class="side__card">
-          <span class="tag">{{ hecho() ? 'COMPLETADO' : 'DESPUÉS DE CONFIRMAR' }}</span>
-          <span class="side__check"><app-icon name="circle-check" [size]="22" /></span>
-          <h3>Usuario desactivado</h3>
-          <p>El acceso de {{ u.nombre }} fue revocado correctamente.</p>
-
-          <div class="side__row">
-            <span>Estado de la cuenta</span>
-            <span class="pill pill--off"><i></i> Desactivado</span>
-          </div>
-          <p class="side__kept">
-            <app-icon name="circle-x" [size]="16" /> Historial, cursos y datos personales conservados.
-          </p>
-        </section>
-
-        <section class="side__audit">
-          <app-icon name="scroll" [size]="18" />
-          <strong>Registro de auditoría</strong>
-          <p>Acción: desactivación · Responsable: {{ responsable() }} · Fecha: hoy, {{ hora() }}</p>
-        </section>
-      </aside>
     </div>
   }
 } @else {

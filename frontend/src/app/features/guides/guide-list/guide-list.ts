@@ -26,6 +26,7 @@ export class GuideList {
     busqueda: '',
     moduleId: null,
     competencyId: null,
+    autor: null,
     estado: 'TODOS',
     pagina: 1,
     porPagina: POR_PAGINA,
@@ -35,6 +36,7 @@ export class GuideList {
   resumen = signal<ResumenGuias | null>(null);
   modulos = signal<ModuleView[]>([]);
   competencias = signal<CompetencyView[]>([]);
+  autores = signal<string[]>([]);
   cargando = signal(true);
   error = signal<string | null>(null);
 
@@ -52,6 +54,21 @@ export class GuideList {
     this.moduleApi
       .listar({ busqueda: '', estado: 'TODOS', orden: 'codigo' })
       .subscribe((m) => this.modulos.set(m));
+    this.api
+      .listar({
+        busqueda: '',
+        moduleId: null,
+        competencyId: null,
+        autor: null,
+        estado: 'TODOS',
+        pagina: 1,
+        porPagina: 100,
+      })
+      .subscribe((p) =>
+        this.autores.set(
+          [...new Set(p.items.map((g) => g.createdBy?.name).filter((name): name is string => !!name))].sort(),
+        ),
+      );
   }
 
   cambiar(cambios: Partial<FiltroGuias>): void {

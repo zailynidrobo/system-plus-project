@@ -18,10 +18,11 @@ import { Icon } from '../../../shared/ui/icon/icon';
 import { TeacherApi } from '../../../features/teacher-space/teacher-api';
 import { SuggestionApi } from '../../../features/suggestions/suggestion-api';
 import { navPara } from './nav';
+import { NotificationBell } from '../notification-bell/notification-bell';
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, NotificationBell],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
   host: { '(document:keydown.escape)': 'menuAbierto.set(false)' },
@@ -64,7 +65,7 @@ export class Shell {
         return { titulo: 'Módulos asignados', texto: nombres.join(' · ') || 'Sin módulos asignados' };
       }
       default:
-        return { titulo: 'Entorno seguro', texto: 'Sesión cifrada y persistente durante la jornada institucional.' };
+        return { titulo: 'Sede', texto: 'System Plus Piendamó' };
     }
   });
 
@@ -88,6 +89,12 @@ export class Shell {
   );
 
   titulo = computed(() => this.datosRuta().titulo);
+  /** Enlace del segundo nivel de la miga: la pantalla principal de la sección (p. ej. /guias). */
+  seccionUrl = computed(() => {
+    this.datosRuta();
+    const primero = this.router.url.split(/[/?#]/).filter(Boolean)[0] ?? '';
+    return '/' + primero;
+  });
   subtitulo = computed(() => this.miga.detalle() ?? this.datosRuta().subtitulo);
 
   constructor() {
@@ -96,7 +103,7 @@ export class Shell {
       .subscribe(() => this.miga.detalle.set(null));
   }
 
-  // Primera y última palabra del nombre, como en Figma: Julián Andrés Ospina → JO
+  // Primera y última palabra del nombre, como en Figma: Julián Andrés Ospina = JO
   iniciales = computed(() => {
     const partes = (this.user()?.nombre ?? '').split(' ').filter(Boolean);
     if (partes.length === 0) return '';

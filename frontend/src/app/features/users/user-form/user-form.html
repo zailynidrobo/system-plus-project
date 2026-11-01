@@ -58,8 +58,8 @@
       <div>
         <strong>Contraseña inicial protegida</strong>
         <p>
-          AthenaDev generará una contraseña temporal de forma automática. Nunca se mostrará en texto
-          plano y se almacenará de manera segura. La usuaria deberá renovarla al ingresar.
+          El sistema generará una contraseña temporal. Se mostrará una sola vez al terminar el registro
+          y la persona deberá cambiarla en su primer ingreso.
         </p>
       </div>
     </div>
@@ -73,9 +73,6 @@
     <div class="actions">
       <a class="link" routerLink="/usuarios">Cancelar</a>
       <div class="actions__right">
-        <button type="button" class="btn-outline" disabled title="Pendiente de confirmar con el equipo">
-          Guardar borrador
-        </button>
         <button type="submit" class="btn-primary" [disabled]="cargando()">
           <app-icon name="user-plus" [size]="18" />
           {{ cargando() ? 'Registrando...' : 'Registrar usuario' }}

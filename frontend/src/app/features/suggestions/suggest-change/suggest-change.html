@@ -95,8 +95,40 @@
                 (input)="justificacion.set($any($event.target).value)"
               ></textarea>
             </div>
-            <p class="ui-help" [class.ui-help--error]="faltaJustificacion()">
-              Mínimo {{ minimo }} caracteres · {{ justificacion().trim().length }}/500
+            <div class="ui-help-count">
+              <p class="ui-help" [class.ui-help--error]="faltaJustificacion()">
+                @if (faltaJustificacion()) {
+                  Escribe al menos {{ minimo }} caracteres.
+                } @else {
+                  Explica por qué propones el cambio.
+                }
+              </p>
+              <span class="ui-counter">{{ justificacion().length }}/500</span>
+            </div>
+          </div>
+
+          <div class="ui-field">
+            <label for="requerida">5. Fecha en que necesitas el cambio <span class="ui-required">*</span></label>
+            <div class="ui-control fecha" [class.ui-control--error]="faltaFecha() || fechaMuyPronto()">
+              <app-icon name="calendar" [size]="15" />
+              <input
+                id="requerida"
+                type="date"
+                [min]="fechaMinima"
+                [value]="requerida()"
+                aria-describedby="ayuda-requerida"
+                (input)="requerida.set($any($event.target).value)"
+              />
+            </div>
+            <p id="ayuda-requerida" class="ui-help" [class.ui-help--error]="faltaFecha() || fechaMuyPronto()">
+              @if (faltaFecha()) {
+                Indica la fecha en que necesitas el cambio aplicado.
+              } @else if (fechaMuyPronto()) {
+                Elige el {{ fechaMinimaTexto }} o una fecha posterior.
+              } @else {
+                Mínimo {{ anticipacion }} días desde hoy (desde el {{ fechaMinimaTexto }}): coordinación tiene hasta
+                {{ plazoLimite }} días hábiles para responder y, si aprueba, el cambio debe quedar publicado a tiempo.
+              }
             </p>
           </div>
         </div>
@@ -113,7 +145,7 @@
       <div class="ui-actions">
         <a class="ui-btn ui-btn--md" [routerLink]="['/mis-modulos/guias', g.id]">Cancelar</a>
         <button type="button" class="ui-btn ui-btn--primary ui-btn--md" [disabled]="enviando()" (click)="enviar()">
-          <app-icon name="send" [size]="14" /> {{ enviando() ? 'Enviando…' : 'Enviar sugerencia' }}
+          <app-icon name="send" [size]="14" /> {{ enviando() ? 'Enviando...' : 'Enviar sugerencia' }}
         </button>
       </div>
     </section>
@@ -124,15 +156,15 @@
         <ul class="ui-options">
           <li>
             <app-icon name="send" [size]="15" />
-            <div><strong>1. Envías la sugerencia</strong><small>Queda en estado Pendiente</small></div>
+            <div><strong>1. Envías la sugerencia</strong><small>Queda en estado Pendiente y coordinación recibe una notificación</small></div>
           </li>
           <li>
             <app-icon name="eye" [size]="15" />
-            <div><strong>2. Coordinación la revisa</strong><small>Plazo de respuesta: 5 días hábiles</small></div>
+            <div><strong>2. Coordinación la revisa</strong><small>Plazo de respuesta: {{ plazoAviso }} a {{ plazoLimite }} días hábiles</small></div>
           </li>
           <li>
             <app-icon name="circle-check" [size]="15" />
-            <div><strong>3. Recibes la decisión</strong><small>Aprobada o rechazada con motivo</small></div>
+            <div><strong>3. Recibes la decisión</strong><small>Por notificación: aprobada o rechazada con motivo</small></div>
           </li>
         </ul>
       </section>
@@ -149,5 +181,5 @@
     </p>
   </section>
 } @else {
-  <p class="ui-state">Cargando guía…</p>
+  <p class="ui-state">Cargando guía...</p>
 }

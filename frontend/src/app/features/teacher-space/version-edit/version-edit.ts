@@ -73,9 +73,9 @@ export class VersionEdit {
     this.ahora();
     switch (this.estado()) {
       case 'guardando':
-        return 'Guardando…';
+        return 'Guardando...';
       case 'pendiente':
-        return 'Cambios sin guardar…';
+        return 'Cambios sin guardar...';
       case 'error':
         return 'No se pudo guardar el último cambio';
       default: {

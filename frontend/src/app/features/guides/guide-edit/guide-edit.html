@@ -1,7 +1,7 @@
 @if (cargando()) {
   <p class="ui-state">Cargando guía...</p>
 } @else if (publicada(); as g) {
-  <!-- HE-03-HU-03-CA-01 · Publicada con éxito -->
+  <!-- Guía publicada con éxito -->
   <header class="ui-page-head">
     <div>
       <h1>Publicación completada</h1>
@@ -62,7 +62,7 @@
       </aside>
     </div>
 
-    <p class="ui-success__trace"><i class="ui-dot"></i> Transición registrada: Borrador → Publicada · HE-03-{{ g.code }}</p>
+    <p class="ui-success__trace">La guía {{ g.code }} pasó de Borrador a Publicada.</p>
   </div>
 } @else if (guia(); as g) {
   <header class="ui-page-head">
@@ -142,10 +142,10 @@
           <button type="button" class="ui-btn" (click)="descartar()" [disabled]="!hayCambios()">Descartar cambios</button>
           <div class="ui-actions__right">
             <button type="button" class="ui-btn ui-btn--outline" (click)="abrirPublicar()" [disabled]="guardando()">
-              <app-icon name="send" [size]="14" /> Publicar…
+              <app-icon name="send" [size]="14" /> Publicar...
             </button>
             <button type="button" class="ui-btn ui-btn--primary" (click)="guardar()" [disabled]="guardando() || !hayCambios()">
-              <app-icon name="save" [size]="15" /> {{ guardando() ? 'Guardando…' : 'Guardar cambios' }}
+              <app-icon name="save" [size]="15" /> {{ guardando() ? 'Guardando...' : 'Guardar cambios' }}
             </button>
           </div>
         </div>

@@ -5,6 +5,7 @@ import { AppService } from './app.service.js';
 import { UsersModule } from './users/users.module.js';
 import { AcademicModule } from './academic/academic.module.js';
 import { AcademicProgramModule } from './academic-program/academic-program.module.js';
+import { SuggestionsModule } from './suggestions/suggestions.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { dirname, resolve } from 'node:path';
@@ -29,6 +30,7 @@ const appDirectory = resolve(dirname(fileURLToPath(import.meta.url)), '..');
     UsersModule,
     AcademicModule,
     AcademicProgramModule,
+    SuggestionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

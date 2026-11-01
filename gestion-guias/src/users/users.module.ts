@@ -7,6 +7,6 @@ import { KeycloakAdminService } from './keycloak-admin.service.js';
 @Module({
   controllers: [UsersController, TeachersController],
   providers: [UsersService, KeycloakAdminService],
-  exports: [UsersService],
+  exports: [UsersService, KeycloakAdminService],
 })
 export class UsersModule {}

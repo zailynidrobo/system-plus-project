@@ -2,7 +2,7 @@ import { Component, ElementRef, computed, inject, signal, viewChild } from '@ang
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { debounceTime, filter, startWith, switchMap, tap } from 'rxjs';
+import { catchError, debounceTime, filter, of, startWith, switchMap, tap } from 'rxjs';
 import { ApiError } from '../../../shared/models/api-error';
 import { ModuleView } from '../../../shared/models/academic-module';
 import { Icon } from '../../../shared/ui/icon/icon';
@@ -10,7 +10,9 @@ import { hora } from '../../../shared/utils/fechas';
 import { iconoModulo } from '../../../shared/utils/modulos';
 import { ModuleApi } from '../module-api';
 
-// Figma HE-02-HU-01: formulario (204:3942), duplicado (204:3823) y registro completado (204:3716)
+import { DESCRIPCION_MAX, NOMBRE_MAX } from '../modulo-limites';
+
+// Registrar módulo: formulario, nombre duplicado y registro completado.
 @Component({
   selector: 'app-module-form',
   imports: [ReactiveFormsModule, RouterLink, Icon],
@@ -22,8 +24,8 @@ export class ModuleForm {
   private nombreInput = viewChild<ElementRef<HTMLInputElement>>('nombreInput');
 
   form = this.fb.nonNullable.group({
-    name: ['', [Validators.required, Validators.pattern(/\S/)]],
-    description: [''],
+    name: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(NOMBRE_MAX)]],
+    description: ['', [Validators.maxLength(DESCRIPCION_MAX)]],
   });
 
   nombreDisponible = signal(false);
@@ -35,6 +37,8 @@ export class ModuleForm {
 
   icono = iconoModulo;
   hora = hora;
+  nombreMax = NOMBRE_MAX;
+  descripcionMax = DESCRIPCION_MAX;
 
   private valores = toSignal(this.form.valueChanges.pipe(startWith(null)));
 
@@ -60,8 +64,11 @@ export class ModuleForm {
           this.duplicado.set(null);
         }),
         debounceTime(400),
-        filter((v) => v.trim().length > 0),
-        switchMap((v) => this.api.disponibilidadNombre(v)),
+        filter((v) => v.trim().length > 0 && v.length <= NOMBRE_MAX),
+        // Si la consulta falla no se corta la verificación: se vuelve a intentar con el siguiente cambio.
+        switchMap((v) =>
+          this.api.disponibilidadNombre(v).pipe(catchError(() => of({ disponible: false, existente: null }))),
+        ),
         takeUntilDestroyed(),
       )
       .subscribe((r) => {
@@ -115,6 +122,7 @@ export class ModuleForm {
   private detalleDisponibilidad(hayNombre: boolean): string {
     if (this.duplicado()) return 'Ya existe en el programa';
     if (this.nombreDisponible()) return 'Sin coincidencias en el programa';
-    return hayNombre ? 'Verificando…' : 'Pendiente de validar';
+    if (this.form.controls.name.hasError('maxlength')) return `Máximo ${NOMBRE_MAX} caracteres`;
+    return hayNombre ? 'Verificando...' : 'Pendiente de validar';
   }
 }

@@ -68,7 +68,7 @@ export class CurricularModule {
   })
   status: CurricularModuleStatus;
 
-  /** Sigla usada en los códigos de competencia: POO → COMP-POO-01. */
+  /** Sigla usada en los códigos de competencia: POO -> COMP-POO-01. */
   @Column({ type: 'varchar', length: 10 })
   competencyPrefix: string;
 

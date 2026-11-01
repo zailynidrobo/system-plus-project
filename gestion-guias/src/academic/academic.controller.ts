@@ -18,6 +18,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { Roles } from '../auth/roles.decorator.js';
 import { KeycloakJwtPayload } from '../auth/keycloak.strategy.js';
+import { toAuthenticatedUser } from '../auth/current-user.decorator.js';
 import { AcademicService } from './academic.service.js';
 import { ConfigureGuideFieldsDto } from './dto/configure-guide-fields.dto.js';
 import { CreateGuideDto } from './dto/create-guide.dto.js';
@@ -152,12 +153,13 @@ export class AcademicController {
   }
 
   @Post('guides/:id/support-materials')
-  @Roles('coordinador')
+  @Roles('coordinador', 'docente_autorizado')
   @UseInterceptors(
     FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }),
   )
   addGuideSupportMaterial(
     @Param('id') id: string,
+    @Req() request: { user: KeycloakJwtPayload },
     @UploadedFile()
     file:
       | {
@@ -170,7 +172,25 @@ export class AcademicController {
   ) {
     if (!file)
       throw new BadRequestException('Adjunta un archivo en el campo file');
-    return this.academicService.addGuideSupportMaterial(id, file);
+    return this.academicService.addGuideSupportMaterial(id, file, {
+      ...toAuthenticatedUser(request.user),
+      roles: request.user.realm_access?.roles ?? [],
+    });
+  }
+
+  @Delete('guides/:id/support-materials/:materialId')
+  @Roles('coordinador', 'docente_autorizado')
+  removeGuideSupportMaterial(
+    @Param('id') id: string,
+    @Param('materialId') materialId: string,
+    @Req() request: { user: KeycloakJwtPayload },
+  ) {
+    return this.academicService.removeGuideSupportMaterial(
+      id,
+      materialId,
+      request.user.sub,
+      request.user.realm_access?.roles ?? [],
+    );
   }
 
   @Get('guides/:id/support-materials')
@@ -286,13 +306,17 @@ export class AcademicController {
       guideId,
       request.user.sub,
       dto?.name,
+      request.user.realm_access?.roles ?? [],
     );
   }
 
   @Get('my-assignments')
   @Roles('docente', 'docente_autorizado')
   findMyAssignments(@Req() request: { user: KeycloakJwtPayload }) {
-    return this.academicService.findAssignmentsForTeacher(request.user.sub);
+    return this.academicService.findAssignmentsForTeacher(
+      request.user.sub,
+      request.user.realm_access?.roles ?? [],
+    );
   }
 
   @Get('personalized-versions')

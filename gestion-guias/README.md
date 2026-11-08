@@ -344,6 +344,39 @@ npx newman run postman/gestion-guias_postman_collection.json `
 
 `--working-dir postman` es para que la carpeta 01 encuentre el PDF de prueba (`postman/fixtures/material-apoyo.pdf`). La carpeta 01 usa un nombre de módulo con la hora, así que también se puede repetir.
 
+## HE-08-HU-01 — Historial de acciones de los usuarios
+
+Implementado en [src/audit/actions](src/audit/actions), al lado de los permisos por rol de HE-08-HU-02 ([src/audit/permissions](src/audit/permissions)). Qué se registra, el contrato completo para el front y los pendientes por confirmar están en [`docs/he08-auditoria.md`](../docs/he08-auditoria.md).
+
+Un interceptor global registra toda acción `POST`, `PUT`, `PATCH` o `DELETE` exitosa de un usuario con sesión; un filtro global registra los accesos denegados (403), y `AuthController` el inicio de sesión (también el fallido, sin la contraseña), el cierre y el cambio de contraseña temporal. Las consultas (`GET`) no se registran. El nombre de cada acción sale del catálogo de HE-08-HU-02. Si guardar el evento falla, la acción del usuario sale igual y el error queda en el log.
+
+### Endpoints
+
+Solo rol `admin`: sin sesión 401, con otro rol 403.
+
+| Método y ruta | Descripción |
+| --- | --- |
+| `GET /audit/actions?userId=&moduleId=&area=&result=&from=&to=&q=&page=&pageSize=` | Registro paginado, del más reciente al más antiguo: `{ items, total, page, pageSize }`. Cada ítem: `id, occurredAt, user { id, name, email, role, roleLabel }, area, action, result, statusCode, ip, entity { type, id, label }, module { id, name } \| null`. `from`/`to` son `YYYY-MM-DD` en hora de Bogotá (incluidas); `pageSize` 20 por defecto, máximo 100 |
+| `GET /audit/actions/filters` | `{ users: [{ id, name, email }], modules: [{ id, name }], areas: string[] }`, sacados de lo registrado |
+| `GET /audit/actions/:id` | Detalle con `method`, `route`, `path`, `userAgent` y `details`. 404 `NOT_FOUND` |
+
+Errores 400: `INVALID_DATE`, `INVALID_DATE_RANGE`, `INVALID_RESULT`, `INVALID_MODULE` e `INVALID_PAGE`, con el formato `{ statusCode, error, code, message }`.
+
+### Configuración
+
+La tabla `audit_events` se crea con `DB_SYNCHRONIZE=true`. Detrás de un proxy (p. ej. Docker con Nginx) pon `TRUST_PROXY=true` para tomar la IP de `X-Forwarded-For`; sin proxy déjalo en `false`.
+
+### Probar con Postman o Newman
+
+La carpeta **09 - HE-08 Auditoría (HU-01)** usa el `coordinatorToken` de la carpeta 00, el módulo de la carpeta 01 y un administrador (`adminUsername` / `adminPassword`; en el realm de desarrollo, `admin@example.com`):
+
+```powershell
+npx newman run postman/gestion-guias_postman_collection.json `
+  -e postman/gestion-guias.local.postman_environment.example.json --working-dir postman `
+  --folder "00 - Autenticación Keycloak" --folder "01 - Configuración de prueba (coordinador)" --folder "09 - HE-08 Auditoría (HU-01)" `
+  --env-var coordinatorPassword=<clave> --env-var teacherPassword=<clave> --env-var adminPassword=<clave>
+```
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.

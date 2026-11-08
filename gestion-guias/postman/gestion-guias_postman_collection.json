@@ -161,6 +161,42 @@
     {
       "key": "he05NeededByShort",
       "value": ""
+    },
+    {
+      "key": "adminUsername",
+      "value": ""
+    },
+    {
+      "key": "adminPassword",
+      "value": ""
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "coordinatorSub",
+      "value": ""
+    },
+    {
+      "key": "auditModuleDescription",
+      "value": ""
+    },
+    {
+      "key": "auditEventId",
+      "value": ""
+    },
+    {
+      "key": "auditFailedEmail",
+      "value": ""
+    },
+    {
+      "key": "auditFailedPassword",
+      "value": ""
+    },
+    {
+      "key": "auditFailedLoginId",
+      "value": ""
     }
   ],
   "item": [
@@ -2779,6 +2815,467 @@
               }
             ],
             "url": "{{baseUrl}}/academic/notifications"
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 - HE-08 Auditoría (HU-01)",
+      "description": "HE-08-HU-01: el administrador consulta el historial de acciones de los usuarios (quién, qué, cuándo y desde dónde) y lo filtra por módulo curricular y por usuario. Requiere las carpetas 00 (coordinatorToken) y 01 (moduleId) y las variables adminUsername y adminPassword de un usuario con rol admin (en el realm de desarrollo, admin@example.com). El inicio de sesión fallido usa un correo inexistente para no bloquear cuentas reales. Las contraseñas no se guardan en la colección: pásalas por el entorno o con --env-var.",
+      "item": [
+        {
+          "name": "Obtener token administrador y guardar sub",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Keycloak devuelve el token del administrador', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.access_token).to.be.a('string').and.not.empty;",
+                  "  pm.collectionVariables.set('adminToken', body.access_token);",
+                  "  const payload = JSON.parse(atob(body.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));",
+                  "  pm.expect(payload.realm_access.roles).to.include('admin');",
+                  "});",
+                  "",
+                  "// sub del coordinador (carpeta 00) para filtrar el registro por usuario.",
+                  "const coordinatorToken = pm.collectionVariables.get('coordinatorToken');",
+                  "const coordinator = JSON.parse(atob(coordinatorToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));",
+                  "pm.collectionVariables.set('coordinatorSub', coordinator.sub);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{clientId}}"
+                },
+                {
+                  "key": "username",
+                  "value": "{{adminUsername}}"
+                },
+                {
+                  "key": "password",
+                  "value": "{{adminPassword}}"
+                },
+                {
+                  "key": "scope",
+                  "value": "openid"
+                }
+              ]
+            },
+            "url": "{{keycloakTokenUrl}}"
+          }
+        },
+        {
+          "name": "Coordinador edita el módulo de prueba",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('auditModuleDescription', 'Descripción editada desde Postman (HE-08) ' + Date.now());"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('El coordinador edita el módulo', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().description).to.eql(pm.collectionVariables.get('auditModuleDescription'));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"{{auditModuleDescription}}\"\n}"
+            },
+            "url": "{{baseUrl}}/modules/{{moduleId}}"
+          }
+        },
+        {
+          "name": "Inicio de sesión fallido (correo inexistente)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Correo que no existe: no suma intentos fallidos a cuentas reales del realm.",
+                  "pm.collectionVariables.set('auditFailedEmail', 'no-existe-' + Date.now() + '@example.com');",
+                  "pm.collectionVariables.set('auditFailedPassword', 'ClaveIncorrecta-' + Date.now());"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('El login falla con credenciales inválidas', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "  pm.expect(pm.response.json().code).to.eql('CREDENCIALES_INVALIDAS');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{auditFailedEmail}}\",\n  \"password\": \"{{auditFailedPassword}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "Registro filtrado por el módulo de prueba (CA-01 y CA-02)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('Responde la página del registro', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(body).to.include.keys('items', 'total', 'page', 'pageSize');",
+                  "  pm.expect(body.items.length).to.be.above(0);",
+                  "});",
+                  "pm.test('CA-02: solo trae acciones del módulo filtrado', function () {",
+                  "  body.items.forEach((item) => pm.expect(item.module.id).to.eql(pm.collectionVariables.get('moduleId')));",
+                  "});",
+                  "pm.test('CA-01: la edición del coordinador aparece con usuario, acción, fecha y hora e IP', function () {",
+                  "  const edit = body.items[0];",
+                  "  pm.expect(edit.action).to.eql('Editar módulos');",
+                  "  pm.expect(edit.area).to.eql('Programa y módulos');",
+                  "  pm.expect(edit.result).to.eql('success');",
+                  "  pm.expect(edit.user.id).to.eql(pm.collectionVariables.get('coordinatorSub'));",
+                  "  pm.expect(edit.user.role).to.eql('coordinador');",
+                  "  pm.expect(edit.user.roleLabel).to.eql('Coordinador Académico');",
+                  "  pm.expect(edit.ip).to.be.a('string').and.not.empty;",
+                  "  pm.expect(new Date(edit.occurredAt).getTime()).to.be.above(Date.now() - 10 * 60 * 1000);",
+                  "  pm.collectionVariables.set('auditEventId', edit.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/audit/actions?moduleId={{moduleId}}"
+          }
+        },
+        {
+          "name": "Registro filtrado por usuario (coordinador)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Solo trae acciones del coordinador, de la más reciente a la más antigua', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const items = pm.response.json().items;",
+                  "  pm.expect(items.length).to.be.above(0);",
+                  "  items.forEach((item) => pm.expect(item.user.id).to.eql(pm.collectionVariables.get('coordinatorSub')));",
+                  "  const times = items.map((item) => new Date(item.occurredAt).getTime());",
+                  "  pm.expect(times).to.eql([...times].sort((a, b) => b - a));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/audit/actions?userId={{coordinatorSub}}&pageSize=50"
+          }
+        },
+        {
+          "name": "Detalle de un evento",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('El detalle trae la ruta y el resumen de lo cambiado', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.id).to.eql(pm.collectionVariables.get('auditEventId'));",
+                  "  pm.expect(body.route).to.eql('/modules/:moduleId');",
+                  "  pm.expect(body.method).to.eql('PATCH');",
+                  "  pm.expect(body.details.fields).to.include('description');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/audit/actions/{{auditEventId}}"
+          }
+        },
+        {
+          "name": "Opciones de los filtros",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Trae usuarios, módulos y áreas registrados', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.users.map((u) => u.id)).to.include(pm.collectionVariables.get('coordinatorSub'));",
+                  "  pm.expect(body.modules.map((m) => m.id)).to.include(pm.collectionVariables.get('moduleId'));",
+                  "  pm.expect(body.areas).to.include.members(['Programa y módulos', 'Sesión']);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/audit/actions/filters"
+          }
+        },
+        {
+          "name": "El inicio de sesión fallido aparece sin contraseña",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('El intento queda con el correo y sin la contraseña', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.total).to.eql(1);",
+                  "  const event = body.items[0];",
+                  "  pm.expect(event.action).to.eql('Inicio de sesión fallido');",
+                  "  pm.expect(event.user.id).to.eql(null);",
+                  "  pm.expect(event.user.email).to.eql(pm.collectionVariables.get('auditFailedEmail'));",
+                  "  pm.expect(pm.response.text()).to.not.include(pm.collectionVariables.get('auditFailedPassword'));",
+                  "  pm.collectionVariables.set('auditFailedLoginId', event.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/audit/actions?area=Sesi%C3%B3n&result=failed&q={{auditFailedEmail}}"
+          }
+        },
+        {
+          "name": "Detalle del inicio de sesión fallido (sin contraseña)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('El detalle tampoco guarda la contraseña', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.details).to.eql({ reason: 'CREDENCIALES_INVALIDAS' });",
+                  "  pm.expect(pm.response.text()).to.not.include(pm.collectionVariables.get('auditFailedPassword'));",
+                  "  pm.expect(pm.response.text().toLowerCase()).to.not.include('\"password\"');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/audit/actions/{{auditFailedLoginId}}"
+          }
+        },
+        {
+          "name": "Coordinador no puede consultar el registro (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Solo el administrador consulta el registro', function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coordinatorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/audit/actions"
+          }
+        },
+        {
+          "name": "Fecha inválida (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Responde 400 con código INVALID_DATE', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.include({ statusCode: 400, error: 'Bad Request', code: 'INVALID_DATE' });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/audit/actions?from=2026-02-30"
+          }
+        },
+        {
+          "name": "Rango de fechas invertido (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Responde 400 con código INVALID_DATE_RANGE', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "  pm.expect(pm.response.json().code).to.eql('INVALID_DATE_RANGE');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/audit/actions?from=2026-11-06&to=2026-11-05"
+          }
+        },
+        {
+          "name": "Evento inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Responde 404 con código NOT_FOUND', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "  pm.expect(pm.response.json()).to.include({ statusCode: 404, code: 'NOT_FOUND' });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/audit/actions/00000000-0000-4000-8000-000000000000"
           }
         }
       ]

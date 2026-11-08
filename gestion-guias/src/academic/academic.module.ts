@@ -9,6 +9,7 @@ import { ModuleTeacherAssignmentRecord } from './entities/module-teacher-assignm
 import { PersonalizedGuideVersionRecord } from './entities/personalized-guide-version-record.entity.js';
 import { GuideSupportMaterialRecord } from './entities/guide-support-material-record.entity.js';
 import { GuideEventRecord } from './entities/guide-event-record.entity.js';
+import { GuideEditLockRecord } from './entities/guide-edit-lock-record.entity.js';
 import { AcademicController } from './academic.controller.js';
 import { AcademicService } from './academic.service.js';
 import { GuideDocumentExportService } from './guide-document-export.service.js';
@@ -31,6 +32,7 @@ import { TypeOrmGuideStatsProvider } from './typeorm-guide-stats.provider.js';
       ModuleTeacherAssignmentRecord,
       GuideSupportMaterialRecord,
       GuideEventRecord,
+      GuideEditLockRecord,
     ]),
   ],
   controllers: [AcademicController],

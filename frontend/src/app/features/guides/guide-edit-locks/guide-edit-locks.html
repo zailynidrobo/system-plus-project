@@ -1,0 +1,81 @@
+<header class="ui-page-head">
+  <div>
+    <h1>Cierres de edición</h1>
+    <p>Protege la información académica durante cierres de semestre y otros momentos críticos.</p>
+    <a class="ui-back ui-back--inline" routerLink="/inicio"><app-icon name="arrow-left" [size]="13" /> Volver al inicio</a>
+  </div>
+</header>
+
+@if (error(); as message) {
+  <p class="ui-help ui-help--error" role="alert">{{ message }}</p>
+}
+
+<section class="ui-card">
+  <div class="ui-hero">
+    <span class="ui-tile ui-tile--warn ui-tile--md"><app-icon name="lock" [size]="19" /></span>
+    <div class="ui-hero__info">
+      <strong>Nuevo periodo de bloqueo</strong>
+      <small>Durante el periodo no se podrán crear, editar ni publicar guías.</small>
+    </div>
+  </div>
+  <form class="ui-grid-2" (ngSubmit)="save()" novalidate>
+    <label class="ui-field">
+      <span>Nombre del periodo <span class="ui-required">*</span></span>
+      <input class="ui-control" name="name" [(ngModel)]="form.name" [class.ui-control--error]="submitted() && !form.name.trim()" required maxlength="150" placeholder="Cierre de semestre 2026-2" />
+      @if (submitted() && !form.name.trim()) { <small class="ui-help ui-help--error">Este campo es obligatorio.</small> }
+    </label>
+    <label class="ui-field">
+      <span>Motivo <span class="ui-required">*</span></span>
+      <input class="ui-control" name="reason" [(ngModel)]="form.reason" [class.ui-control--error]="submitted() && !form.reason.trim()" required maxlength="500" placeholder="Consolidación de notas y revisión académica" />
+      @if (submitted() && !form.reason.trim()) { <small class="ui-help ui-help--error">Este campo es obligatorio.</small> }
+    </label>
+    <label class="ui-field">
+      <span>Inicio <span class="ui-required">*</span></span>
+      <div class="ui-date-control">
+        <input #startsInput class="ui-control" type="datetime-local" name="startsAt" [(ngModel)]="form.startsAt" [min]="minInicio()" [class.ui-control--error]="submitted() && (!form.startsAt || form.startsAt < minInicio())" required (focus)="dateOpen.set('startsAt')" />
+        <button type="button" class="ui-btn ui-btn--outline ui-date-control__ok" (click)="cerrarSelector(startsInput)">OK</button>
+      </div>
+      @if (submitted() && !form.startsAt) { <small class="ui-help ui-help--error">Selecciona la fecha de inicio.</small> }
+      @if (submitted() && form.startsAt && form.startsAt < minInicio()) { <small class="ui-help ui-help--error">No puedes seleccionar una fecha pasada.</small> }
+    </label>
+    <label class="ui-field">
+      <span>Finalización <span class="ui-required">*</span></span>
+      <div class="ui-date-control">
+        <input #endsInput class="ui-control" type="datetime-local" name="endsAt" [(ngModel)]="form.endsAt" [min]="minFin()" [class.ui-control--error]="submitted() && (!form.endsAt || form.endsAt <= form.startsAt)" required (focus)="dateOpen.set('endsAt')" />
+        <button type="button" class="ui-btn ui-btn--outline ui-date-control__ok" (click)="cerrarSelector(endsInput)">OK</button>
+      </div>
+      @if (submitted() && !form.endsAt) { <small class="ui-help ui-help--error">Selecciona la fecha de finalización.</small> }
+      @if (submitted() && form.endsAt && form.startsAt && form.endsAt <= form.startsAt) { <small class="ui-help ui-help--error">Debe ser posterior al inicio.</small> }
+    </label>
+    <div class="ui-actions">
+      <button class="ui-btn ui-btn--primary" type="submit" [disabled]="saving()">
+        <app-icon name="lock" [size]="15" /> {{ saving() ? 'Guardando...' : 'Programar bloqueo' }}
+      </button>
+    </div>
+  </form>
+</section>
+
+<section class="ui-panel">
+  <div class="ui-panel__head">
+    <div><h2>Periodos programados</h2><p>Los periodos se activan automáticamente según sus fechas.</p></div>
+  </div>
+  <div class="ui-table-wrap">
+    <table class="ui-table">
+      <thead><tr><th>Periodo</th><th>Desde</th><th>Hasta</th><th>Motivo</th><th>Estado</th><th></th></tr></thead>
+      <tbody>
+        @for (lock of locks(); track lock.id) {
+          <tr>
+            <td><strong>{{ lock.name }}</strong><small>{{ lock.createdBy.name }}</small></td>
+            <td>{{ lock.startsAt | date:'medium' }}</td>
+            <td>{{ lock.endsAt | date:'medium' }}</td>
+            <td>{{ lock.reason }}</td>
+            <td><span class="ui-pill" [class.ui-pill--ok]="estado(lock) !== 'Activo'" [class.ui-pill--warn]="estado(lock) === 'Activo'"><i></i>{{ estado(lock) }}</span></td>
+            <td><button class="ui-icon-btn" type="button" (click)="remove(lock)" title="Eliminar periodo" aria-label="Eliminar periodo"><app-icon name="trash" [size]="14" /></button></td>
+          </tr>
+        } @empty {
+          <tr><td colspan="6" class="ui-empty">No hay periodos programados.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

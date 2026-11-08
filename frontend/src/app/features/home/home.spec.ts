@@ -30,7 +30,7 @@ describe('Inicio por rol', () => {
 
   it('el administrador tiene atajos solo a lo que su rol permite', async () => {
     const { componente } = await abrir(CORREOS.admin);
-    expect(componente.atajos().map((a) => a.ruta)).toEqual(['/usuarios', '/roles', '/usuarios/nuevo']);
+    expect(componente.atajos().map((a) => a.ruta)).toEqual(['/usuarios', '/roles', '/cierres-edicion', '/usuarios/nuevo']);
     expect(componente.resumen()?.indicadores[0].titulo).toBe('Usuarios registrados');
   });
 

@@ -1,0 +1,25 @@
+.ui-date-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ui-date-control .ui-control {
+  flex: 1;
+  min-width: 0;
+}
+
+.ui-date-control__ok {
+  flex: 0 0 auto;
+  min-height: 2.75rem;
+  padding-inline: 0.85rem;
+}
+
+.ui-table td:first-child strong,
+.ui-table td:first-child small {
+  display: block;
+}
+
+.ui-table td:first-child small {
+  margin-top: 0.2rem;
+}

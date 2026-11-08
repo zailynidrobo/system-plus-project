@@ -33,6 +33,7 @@ export const routes: Routes = [
       { path: 'roles', loadComponent: () => import('./features/users/role-list/role-list').then((m) => m.RoleList), canActivate: [roleGuard], data: { ...usuarios, titulo: 'Roles y permisos' } },
       { path: 'roles/:id', loadComponent: () => import('./features/users/user-role/user-role').then((m) => m.UserRole), canActivate: [roleGuard], data: usuarios },
       { path: 'usuarios/:id/rol', redirectTo: 'roles/:id' },
+      { path: 'cierres-edicion', loadComponent: () => import('./features/guides/guide-edit-locks/guide-edit-locks').then((m) => m.GuideEditLocks), canActivate: [roleGuard], data: { ...usuarios, titulo: 'Cierres de edición' } },
 
       // HE-02 · Coordinador Académico (carga diferida para no inflar el bundle inicial)
       { path: 'modulos', loadComponent: () => import('./features/academic-program/module-list/module-list').then((m) => m.ModuleList), canActivate: [roleGuard], data: programa },

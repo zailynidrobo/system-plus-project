@@ -13,6 +13,7 @@ import { cuando } from '../../../shared/utils/modulos';
 import { CompetencyApi } from '../../academic-program/competency-api';
 import { GuideApi } from '../guide-api';
 import { PublishModal } from '../publish-modal/publish-modal';
+import { GuideEditLockApi } from '../guide-edit-lock-api';
 
 // Figma HE-03: editar borrador (2027:959), confirmar publicación (2027:1373) y publicada con éxito (2027:1176)
 @Component({
@@ -22,6 +23,7 @@ import { PublishModal } from '../publish-modal/publish-modal';
 })
 export class GuideEdit {
   private api = inject(GuideApi);
+  private editLockApi = inject(GuideEditLockApi);
   private competencyApi = inject(CompetencyApi);
   private miga = inject(Miga);
   private route = inject(ActivatedRoute);
@@ -42,6 +44,7 @@ export class GuideEdit {
   publicando = signal(false);
   modalPublicar = signal(false);
   publicada = signal<GuideView | null>(null);
+  bloqueo = signal<string | null>(null);
 
   fecha = fechaCorta;
   hora = hora;
@@ -56,6 +59,12 @@ export class GuideEdit {
   });
 
   constructor() {
+    this.editLockApi.listar().subscribe({
+      next: (locks) => {
+        const active = locks.find((lock) => lock.active);
+        this.bloqueo.set(active ? active.reason : null);
+      },
+    });
     const abrirPublicar = this.route.snapshot.queryParamMap.has('publicar');
     this.api.obtener(this.id).subscribe({
       next: (g) => {

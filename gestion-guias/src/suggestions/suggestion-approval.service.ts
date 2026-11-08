@@ -35,6 +35,9 @@ export class SuggestionApprovalService {
   async approve(id: string, coordinator: SuggestionActor) {
     if (!isUuid(id))
       throw suggestionNotFound('NOT_FOUND', 'Sugerencia no encontrada');
+    if (typeof this.academic.assertGuideEditingAllowed === 'function') {
+      await this.academic.assertGuideEditingAllowed();
+    }
     const now = this.views.now();
     const result = await this.dataSource.transaction(async (manager) => {
       const suggestion = await manager.findOne(SuggestionRecord, {

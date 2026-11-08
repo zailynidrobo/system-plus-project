@@ -22,6 +22,9 @@ export class GuideEditLocks {
   dateOpen = signal<'startsAt' | 'endsAt' | null>(null);
   form: NewGuideEditLock = { name: '', startsAt: '', endsAt: '', reason: '' };
   private readonly minFechaInicio = this.toLocalDateTime(new Date());
+  readonly horas = Array.from({ length: 12 }, (_, index) => String(index + 1).padStart(2, '0'));
+  readonly minutos = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'));
+  readonly periodos = ['AM', 'PM'];
 
   constructor() {
     this.load();
@@ -115,6 +118,39 @@ export class GuideEditLocks {
     return this.form.startsAt || this.minInicio();
   }
 
+  datePart(value: string): string {
+    return value.slice(0, 10);
+  }
+
+  hourPart(value: string): string {
+    const hour = Number(value.slice(11, 13));
+    if (!Number.isInteger(hour)) return '';
+    return String(hour % 12 || 12).padStart(2, '0');
+  }
+
+  minutePart(value: string): string {
+    return value.slice(14, 16);
+  }
+
+  periodPart(value: string): string {
+    const hour = Number(value.slice(11, 13));
+    return Number.isInteger(hour) && hour >= 12 ? 'PM' : 'AM';
+  }
+
+  setDatePart(field: 'startsAt' | 'endsAt', date: string): void {
+    this.form[field] = this.combineDateTime(date, this.timePart(field));
+  }
+
+  setTimePart(field: 'startsAt' | 'endsAt', part: 'hour' | 'minute' | 'period', value: string): void {
+    const hour = part === 'hour' ? value : this.hourPart(this.form[field]);
+    const minute = part === 'minute' ? value : this.minutePart(this.form[field]);
+    const period = part === 'period' ? value : this.periodPart(this.form[field]);
+    this.form[field] = this.combineDateTime(
+      this.datePart(this.form[field]),
+      this.to24Hour(hour, minute, period),
+    );
+  }
+
   cerrarSelector(input: HTMLInputElement): void {
     input.blur();
     this.dateOpen.set(null);
@@ -124,6 +160,26 @@ export class GuideEditLocks {
     date.setSeconds(0, 0);
     const offset = date.getTimezoneOffset();
     return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 16);
+  }
+
+  private timePart(field: 'startsAt' | 'endsAt'): string {
+    const value = this.form[field];
+    return this.to24Hour(this.hourPart(value), this.minutePart(value), this.periodPart(value));
+  }
+
+  private combineDateTime(date: string, time: string): string {
+    return date && time ? `${date}T${time}` : '';
+  }
+
+  private to24Hour(hour: string, minute: string, period: string): string {
+    const numericHour = Number(hour);
+    const selectedHour = hour || '12';
+    const selectedMinute = minute || '00';
+    const selectedPeriod = period || 'AM';
+    const selectedNumericHour = Number(selectedHour);
+    if (!Number.isInteger(selectedNumericHour)) return '';
+    const hour24 = (selectedNumericHour % 12) + (selectedPeriod === 'PM' ? 12 : 0);
+    return `${String(hour24).padStart(2, '0')}:${selectedMinute}`;
   }
 
   private load(): void {

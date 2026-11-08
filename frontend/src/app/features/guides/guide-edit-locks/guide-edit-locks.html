@@ -32,7 +32,12 @@
     <label class="ui-field">
       <span>Inicio <span class="ui-required">*</span></span>
       <div class="ui-date-control">
-        <input #startsInput class="ui-control" type="datetime-local" name="startsAt" [(ngModel)]="form.startsAt" [min]="minInicio()" [class.ui-control--error]="submitted() && (!form.startsAt || form.startsAt < minInicio())" required (focus)="dateOpen.set('startsAt')" />
+        <input #startsInput class="ui-control guide-lock-date-input" type="date" name="startsDate" [ngModel]="datePart(form.startsAt)" [min]="minInicio().slice(0, 10)" (ngModelChange)="setDatePart('startsAt', $event)" [class.ui-control--error]="submitted() && (!form.startsAt || form.startsAt < minInicio())" required />
+        <div class="guide-lock-time-controls" aria-label="Hora de inicio">
+          <select class="ui-control" name="startsHour" [ngModel]="hourPart(form.startsAt)" (ngModelChange)="setTimePart('startsAt', 'hour', $event)" aria-label="Hora"><option value="">Hora</option>@for (hour of horas; track hour) { <option [value]="hour">{{ hour }}</option> }</select>
+          <select class="ui-control" name="startsMinute" [ngModel]="minutePart(form.startsAt)" (ngModelChange)="setTimePart('startsAt', 'minute', $event)" aria-label="Minutos"><option value="">Min</option>@for (minute of minutos; track minute) { <option [value]="minute">{{ minute }}</option> }</select>
+          <select class="ui-control" name="startsPeriod" [ngModel]="periodPart(form.startsAt)" (ngModelChange)="setTimePart('startsAt', 'period', $event)" aria-label="AM o PM">@for (period of periodos; track period) { <option [value]="period">{{ period }}</option> }</select>
+        </div>
         <button type="button" class="ui-btn ui-btn--outline ui-date-control__ok" (click)="cerrarSelector(startsInput)">OK</button>
       </div>
       @if (submitted() && !form.startsAt) { <small class="ui-help ui-help--error">Selecciona la fecha de inicio.</small> }
@@ -41,7 +46,12 @@
     <label class="ui-field">
       <span>Finalización <span class="ui-required">*</span></span>
       <div class="ui-date-control">
-        <input #endsInput class="ui-control" type="datetime-local" name="endsAt" [(ngModel)]="form.endsAt" [min]="minFin()" [class.ui-control--error]="submitted() && (!form.endsAt || form.endsAt <= form.startsAt)" required (focus)="dateOpen.set('endsAt')" />
+        <input #endsInput class="ui-control guide-lock-date-input" type="date" name="endsDate" [ngModel]="datePart(form.endsAt)" [min]="datePart(minFin())" (ngModelChange)="setDatePart('endsAt', $event)" [class.ui-control--error]="submitted() && (!form.endsAt || form.endsAt <= form.startsAt)" required />
+        <div class="guide-lock-time-controls" aria-label="Hora de finalización">
+          <select class="ui-control" name="endsHour" [ngModel]="hourPart(form.endsAt)" (ngModelChange)="setTimePart('endsAt', 'hour', $event)" aria-label="Hora"><option value="">Hora</option>@for (hour of horas; track hour) { <option [value]="hour">{{ hour }}</option> }</select>
+          <select class="ui-control" name="endsMinute" [ngModel]="minutePart(form.endsAt)" (ngModelChange)="setTimePart('endsAt', 'minute', $event)" aria-label="Minutos"><option value="">Min</option>@for (minute of minutos; track minute) { <option [value]="minute">{{ minute }}</option> }</select>
+          <select class="ui-control" name="endsPeriod" [ngModel]="periodPart(form.endsAt)" (ngModelChange)="setTimePart('endsAt', 'period', $event)" aria-label="AM o PM">@for (period of periodos; track period) { <option [value]="period">{{ period }}</option> }</select>
+        </div>
         <button type="button" class="ui-btn ui-btn--outline ui-date-control__ok" (click)="cerrarSelector(endsInput)">OK</button>
       </div>
       @if (submitted() && !form.endsAt) { <small class="ui-help ui-help--error">Selecciona la fecha de finalización.</small> }
@@ -61,7 +71,7 @@
   </div>
   <div class="ui-table-wrap">
     <table class="ui-table">
-      <thead><tr><th>Periodo</th><th>Desde</th><th>Hasta</th><th>Motivo</th><th>Estado</th><th></th></tr></thead>
+      <thead><tr><th>Periodo</th><th>Desde</th><th>Hasta</th><th>Motivo</th><th>Estado</th><th>Acciones</th></tr></thead>
       <tbody>
         @for (lock of locks(); track lock.id) {
           <tr>
@@ -70,7 +80,7 @@
             <td>{{ lock.endsAt | date:'medium' }}</td>
             <td>{{ lock.reason }}</td>
             <td><span class="ui-pill" [class.ui-pill--ok]="estado(lock) !== 'Activo'" [class.ui-pill--warn]="estado(lock) === 'Activo'"><i></i>{{ estado(lock) }}</span></td>
-            <td><button class="ui-icon-btn" type="button" (click)="remove(lock)" title="Eliminar periodo" aria-label="Eliminar periodo"><app-icon name="trash" [size]="14" /></button></td>
+            <td><button class="ui-icon-btn ui-icon-btn--danger" type="button" (click)="remove(lock)" title="Eliminar periodo" aria-label="Eliminar periodo"><app-icon name="trash" [size]="14" /></button></td>
           </tr>
         } @empty {
           <tr><td colspan="6" class="ui-empty">No hay periodos programados.</td></tr>

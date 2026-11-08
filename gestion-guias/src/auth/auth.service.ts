@@ -51,7 +51,7 @@ const ACCOUNT_NOT_SET_UP = 'Account is not fully set up';
 const UPDATE_PASSWORD = 'UPDATE_PASSWORD';
 
 /** Si el usuario tiene varios roles, gana el de mayor alcance. */
-const ROLE_PRIORITY = [
+export const ROLE_PRIORITY = [
   Role.ADMIN,
   Role.COORDINADOR,
   Role.DOCENTE_AUTORIZADO,

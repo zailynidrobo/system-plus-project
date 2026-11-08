@@ -7,9 +7,15 @@ import { KeycloakStrategy } from './keycloak.strategy.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { UsersModule } from '../users/users.module.js';
+import { AuditActionsModule } from '../audit/actions/audit-actions.module.js';
 
 @Module({
-  imports: [PassportModule.register({ defaultStrategy: 'keycloak-jwt' }), UsersModule],
+  imports: [
+    PassportModule.register({ defaultStrategy: 'keycloak-jwt' }),
+    UsersModule,
+    // Inicio y cierre de sesión en el registro de auditoría (HE-08-HU-01).
+    AuditActionsModule,
+  ],
   providers: [
     KeycloakStrategy,
     AuthService,

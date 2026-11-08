@@ -8,6 +8,7 @@ import { AcademicProgramModule } from './academic-program/academic-program.modul
 import { SuggestionsModule } from './suggestions/suggestions.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { DatabaseModule } from './database/database.module.js';
+import { RolePermissionsModule } from './audit/permissions/role-permissions.module.js';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -31,6 +32,7 @@ const appDirectory = resolve(dirname(fileURLToPath(import.meta.url)), '..');
     AcademicModule,
     AcademicProgramModule,
     SuggestionsModule,
+    RolePermissionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

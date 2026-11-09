@@ -101,4 +101,7 @@ export const PERMISSION_CATALOG: Record<string, PermissionDescription> = {
 
   'GET /audit/permissions': { area: AUDITORIA, action: 'Consultar los permisos de cada rol' },
   'GET /audit/permissions/:role': { area: AUDITORIA, action: 'Consultar los permisos de un rol' },
+  'GET /audit/actions': { area: AUDITORIA, action: 'Consultar el historial de acciones de los usuarios' },
+  'GET /audit/actions/filters': { area: AUDITORIA, action: 'Consultar las opciones de filtro del historial de acciones' },
+  'GET /audit/actions/:id': { area: AUDITORIA, action: 'Ver el detalle de una acción registrada' },
 };

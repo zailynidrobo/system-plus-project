@@ -23,6 +23,17 @@
     </div>
   </header>
 
+  @if (bloqueo(); as b) {
+    <div class="ui-notice ui-notice--danger" role="alert">
+      <app-icon name="ban" [size]="18" />
+      <div>
+        <strong>Edición bloqueada · {{ b.name }}</strong>
+        <p>{{ b.reason }}</p>
+        <small>Vigente el {{ vigencia() }} · Definido por Administración</small>
+      </div>
+    </div>
+  }
+
   <div class="ui-layout ui-layout--docente">
     <section class="ui-card ui-card--compact">
       <div class="ui-hero">
@@ -31,7 +42,11 @@
           <strong class="titulo">{{ v.name }}</strong>
           <small>Basada en {{ v.guideCode }} {{ v.baseVersion }} · Creada el {{ fecha(v.createdAt) }}</small>
         </div>
-        <span class="ui-pill ui-pill--info">Mi versión</span>
+        @if (bloqueo()) {
+          <span class="ui-pill ui-pill--off">Solo consulta</span>
+        } @else {
+          <span class="ui-pill ui-pill--info">Mi versión</span>
+        }
       </div>
 
       @if (v.guideVersion !== v.baseVersion) {
@@ -55,7 +70,9 @@
                 @if (adaptado(f.key)) {
                   <span class="ui-pill ui-pill--gold ui-pill--sm">Adaptado</span>
                 }
-                @if (editable(f)) {
+                @if (bloqueo()) {
+                  <span class="ui-lock"><app-icon name="lock" [size]="11" /> Bloqueado</span>
+                } @else if (editable(f)) {
                   <button type="button" class="ui-icon-btn" [attr.aria-label]="'Editar ' + f.label" title="Editar campo" (click)="editar(f)">
                     <app-icon name="pencil" [size]="13" />
                   </button>
@@ -143,11 +160,22 @@
         </ul>
       </section>
 
-      <section class="ui-side-note ui-side-note--ok">
-        <app-icon name="cloud-check" [size]="18" />
-        <strong>Guardado automático activo</strong>
-        <p>Cada campo se guarda al confirmarlo y tu avance se conserva aunque cierres la sesión.</p>
-      </section>
+      @if (bloqueo()) {
+        <section class="ui-side-card">
+          <h3 class="ui-side-title">Durante el bloqueo</h3>
+          <ul class="ui-options">
+            <li><app-icon name="circle-check" [size]="15" /><div><strong>Puedes consultar</strong><small>Guías y tus versiones</small></div></li>
+            <li><app-icon name="ban" [size]="15" /><div><strong>No puedes editar</strong><small>Tus versiones quedan en solo lectura</small></div></li>
+            <li><app-icon name="ban" [size]="15" /><div><strong>No puedes enviar sugerencias</strong><small>Se habilitan el {{ reapertura() }}</small></div></li>
+          </ul>
+        </section>
+      } @else {
+        <section class="ui-side-note ui-side-note--ok">
+          <app-icon name="cloud-check" [size]="18" />
+          <strong>Guardado automático activo</strong>
+          <p>Cada campo se guarda al confirmarlo y tu avance se conserva aunque cierres la sesión.</p>
+        </section>
+      }
     </aside>
   </div>
 

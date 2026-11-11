@@ -6,6 +6,17 @@
     </div>
   </header>
 
+  @if (bloqueo(); as b) {
+    <div class="ui-notice ui-notice--danger" role="alert">
+      <app-icon name="ban" [size]="18" />
+      <div>
+        <strong>Envío de sugerencias bloqueado · {{ b.name }}</strong>
+        <p>{{ b.reason }}</p>
+        <small>Se habilita el {{ reapertura() }} · Vigente el {{ vigencia() }} · Definido por Administración</small>
+      </div>
+    </div>
+  }
+
   <div class="ui-layout ui-layout--docente">
     <section class="ui-card ui-card--compact">
       <div class="ui-transfer__item">
@@ -144,7 +155,7 @@
       <div class="ui-separator"></div>
       <div class="ui-actions">
         <a class="ui-btn ui-btn--md" [routerLink]="['/mis-modulos/guias', g.id]">Cancelar</a>
-        <button type="button" class="ui-btn ui-btn--primary ui-btn--md" [disabled]="enviando()" (click)="enviar()">
+        <button type="button" class="ui-btn ui-btn--primary ui-btn--md" [disabled]="enviando() || !!bloqueo()" (click)="enviar()">
           <app-icon name="send" [size]="14" /> {{ enviando() ? 'Enviando...' : 'Enviar sugerencia' }}
         </button>
       </div>

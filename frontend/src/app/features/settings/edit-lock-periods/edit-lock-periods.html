@@ -1,0 +1,144 @@
+<header class="ui-page-head">
+  <div>
+    <h1>Configuración del sistema</h1>
+    <p>Ajusta los parámetros de negocio sin depender de un desarrollador.</p>
+  </div>
+</header>
+
+<div class="config">
+  <nav class="ui-card menu" aria-label="Secciones de configuración">
+    @for (m of menu; track m.texto) {
+      @if (m.activo) {
+        <span class="menu__item menu__item--activo" aria-current="page"><app-icon [name]="m.icono" [size]="15" /> {{ m.texto }}</span>
+      } @else {
+        <span class="menu__item menu__item--off" title="Próximamente" aria-disabled="true"><app-icon [name]="m.icono" [size]="15" /> {{ m.texto }}</span>
+      }
+    }
+  </nav>
+
+  <section class="ui-card formulario">
+    <div class="ui-card__head">
+      <h2>Nuevo periodo de bloqueo</h2>
+      <p>Durante el periodo nadie podrá editar guías base ni versiones docentes.</p>
+    </div>
+
+    <div class="ui-field">
+      <label for="p-nombre">Nombre del periodo <span class="ui-required">*</span></label>
+      <div class="ui-control" [class.ui-control--error]="intentado() && errores().nombre">
+        <input id="p-nombre" type="text" placeholder="Ej. Cierre de semestre 2026-2" [attr.maxlength]="maxNombre" [value]="nombre()" (input)="nombre.set($any($event.target).value)" />
+      </div>
+      @if (intentado() && errores().nombre) {
+        <small class="ui-help ui-help--error" role="alert">{{ errores().nombre }}</small>
+      }
+    </div>
+
+    <div class="fechas">
+      <div class="ui-field">
+        <label for="p-inicio">Fecha de inicio <span class="ui-required">*</span></label>
+        <div class="ui-control" [class.ui-control--error]="intentado() && errores().inicio">
+          <app-icon name="calendar" [size]="15" />
+          <input id="p-inicio" type="datetime-local" [min]="minimo" [value]="inicio()" (input)="inicio.set($any($event.target).value)" />
+        </div>
+        @if (intentado() && errores().inicio) {
+          <small class="ui-help ui-help--error" role="alert">{{ errores().inicio }}</small>
+        }
+      </div>
+      <div class="ui-field">
+        <label for="p-fin">Fecha de fin <span class="ui-required">*</span></label>
+        <div class="ui-control" [class.ui-control--error]="intentado() && errores().fin">
+          <app-icon name="calendar" [size]="15" />
+          <input id="p-fin" type="datetime-local" [min]="inicio() || minimo" [value]="fin()" (input)="fin.set($any($event.target).value)" />
+        </div>
+        @if (intentado() && errores().fin) {
+          <small class="ui-help ui-help--error" role="alert">{{ errores().fin }}</small>
+        }
+      </div>
+    </div>
+
+    <div class="ui-field">
+      <span class="etiqueta">Roles afectados <span class="ui-required">*</span></span>
+      <div class="roles">
+        @for (r of roles; track r) {
+          <span class="roles__chip"><app-icon name="check" [size]="13" /> {{ r }}</span>
+        }
+      </div>
+      <small class="ui-help">El bloqueo aplica a todos los roles que editan guías.</small>
+    </div>
+
+    <div class="ui-field">
+      <label for="p-mensaje">Mensaje que verán los usuarios <span class="ui-required">*</span></label>
+      <div class="ui-control" [class.ui-control--error]="intentado() && errores().mensaje">
+        <textarea id="p-mensaje" rows="3" [attr.maxlength]="maxMensaje" [value]="mensaje()" (input)="mensaje.set($any($event.target).value)"></textarea>
+      </div>
+      <div class="pie-campo">
+        @if (intentado() && errores().mensaje) {
+          <small class="ui-help ui-help--error" role="alert">{{ errores().mensaje }}</small>
+        } @else {
+          <span></span>
+        }
+        <small class="ui-help">{{ mensaje().length }}/{{ maxMensaje }}</small>
+      </div>
+    </div>
+
+    <div class="ui-notice">
+      <app-icon name="triangle-alert" [size]="16" />
+      <div>
+        <strong>Efecto durante el periodo</strong>
+        <p>Se bloquean crear, editar y publicar guías, editar versiones docentes y enviar sugerencias. La consulta sigue habilitada.</p>
+      </div>
+    </div>
+
+    @if (errorEnvio(); as e) {
+      <p class="ui-help ui-help--error" role="alert">{{ e }}</p>
+    }
+
+    <div class="ui-actions">
+      <button type="button" class="ui-btn ui-btn--outline" (click)="cancelar()">Cancelar</button>
+      <button type="button" class="ui-btn ui-btn--primary" [disabled]="guardando()" (click)="guardar()">
+        <app-icon name="lock" [size]="14" /> {{ guardando() ? 'Programando...' : 'Programar bloqueo' }}
+      </button>
+    </div>
+  </section>
+
+  <aside class="ui-card lateral" aria-label="Periodos programados">
+    <h3 class="lateral__titulo">Periodos programados</h3>
+    @if (errorLista(); as e) {
+      <p class="ui-help ui-help--error" role="alert">{{ e }}</p>
+      <button type="button" class="ui-btn ui-btn--outline ui-btn--sm" (click)="cargar()">
+        <app-icon name="rotate-ccw" [size]="13" /> Reintentar
+      </button>
+    } @else if (cargando()) {
+      <p class="ui-muted">Cargando periodos...</p>
+    } @else if (ordenados().length === 0) {
+      <p class="ui-muted">Todavía no hay periodos de bloqueo.</p>
+    } @else {
+      <ul class="periodos">
+        @for (p of ordenados(); track p.id) {
+          <li class="periodo" [class.periodo--fin]="estado(p) === 'Finalizado'">
+            <app-icon [name]="estado(p) === 'Finalizado' ? 'circle-check' : 'lock'" [size]="15" />
+            <div class="periodo__texto">
+              <strong>{{ p.name }}</strong>
+              <small>{{ rango(p.startsAt, p.endsAt) }} · {{ estado(p) }}</small>
+              @if (porEliminar() === p.id) {
+                <span class="periodo__confirmar">
+                  ¿Eliminar?
+                  <button type="button" (click)="eliminar(p)">Sí</button>
+                  <button type="button" (click)="porEliminar.set(null)">No</button>
+                </span>
+              }
+            </div>
+            @if (porEliminar() !== p.id) {
+              <button type="button" class="ui-icon-btn" (click)="porEliminar.set(p.id)" [attr.aria-label]="'Eliminar ' + p.name" title="Eliminar periodo">
+                <app-icon name="trash-2" [size]="13" />
+              </button>
+            }
+          </li>
+        }
+      </ul>
+    }
+  </aside>
+</div>
+
+@if (toast(); as t) {
+  <div class="ui-toast" role="status"><app-icon name="circle-check" [size]="16" /> {{ t }}</div>
+}

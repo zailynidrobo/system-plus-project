@@ -6,8 +6,8 @@ describe('Menú lateral por rol', () => {
   it('Administrador: Usuarios y Roles y permisos habilitados', () => {
     const nav = navPara('ADMINISTRADOR');
     expect(nav.seccion).toBe('Administración');
-    expect(etiquetas('ADMINISTRADOR')).toEqual(['Inicio', 'Usuarios', 'Roles y permisos', 'Cierres de edición', 'Auditoría']);
-    expect(nav.items.filter((i) => i.route).map((i) => i.route)).toEqual(['/inicio', '/usuarios', '/roles', '/cierres-edicion']);
+    expect(etiquetas('ADMINISTRADOR')).toEqual(['Inicio', 'Usuarios', 'Roles y permisos', 'Configuración', 'Auditoría']);
+    expect(nav.items.filter((i) => i.route).map((i) => i.route)).toEqual(['/inicio', '/usuarios', '/roles', '/configuracion']);
   });
 
   it('Coordinador: Gestión académica con Programa académico y Sugerencias (con contador)', () => {

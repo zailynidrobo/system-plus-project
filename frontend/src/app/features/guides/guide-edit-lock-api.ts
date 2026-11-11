@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { Auth } from '../../core/auth/auth';
 import { MOCK_LATENCY, simular } from '../../core/mock/latency';
 import { MockDb } from '../../core/mock/mock-db';
@@ -20,6 +20,9 @@ export class GuideEditLockApi {
     return simular(this.ms, () => {
       const startsAt = new Date(data.startsAt);
       const endsAt = new Date(data.endsAt);
+      const ahora = new Date();
+      ahora.setSeconds(0, 0);
+      if (startsAt < ahora) throw new ApiError('GUIDE_EDIT_LOCK_PAST');
       if (startsAt >= endsAt) throw new ApiError('GUIDE_EDIT_LOCK_INVALID_RANGE');
       if (
         this.db.bloqueosEdicion.some(
@@ -31,6 +34,8 @@ export class GuideEditLockApi {
       const lock = {
         id: crypto.randomUUID(),
         ...data,
+        name: data.name.trim(),
+        reason: data.reason.trim(),
         createdBy: {
           id: String(this.auth.user()?.id ?? ''),
           name: this.auth.user()?.nombre ?? 'Administrador',
@@ -49,6 +54,11 @@ export class GuideEditLockApi {
       }
       this.db.bloqueosEdicion = this.db.bloqueosEdicion.filter((lock) => lock.id !== id);
     });
+  }
+
+  /** El periodo que está bloqueando la edición ahora mismo, o null. Lo usan las pantallas de coordinador y docente. */
+  vigente(): Observable<GuideEditLock | null> {
+    return this.listar().pipe(map((locks) => locks.find((lock) => lock.active) ?? null));
   }
 
   activo(): GuideEditLock | null {

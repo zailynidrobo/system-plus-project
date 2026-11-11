@@ -47,6 +47,8 @@ describe('Rutas: redirección por rol', () => {
     [CORREOS.coordinador, '/mis-versiones'],
     [CORREOS.coordinador, '/mis-sugerencias'],
     [CORREOS.admin, '/sugerencias'],
+    [CORREOS.coordinador, '/configuracion'],
+    [CORREOS.docente, '/configuracion/periodos-bloqueo'],
   ])('%s no puede abrir %s', async (correo, ruta) => {
     await entrarComo(correo);
     await harness.navigateByUrl(ruta);

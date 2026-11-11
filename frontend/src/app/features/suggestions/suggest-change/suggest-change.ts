@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiError } from '../../../shared/models/api-error';
+import { GuideEditLock } from '../../../shared/models/guide-edit-lock';
 import { GuideField } from '../../../shared/models/guide-field';
 import {
   ANTICIPACION_MINIMA_DIAS,
@@ -9,7 +10,9 @@ import {
   PLAZO_LIMITE_DIAS_HABILES,
 } from '../../../shared/models/suggestion';
 import { Icon } from '../../../shared/ui/icon/icon';
+import { diaDeReapertura, vigenciaPeriodo } from '../../../shared/utils/periodos';
 import { fechaDeCalendario, fechaMinimaRequerida } from '../../../shared/utils/sugerencias';
+import { GuideEditLockApi } from '../../guides/guide-edit-lock-api';
 import { RELOJ } from '../reloj';
 import { GuiaAsignada, TeacherApi } from '../../teacher-space/teacher-api';
 import { SuggestionApi } from '../suggestion-api';
@@ -39,6 +42,7 @@ const MENSAJES: Record<string, string> = {
 export class SuggestChange {
   private teacherApi = inject(TeacherApi);
   private api = inject(SuggestionApi);
+  private bloqueos = inject(GuideEditLockApi);
   private router = inject(Router);
   private ruta = inject(ActivatedRoute).snapshot;
   private id = Number(this.ruta.paramMap.get('id'));
@@ -76,7 +80,13 @@ export class SuggestChange {
   faltaFecha = computed(() => this.intentado() && !this.requerida());
   fechaMuyPronto = computed(() => this.intentado() && !!this.requerida() && this.requerida() < this.fechaMinima);
 
+  /** Periodo de bloqueo vigente (HE-09): no se pueden enviar sugerencias. */
+  bloqueo = signal<GuideEditLock | null>(null);
+  vigencia = computed(() => { const b = this.bloqueo(); return b ? vigenciaPeriodo(b.startsAt, b.endsAt) : ''; });
+  reapertura = computed(() => { const b = this.bloqueo(); return b ? diaDeReapertura(b.endsAt) : ''; });
+
   constructor() {
+    this.bloqueos.vigente().subscribe({ next: (b) => this.bloqueo.set(b), error: () => this.bloqueo.set(null) });
     this.teacherApi.obtenerGuia(this.id).subscribe({
       next: (g) => {
         this.guia.set(g);
@@ -100,7 +110,7 @@ export class SuggestChange {
   enviar(): void {
     const g = this.guia();
     const campo = this.campo();
-    if (!g || !campo || this.enviando()) return;
+    if (!g || !campo || this.enviando() || this.bloqueo()) return;
     this.intentado.set(true);
     if (this.faltaPropuesta() || this.faltaJustificacion() || this.faltaFecha() || this.fechaMuyPronto()) return;
 

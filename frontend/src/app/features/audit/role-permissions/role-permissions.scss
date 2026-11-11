@@ -1,0 +1,95 @@
+.matriz {
+  min-width: 860px;
+
+  td,
+  th,
+  strong,
+  small { overflow-wrap: normal; word-break: normal; }
+
+  td:first-child { min-width: 280px; }
+
+  th { text-align: center; }
+  th:first-child { text-align: left; }
+
+  td { height: 48px; }
+
+  &__rol { width: 140px; line-height: 1.3; white-space: normal; }
+
+  &__area td {
+    height: 34px;
+    background: var(--color-surface-2);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--color-muted-figma);
+  }
+
+  &__celda { text-align: center; }
+
+  // la columna del rol que se resalta
+  &__resaltado { background: #f4f4fb; }
+  th.matriz__resaltado { background: #ecebf8; color: var(--color-primary); }
+}
+
+.si { color: var(--color-success-figma); }
+.no { color: #c5c8d4; }
+
+.lateral {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.resumen {
+  gap: 12px;
+  padding: 18px;
+
+  &__rol { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--color-primary); }
+  h2 { margin: 0; font-size: 17px; font-weight: 500; color: var(--color-primary); }
+
+  &__dato {
+    display: flex;
+    gap: 9px;
+
+    strong { display: block; font-size: 13px; font-weight: 400; color: var(--color-text-figma); }
+    small { font-size: 11px; color: var(--color-muted-figma); }
+    app-icon { margin-top: 2px; }
+  }
+
+  .no-permitido { color: var(--color-danger-figma); }
+}
+
+.leyenda {
+  gap: 10px;
+  padding: 18px;
+
+  h2 { margin: 0; font-size: 15px; font-weight: 500; color: var(--color-primary); }
+  p { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 13px; color: var(--color-text-figma); }
+}
+
+.consulta {
+  flex-direction: row;
+  gap: 9px;
+  padding: 14px;
+
+  strong { display: block; margin-bottom: 2px; font-size: 13px; font-weight: 500; color: #8a6a1f; }
+  p { font-size: 12px; }
+  app-icon { flex-shrink: 0; margin-top: 2px; color: #b8862b; }
+}
+
+.estado {
+  align-items: center;
+  text-align: center;
+
+  h3 { margin: 6px 0 0; font-size: 18px; font-weight: 400; color: var(--color-text-figma); }
+  p { max-width: 380px; margin: 0 0 8px; font-size: 13px; line-height: 1.5; color: var(--color-muted-figma); }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

@@ -26,7 +26,7 @@ const ADMINISTRADOR: NavConfig = {
     { label: 'Inicio', icon: 'dashboard', route: '/inicio' },
     { label: 'Usuarios', icon: 'users', route: '/usuarios' },
     { label: 'Roles y permisos', icon: 'shield-check', route: '/roles' },
-    { label: 'Auditoría', icon: 'scroll', route: null },
+    { label: 'Auditoría', icon: 'scroll', route: '/auditoria' },
   ],
 };
 

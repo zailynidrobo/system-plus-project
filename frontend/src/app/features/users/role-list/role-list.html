@@ -3,12 +3,14 @@
     <h1>Roles y permisos</h1>
     <p>Consulta el rol activo de cada usuario y asígnale uno nuevo.</p>
   </div>
+  <div class="ui-page-head__actions">
+    <a class="ui-btn ui-btn--outline" routerLink="/roles/matriz"><app-icon name="shield-check" [size]="16" /> Ver matriz de permisos</a>
+  </div>
 </header>
 
 <section class="ui-stats">
   @for (r of roles; track r.value) {
     <article class="ui-stat">
-      <span class="ui-tile"><app-icon [name]="r.icono" [size]="18" /></span>
       <div>
         <small>{{ r.label }}</small>
         <strong>{{ conteo()?.[r.value] ?? '–' }}</strong><em>usuarios</em>

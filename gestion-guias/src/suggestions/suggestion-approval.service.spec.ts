@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { AcademicService } from '../academic/academic.service.js';
 import { AcademicGuideRecord } from '../academic/entities/academic-guide-record.entity.js';
+import { AcademicGuideVersionRecord } from '../academic/entities/academic-guide-version-record.entity.js';
 import { ModuleTeacherAssignmentRecord } from '../academic/entities/module-teacher-assignment-record.entity.js';
 import { SuggestionRecord } from './entities/suggestion-record.entity.js';
 import { SuggestionApprovalService } from './suggestion-approval.service.js';
@@ -102,6 +103,23 @@ describe('HE-05-HU-03 · Aprobar sugerencia', () => {
         authorName: 'Laura Muñoz',
       }),
     ]);
+  });
+
+  it('cada aprobación queda en el historial de versiones, con la versión anterior conservada (DEF-12)', async () => {
+    const before = scenario.guideRow().version;
+    const previousContent = structuredClone(scenario.guideRow().content);
+    const suggestion = await send();
+    await approval.approve(suggestion.id, LAURA);
+
+    const versions = scenario.store.rows<AcademicGuideVersionRecord>(AcademicGuideVersionRecord);
+    const after = scenario.guideRow().version;
+    expect(versions.map((v) => v.version).sort()).toEqual([before, after].sort());
+    const previous = versions.find((v) => v.version === before)!;
+    const current = versions.find((v) => v.version === after)!;
+    expect(previous.content).toEqual(previousContent);
+    expect(current.content.criterios).toBe(NEW_CRITERIA);
+    expect(current.authorName).toBe(LAURA.name);
+    expect(current.description).toContain(suggestion.code);
   });
 
   it('sigue la secuencia de versiones menores (v2.1 -> v2.2)', async () => {

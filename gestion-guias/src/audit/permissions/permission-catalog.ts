@@ -19,6 +19,7 @@ const VERSIONES = 'Versiones personalizadas';
 const SUGERENCIAS = 'Sugerencias';
 const NOTIFICACIONES = 'Notificaciones';
 const AUDITORIA = 'Auditoría';
+const CIERRES = 'Cierres de edición';
 
 export const PERMISSION_CATALOG: Record<string, PermissionDescription> = {
   'POST /users': { area: USUARIOS, action: 'Registrar usuarios' },
@@ -68,6 +69,10 @@ export const PERMISSION_CATALOG: Record<string, PermissionDescription> = {
   'PATCH /academic/guides/:id': { area: GUIAS, action: 'Editar guías base' },
   'PATCH /academic/guides/:id/publish': { area: GUIAS, action: 'Publicar guías' },
 
+  'GET /academic/guide-edit-locks': { area: CIERRES, action: 'Consultar los periodos en que no se pueden editar guías' },
+  'POST /academic/guide-edit-locks': { area: CIERRES, action: 'Programar un periodo de edición inhabilitada' },
+  'DELETE /academic/guide-edit-locks/:id': { area: CIERRES, action: 'Eliminar un periodo de edición inhabilitada' },
+
   'POST /academic/guides/:id/support-materials': { area: MATERIALES, action: 'Adjuntar material de apoyo' },
   'DELETE /academic/guides/:id/support-materials/:materialId': { area: MATERIALES, action: 'Eliminar material de apoyo' },
   'GET /academic/guides/:id/support-materials': { area: MATERIALES, action: 'Consultar el material de apoyo' },
@@ -94,6 +99,8 @@ export const PERMISSION_CATALOG: Record<string, PermissionDescription> = {
   'GET /academic/suggestions/:id': { area: SUGERENCIAS, action: 'Revisar una sugerencia' },
   'PATCH /academic/suggestions/:id/approve': { area: SUGERENCIAS, action: 'Aprobar sugerencias' },
   'PATCH /academic/suggestions/:id/reject': { area: SUGERENCIAS, action: 'Rechazar sugerencias' },
+  'GET /academic/settings/suggestion-deadline': { area: SUGERENCIAS, action: 'Consultar el tiempo límite de respuesta a sugerencias' },
+  'PUT /academic/settings/suggestion-deadline': { area: SUGERENCIAS, action: 'Configurar el tiempo límite de respuesta a sugerencias' },
 
   'GET /academic/notifications': { area: NOTIFICACIONES, action: 'Consultar sus notificaciones' },
   'PATCH /academic/notifications/read-all': { area: NOTIFICACIONES, action: 'Marcar todas las notificaciones como leídas' },

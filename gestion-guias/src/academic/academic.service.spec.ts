@@ -20,6 +20,7 @@ import { GuideFieldConfigRecord } from './entities/guide-field-config-record.ent
 import { ModuleTeacherAssignmentRecord } from './entities/module-teacher-assignment-record.entity.js';
 import { PersonalizedGuideVersionRecord } from './entities/personalized-guide-version-record.entity.js';
 import { GuideSupportMaterialRecord } from './entities/guide-support-material-record.entity.js';
+import { GuideEditLockRecord } from './entities/guide-edit-lock-record.entity.js';
 
 /** Quien sube materiales en las pruebas de HE-03. */
 const COORDINADOR = {
@@ -154,6 +155,7 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
   ];
   let dataSource: DataSource;
   let versionRepository: Repository<AcademicGuideVersionRecord>;
+  let lockRepository: Repository<GuideEditLockRecord>;
 
   beforeEach(() => {
     repositories = [
@@ -167,6 +169,7 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
       memoryRepository<GuideEventRecord>(),
     ];
     versionRepository = memoryRepository<AcademicGuideVersionRecord>();
+    lockRepository = memoryRepository<GuideEditLockRecord>();
     const repositoryFor = (entity: Function) => {
       if (entity === CurricularModule) return repositories[0];
       if (entity === Competency) return repositories[1];
@@ -198,6 +201,7 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
       ) => callback(manager),
       getRepository: (entity: Function) => {
         if (entity === AcademicGuideVersionRecord) return versionRepository;
+        if (entity === GuideEditLockRecord) return lockRepository;
         throw new Error(`Unexpected repository: ${entity.name}`);
       },
     } as unknown as DataSource;
@@ -517,9 +521,23 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
       BadRequestException,
     );
 
-    await service.updateGuide(draft.id, {
+    const opened = await service.findGuide(draft.id);
+    const firstSave = await service.updateGuide(draft.id, {
       content: { sourceType: 'secundaria', year: 2020 },
+      expectedUpdatedAt: new Date(opened.updatedAt).toISOString(),
     });
+    // DEF-05: quien abrió la guía antes de ese guardado no puede sobrescribirlo.
+    const stale = await service
+      .updateGuide(draft.id, {
+        content: { sourceType: 'primaria', year: 1990 },
+        expectedUpdatedAt: new Date(new Date(opened.updatedAt).getTime() - 60_000).toISOString(),
+      })
+      .catch((error: unknown) => error);
+    expect(stale).toBeInstanceOf(ConflictException);
+    expect((stale as ConflictException).getResponse()).toMatchObject({
+      code: 'GUIDE_MODIFIED',
+    });
+    expect((await service.findGuide(draft.id)).content).toEqual(firstSave.content);
     const published = await service.publishGuide(draft.id);
 
     expect(published).toMatchObject({

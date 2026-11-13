@@ -184,6 +184,9 @@ importers:
       '@angular/router':
         specifier: ^21.2.0
         version: 21.2.25(@angular/common@21.2.25(@angular/core@21.2.25(@angular/compiler@21.2.25)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.25(@angular/compiler@21.2.25)(rxjs@7.8.2))(@angular/platform-browser@21.2.25(@angular/common@21.2.25(@angular/core@21.2.25(@angular/compiler@21.2.25)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.2.25(@angular/compiler@21.2.25)(rxjs@7.8.2)))(rxjs@7.8.2)
+      '@fontsource/inter':
+        specifier: ^5.3.0
+        version: 5.3.0
       keycloak-js:
         specifier: ^26.2.4
         version: 26.2.4
@@ -716,6 +719,9 @@ packages:
     peerDependenciesMeta:
       '@noble/hashes':
         optional: true
+
+  '@fontsource/inter@5.3.0':
+    resolution: {integrity: sha512-RofMylZmjlJEfELXeNHFWBRcSs75rGU/6bV2S2jfnvv/3rPXPGe0LgUJTklcHZ9lM4OZmAVFhcJPnACfb91A3g==}
 
   '@gar/promise-retry@1.0.3':
     resolution: {integrity: sha512-GmzA9ckNokPypTg10pgpeHNQe7ph+iIKKmhKu3Ob9ANkswreCx7R3cKmY781K8QK3AqVL3xVh9A42JvIAbkkSA==}
@@ -3353,6 +3359,8 @@ snapshots:
     optional: true
 
   '@exodus/bytes@1.16.0': {}
+
+  '@fontsource/inter@5.3.0': {}
 
   '@gar/promise-retry@1.0.3': {}
 

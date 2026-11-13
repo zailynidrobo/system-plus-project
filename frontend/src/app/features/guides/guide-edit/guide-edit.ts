@@ -2,6 +2,7 @@ import { Component, computed, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Observable, of } from 'rxjs';
 import { Miga } from '../../../core/layout/miga';
+import { ApiError } from '../../../shared/models/api-error';
 import { CompetencyView } from '../../../shared/models/competency';
 import { GuideEvent, GuideView } from '../../../shared/models/guide';
 import { GuideContent, camposFaltantes } from '../../../shared/models/guide-field';
@@ -13,6 +14,7 @@ import { cuando } from '../../../shared/utils/modulos';
 import { CompetencyApi } from '../../academic-program/competency-api';
 import { GuideApi } from '../guide-api';
 import { PublishModal } from '../publish-modal/publish-modal';
+import { GuideEditLockApi } from '../guide-edit-lock-api';
 
 // Figma HE-03: editar borrador (2027:959), confirmar publicación (2027:1373) y publicada con éxito (2027:1176)
 @Component({
@@ -22,6 +24,7 @@ import { PublishModal } from '../publish-modal/publish-modal';
 })
 export class GuideEdit {
   private api = inject(GuideApi);
+  private editLockApi = inject(GuideEditLockApi);
   private competencyApi = inject(CompetencyApi);
   private miga = inject(Miga);
   private route = inject(ActivatedRoute);
@@ -42,6 +45,7 @@ export class GuideEdit {
   publicando = signal(false);
   modalPublicar = signal(false);
   publicada = signal<GuideView | null>(null);
+  bloqueo = signal<string | null>(null);
 
   fecha = fechaCorta;
   hora = hora;
@@ -56,6 +60,12 @@ export class GuideEdit {
   });
 
   constructor() {
+    this.editLockApi.listar().subscribe({
+      next: (locks) => {
+        const active = locks.find((lock) => lock.active);
+        this.bloqueo.set(active ? active.reason : null);
+      },
+    });
     const abrirPublicar = this.route.snapshot.queryParamMap.has('publicar');
     this.api.obtener(this.id).subscribe({
       next: (g) => {
@@ -137,7 +147,13 @@ export class GuideEdit {
 
     this.guardando.set(true);
     return new Observable<boolean>((sub) => {
-      this.api.actualizar(this.id, { competencyId: this.competenciaId()!, content: form.valor() }).subscribe({
+      this.api
+        .actualizar(this.id, {
+          competencyId: this.competenciaId()!,
+          content: form.valor(),
+          expectedUpdatedAt: this.guia()?.updatedAt,
+        })
+        .subscribe({
         next: (g) => {
           this.guardando.set(false);
           this.guardado.set(true);
@@ -146,9 +162,15 @@ export class GuideEdit {
           sub.next(true);
           sub.complete();
         },
-        error: () => {
+        error: (e: ApiError) => {
           this.guardando.set(false);
-          this.error.set('No pudimos guardar los cambios. Inténtalo de nuevo en unos minutos.');
+          this.error.set(
+            e?.code === 'GUIDE_MODIFIED'
+              ? 'Otra persona guardó cambios en esta guía mientras la editabas. Recarga la página para ver su versión; copia antes lo que escribiste si lo necesitas.'
+              : e?.code === 'GUIDE_EDITING_LOCKED'
+                ? 'La edición de guías está inhabilitada por un periodo de bloqueo. Tus cambios no se guardaron.'
+                : 'No pudimos guardar los cambios. Inténtalo de nuevo en unos minutos.',
+          );
           sub.next(false);
           sub.complete();
         },

@@ -14,6 +14,7 @@ import { CompetencyApi } from '../../academic-program/competency-api';
 import { ModuleApi } from '../../academic-program/module-api';
 import { FieldConfigApi } from '../field-config-api';
 import { GuideApi } from '../guide-api';
+import { GuideEditLockApi } from '../guide-edit-lock-api';
 
 // Figma HE-03-HU-01: formulario (2027:507) y guardada como borrador (2027:792)
 @Component({
@@ -23,6 +24,7 @@ import { GuideApi } from '../guide-api';
 })
 export class GuideForm {
   private api = inject(GuideApi);
+  private editLockApi = inject(GuideEditLockApi);
   private moduleApi = inject(ModuleApi);
   private competencyApi = inject(CompetencyApi);
   private fieldConfigApi = inject(FieldConfigApi);
@@ -42,6 +44,7 @@ export class GuideForm {
   error = signal<string | null>(null);
   errorCarga = signal<string | null>(null);
   creada = signal<GuideView | null>(null);
+  bloqueo = signal<string | null>(null);
 
   fecha = fechaCorta;
   hora = hora;
@@ -73,6 +76,9 @@ export class GuideForm {
   });
 
   constructor() {
+    this.editLockApi.listar().subscribe({
+      next: (locks) => this.bloqueo.set(locks.find((lock) => lock.active)?.reason ?? null),
+    });
     const pedido = Number(inject(ActivatedRoute).snapshot.queryParamMap.get('modulo')) || null;
     this.moduleApi.disponiblesParaGuias().subscribe({
       next: (m) => {

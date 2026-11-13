@@ -5,7 +5,7 @@ import { ApiError } from '../../shared/models/api-error';
 /** Cuerpo de error del backend: { statusCode, error, code?, message, existingModule?, existingCompetency? }. */
 interface CuerpoError {
   code?: string;
-  message?: string | string[];
+  message?: string | string[] | { code?: string; message?: string };
   existingModule?: unknown;
   existingCompetency?: { code: string };
 }
@@ -23,6 +23,13 @@ export function traducirError(e: unknown, aModulo?: (m: never) => unknown): ApiE
   if (!(e instanceof HttpErrorResponse)) return new ApiError('ERROR_DE_SERVIDOR', { estado: 0 });
 
   const cuerpo = (e.error && typeof e.error === 'object' ? e.error : {}) as CuerpoError;
+  const mensajeAnidado =
+    cuerpo.message && typeof cuerpo.message === 'object' && !Array.isArray(cuerpo.message)
+      ? cuerpo.message
+      : null;
+  if (mensajeAnidado?.code) {
+    return new ApiError(mensajeAnidado.code, mensajeAnidado.message);
+  }
   if (cuerpo.code === 'MODULE_NAME_DUPLICATED') {
     const existente =
       aModulo && cuerpo.existingModule
@@ -39,13 +46,19 @@ export function traducirError(e: unknown, aModulo?: (m: never) => unknown): ApiE
   if (e.status === 400) {
     const mensajes = Array.isArray(cuerpo.message)
       ? cuerpo.message
-      : cuerpo.message
+      : typeof cuerpo.message === 'string'
         ? [cuerpo.message]
         : [];
     return new ApiError('VALIDATION_ERROR', { mensajes });
   }
   if (e.status === 401 || e.status === 403) return new ApiError('SIN_PERMISO');
-  return new ApiError('ERROR_DE_SERVIDOR', { estado: e.status });
+  const mensaje =
+    typeof cuerpo.message === 'string'
+      ? cuerpo.message
+      : Array.isArray(cuerpo.message)
+        ? cuerpo.message.join('. ')
+        : undefined;
+  return new ApiError('ERROR_DE_SERVIDOR', { estado: e.status, mensaje });
 }
 
 /** Para usar dentro de `catchError`: relanza el error ya traducido. */

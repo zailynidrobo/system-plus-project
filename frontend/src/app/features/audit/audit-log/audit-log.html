@@ -1,0 +1,254 @@
+<header class="ui-page-head">
+  <div>
+    <h1>Registro de auditoría</h1>
+    <p>Consulta quién hizo qué, cuándo y desde dónde.</p>
+  </div>
+  <div class="ui-page-head__actions">
+    <button type="button" class="ui-btn ui-btn--outline" (click)="exportar()" [disabled]="exportando() || total() === 0">
+      <app-icon name="download" [size]="16" />
+      {{ exportando() ? 'Exportando...' : activos().length ? 'Exportar filtrado' : 'Exportar CSV' }}
+    </button>
+  </div>
+</header>
+
+@if (errorExportar(); as e) {
+  <p class="ui-help ui-help--error" role="alert">{{ e }}</p>
+}
+
+<section class="ui-stats" aria-label="Resumen">
+  <article class="ui-stat">
+    <div>
+      <small>Eventos registrados</small>
+      <strong>{{ eventosDelRango() === null ? '–' : numero(eventosDelRango()!) }}</strong><em>{{ textoRango() }}</em>
+    </div>
+  </article>
+  <article class="ui-stat">
+    <div>
+      <small>Usuarios activos</small>
+      <strong>{{ opciones().users.length || '–' }}</strong><em>con acciones</em>
+    </div>
+  </article>
+  <article class="ui-stat">
+    <div>
+      <small>Cambios de permisos</small>
+      <strong>{{ cambiosDePermisos() === null ? '–' : numero(cambiosDePermisos()!) }}</strong><em>este mes</em>
+    </div>
+  </article>
+</section>
+
+<section class="ui-panel">
+  <div class="ui-toolbar">
+    <label class="ui-search">
+      <app-icon name="search" [size]="16" />
+      <input
+        type="search"
+        placeholder="Buscar por usuario, acción o elemento..."
+        aria-label="Buscar por usuario, acción o elemento"
+        [attr.maxlength]="maxBusqueda"
+        [value]="texto()"
+        (input)="escribir($any($event.target).value)"
+      />
+    </label>
+    <div class="ui-filters">
+      <label class="ui-select">
+        <select aria-label="Filtrar por usuario" (change)="cambiar({ userId: $any($event.target).value || null })">
+          <option value="" [selected]="filtro().userId === null">Usuario: Todos</option>
+          @for (u of opciones().users; track u.id) {
+            <option [value]="u.id" [selected]="u.id === filtro().userId">Usuario: {{ u.name }}</option>
+          }
+        </select>
+      </label>
+      <label class="ui-select">
+        <select aria-label="Filtrar por módulo" (change)="cambiar({ moduleId: $any($event.target).value || null })">
+          <option value="" [selected]="filtro().moduleId === null">Módulo: Todos</option>
+          @for (m of opciones().modules; track m.id) {
+            <option [value]="m.id" [selected]="m.id === filtro().moduleId">Módulo: {{ m.name }}</option>
+          }
+        </select>
+      </label>
+      <label class="ui-select">
+        <app-icon name="calendar" [size]="15" />
+        <select aria-label="Rango de fechas" (change)="cambiarRango($any($event.target).value)">
+          @for (r of rangos; track r.valor) {
+            <option [value]="r.valor" [selected]="r.valor === rango()">{{ r.texto }}</option>
+          }
+        </select>
+      </label>
+    </div>
+  </div>
+
+  @if (activos().length) {
+    <div class="activos">
+      <span class="activos__titulo">{{ activos().length === 1 ? 'Filtro activo:' : 'Filtros activos:' }}</span>
+      @for (a of activos(); track a.clave) {
+        <span class="activos__chip">
+          {{ a.texto }}
+          <button type="button" (click)="quitar(a.clave)" [attr.aria-label]="'Quitar filtro ' + a.texto">
+            <app-icon name="x" [size]="12" />
+          </button>
+        </span>
+      }
+      <span class="activos__cuenta" aria-live="polite">
+        <strong>{{ numero(total()) }}</strong> {{ total() === 1 ? 'evento' : 'eventos' }}
+        @if (eventosDelRango() !== null) {
+          de {{ numero(eventosDelRango()!) }}
+        }
+      </span>
+    </div>
+  }
+
+  @if (error(); as e) {
+    <div class="estado" role="alert">
+      <span class="ui-circle ui-circle--soft"><app-icon name="circle-alert" [size]="22" /></span>
+      <h3>No se pudo cargar el registro</h3>
+      <p>{{ e }}</p>
+      <button type="button" class="ui-btn ui-btn--outline" (click)="cargar()">
+        <app-icon name="rotate-ccw" [size]="15" /> Reintentar
+      </button>
+    </div>
+  } @else if (!cargando() && total() === 0) {
+    <div class="estado">
+      <span class="ui-circle ui-circle--soft"><app-icon name="search" [size]="22" /></span>
+      @if (activos().length) {
+        <h3>No encontramos eventos</h3>
+        <p>Ninguna acción cumple los filtros en este período. Quita algún filtro o amplía el rango de fechas.</p>
+      } @else {
+        <h3>No hay eventos en este período</h3>
+        <p>Cuando los usuarios hagan cambios en el sistema aparecerán aquí. Prueba con un rango de fechas más amplio.</p>
+      }
+    </div>
+  } @else {
+    <div class="ui-table-wrap" [class.is-loading]="cargando()">
+      <table class="ui-table tabla">
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Acción</th>
+            <th>Elemento</th>
+            <th>Módulo</th>
+            <th>Fecha y hora</th>
+            <th>IP de origen</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (e of eventos(); track e.id) {
+            <tr class="fila" tabindex="0" (click)="verDetalle(e)" (keydown.enter)="verDetalle(e)" [attr.aria-label]="'Ver detalle: ' + e.action">
+              <td>
+                <div class="ui-cell">
+                  <span class="ui-avatar">{{ iniciales(e.user) }}</span>
+                  <div>
+                    <strong>{{ nombre(e.user) }}</strong>
+                    @if (e.user.roleLabel) {
+                      <small>{{ e.user.roleLabel }}</small>
+                    }
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="ui-pill" [class]="'ui-pill--' + tono(e)">
+                  {{ e.action }}@if (e.result !== 'success') { · {{ etiquetaResultado[e.result].toLowerCase() }} }
+                </span>
+              </td>
+              <td>{{ e.entity?.label || '—' }}</td>
+              <td [attr.title]="e.module?.name">{{ e.module ? siglas(e.module.name) : '—' }}</td>
+              <td class="nowrap">{{ fecha(e.occurredAt) }}</td>
+              <td class="nowrap">{{ e.ip }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="ui-pager">
+      @if (moduloFiltrado(); as m) {
+        <span>Solo se muestran acciones relacionadas con el módulo {{ m }}.</span>
+      } @else {
+        <span>Mostrando {{ desde() }}–{{ hasta() }} de {{ numero(total()) }} eventos</span>
+      }
+      @if (totalPaginas() > 1) {
+        <div class="ui-pager__buttons">
+          <button type="button" class="ui-icon-btn" (click)="irA(filtro().pagina - 1)" [disabled]="filtro().pagina === 1" aria-label="Página anterior">
+            <app-icon name="chevron-left" [size]="14" />
+          </button>
+          @for (p of paginas(); track p) {
+            <button
+              type="button"
+              class="ui-icon-btn"
+              [class.is-current]="p === filtro().pagina"
+              (click)="irA(p)"
+              [attr.aria-current]="p === filtro().pagina ? 'page' : null"
+            >
+              {{ p }}
+            </button>
+          }
+          <button type="button" class="ui-icon-btn" (click)="irA(filtro().pagina + 1)" [disabled]="filtro().pagina === totalPaginas()" aria-label="Página siguiente">
+            <app-icon name="chevron-right" [size]="14" />
+          </button>
+        </div>
+      }
+    </footer>
+  }
+</section>
+
+@if (activos().length) {
+  <aside class="solo-consulta">
+    <app-icon name="info" [size]="16" />
+    <div>
+      <strong>Registro de solo consulta</strong>
+      <p>Los eventos de auditoría no se pueden editar ni eliminar, ni siquiera por un administrador.</p>
+    </div>
+  </aside>
+}
+
+@if (seleccionado(); as d) {
+  <div class="ui-modal-backdrop" (click)="cerrarDetalle()">
+    <section class="ui-modal ui-modal--wide" role="dialog" aria-modal="true" aria-labelledby="titulo-detalle" (click)="$event.stopPropagation()">
+      <header class="ui-modal__head">
+        <span class="ui-modal__icon"><app-icon name="scroll" [size]="20" /></span>
+        <div>
+          <h2 id="titulo-detalle">{{ d.action }}</h2>
+          <p>{{ d.area }} · {{ fechaDetalle(d.occurredAt) }}</p>
+        </div>
+      </header>
+
+      <div class="ui-box">
+        <div class="ui-kv"><span>Usuario</span><strong>{{ nombre(d.user) }}</strong></div>
+        @if (d.user.email) {
+          <div class="ui-kv"><span>Correo</span><strong>{{ d.user.email }}</strong></div>
+        }
+        @if (d.user.roleLabel) {
+          <div class="ui-kv"><span>Rol en ese momento</span><strong>{{ d.user.roleLabel }}</strong></div>
+        }
+        <div class="ui-kv"><span>Resultado</span><strong>{{ etiquetaResultado[d.result] }} ({{ d.statusCode }})</strong></div>
+        @if (d.entity?.label) {
+          <div class="ui-kv"><span>Elemento</span><strong>{{ d.entity?.label }}</strong></div>
+        }
+        @if (d.module) {
+          <div class="ui-kv"><span>Módulo</span><strong>{{ d.module.name }}</strong></div>
+        }
+        <div class="ui-kv"><span>IP de origen</span><strong>{{ d.ip ?? 'No disponible' }}</strong></div>
+      </div>
+
+      @if (cargandoDetalle()) {
+        <p class="ui-state">Cargando detalle...</p>
+      } @else if (errorDetalle(); as e) {
+        <p class="ui-help ui-help--error" role="alert">{{ e }}</p>
+      } @else {
+        <div class="ui-box">
+          <div class="ui-kv"><span>Petición</span><strong>{{ d.method }} {{ d.route }}</strong></div>
+          <div class="ui-kv"><span>Ruta</span><strong class="corta">{{ d.path }}</strong></div>
+          @if (d.userAgent) {
+            <div class="ui-kv"><span>Navegador</span><strong class="corta">{{ d.userAgent }}</strong></div>
+          }
+          @for (f of filasDetalle(); track f.llave) {
+            <div class="ui-kv"><span>{{ f.llave }}</span><strong>{{ f.valor }}</strong></div>
+          }
+        </div>
+      }
+
+      <div class="ui-actions">
+        <button type="button" class="ui-btn ui-btn--primary" (click)="cerrarDetalle()">Cerrar</button>
+      </div>
+    </section>
+  </div>
+}

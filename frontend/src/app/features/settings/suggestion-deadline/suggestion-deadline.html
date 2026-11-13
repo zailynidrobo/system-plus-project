@@ -1,0 +1,96 @@
+<header class="ui-page-head">
+  <div>
+    <h1>Configuración del sistema</h1>
+    <p>Parámetros de negocio que el administrador puede ajustar sin cambiar el código.</p>
+  </div>
+</header>
+
+<div class="config">
+  <app-settings-menu />
+
+  <section class="ui-card formulario" aria-labelledby="t-plazo">
+    <div class="ui-card__head">
+      <h2 id="t-plazo">Tiempo límite de respuesta a sugerencias</h2>
+      <p>Días hábiles que tiene la coordinación para aprobar o rechazar una sugerencia desde que el docente la envía.</p>
+    </div>
+
+    @if (errorCarga(); as e) {
+      <p class="ui-help ui-help--error" role="alert">{{ e }}</p>
+      <div>
+        <button type="button" class="ui-btn ui-btn--outline ui-btn--sm" (click)="cargar()">
+          <app-icon name="rotate-ccw" [size]="13" /> Reintentar
+        </button>
+      </div>
+    } @else if (cargando()) {
+      <p class="ui-muted">Cargando configuración...</p>
+    } @else {
+      <div class="campos">
+        <div class="ui-field">
+          <label for="s-plazo">Plazo de respuesta <span class="ui-required">*</span></label>
+          <div class="ui-control" [class.ui-control--error]="intentado() && errores().plazo">
+            <input id="s-plazo" type="number" inputmode="numeric" min="1" [attr.max]="maximo" step="1" [value]="plazo()" (input)="plazo.set($any($event.target).value)" aria-describedby="s-plazo-ayuda" />
+            <span class="unidad">días hábiles</span>
+          </div>
+          @if (intentado() && errores().plazo) {
+            <small class="ui-help ui-help--error" role="alert">{{ errores().plazo }}</small>
+          } @else {
+            <small id="s-plazo-ayuda" class="ui-help">Al cumplirse, la sugerencia aparece como vencida.</small>
+          }
+        </div>
+
+        <div class="ui-field">
+          <label for="s-aviso">Aviso de vencimiento <span class="ui-required">*</span></label>
+          <div class="ui-control" [class.ui-control--error]="intentado() && errores().aviso">
+            <input id="s-aviso" type="number" inputmode="numeric" min="1" [attr.max]="maximo" step="1" [value]="aviso()" (input)="aviso.set($any($event.target).value)" aria-describedby="s-aviso-ayuda" />
+            <span class="unidad">días hábiles</span>
+          </div>
+          @if (intentado() && errores().aviso) {
+            <small class="ui-help ui-help--error" role="alert">{{ errores().aviso }}</small>
+          } @else {
+            <small id="s-aviso-ayuda" class="ui-help">Desde este día la coordinación recibe el aviso de que la sugerencia está por vencer.</small>
+          }
+        </div>
+      </div>
+
+      <div class="ui-notice">
+        <app-icon name="info" [size]="16" />
+        <div>
+          <strong>A qué sugerencias aplica</strong>
+          <p>El cambio rige para las sugerencias que se envíen desde que lo guardes. Las que ya están en revisión conservan su fecha límite. Los días hábiles no cuentan sábados, domingos ni festivos de Colombia.</p>
+        </div>
+      </div>
+
+      @if (errorEnvio(); as e) {
+        <p class="ui-help ui-help--error" role="alert">{{ e }}</p>
+      }
+
+      <div class="ui-actions">
+        <button type="button" class="ui-btn ui-btn--outline" [disabled]="sinCambios() || guardando()" (click)="descartar()">Descartar cambios</button>
+        <button type="button" class="ui-btn ui-btn--primary" [disabled]="sinCambios() || guardando()" (click)="guardar()">
+          {{ guardando() ? 'Guardando...' : 'Guardar cambios' }}
+        </button>
+      </div>
+    }
+  </section>
+
+  <aside class="ui-card lateral" aria-label="Valor vigente">
+    <h3 class="lateral__titulo">Valor vigente</h3>
+    @if (actual(); as a) {
+      <dl class="vigente">
+        <div><dt>Plazo de respuesta</dt><dd>{{ a.dueBusinessDays }} días hábiles</dd></div>
+        <div><dt>Aviso de vencimiento</dt><dd>Día hábil {{ a.dueSoonBusinessDays }}</dd></div>
+      </dl>
+      @if (ultimaModificacion(); as m) {
+        <p class="ui-muted origen">Modificado el {{ m }}.</p>
+      } @else {
+        <p class="ui-muted origen">Valores de la instalación. Aún no se han cambiado desde el sistema.</p>
+      }
+    } @else if (!cargando()) {
+      <p class="ui-muted">Sin datos.</p>
+    }
+  </aside>
+</div>
+
+@if (toast(); as t) {
+  <div class="ui-toast" role="status"><app-icon name="circle-check" [size]="16" /> {{ t }}</div>
+}

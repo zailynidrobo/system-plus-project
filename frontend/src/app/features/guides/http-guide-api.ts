@@ -301,7 +301,7 @@ export class HttpGuideApi {
 
   actualizar(
     id: number,
-    data: { competencyId: number; content: GuideContent },
+    data: { competencyId: number; content: GuideContent; expectedUpdatedAt?: string },
   ): Observable<GuideView> {
     return forkJoin({
       uuid: this.ids.guia(id),
@@ -311,6 +311,7 @@ export class HttpGuideApi {
         this.http.patch<GuideResponse>(`${this.base}/${uuid}`, {
           competencyId,
           content: data.content,
+          expectedUpdatedAt: data.expectedUpdatedAt,
         }),
       ),
       switchMap((guide) =>

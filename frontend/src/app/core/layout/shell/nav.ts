@@ -3,7 +3,7 @@ import { Role } from '../../../shared/models/user';
 export interface NavItem {
   label: string;
   icon: string;
-  /** null = sin HU todavía: se muestra deshabilitado ("Próximamente"). */
+  /** null = sin HU todavía: se muestra deshabilitado. Hoy todas las opciones del menú existen. */
   route: string | null;
   /** Contador al lado del texto (sugerencias pendientes del coordinador). */
   badge?: 'sugerencias';
@@ -26,7 +26,8 @@ const ADMINISTRADOR: NavConfig = {
     { label: 'Inicio', icon: 'dashboard', route: '/inicio' },
     { label: 'Usuarios', icon: 'users', route: '/usuarios' },
     { label: 'Roles y permisos', icon: 'shield-check', route: '/roles' },
-    { label: 'Auditoría', icon: 'scroll', route: null },
+    { label: 'Configuración', icon: 'settings', route: '/configuracion' },
+    { label: 'Auditoría', icon: 'scroll', route: '/auditoria' },
   ],
 };
 
@@ -38,7 +39,6 @@ const COORDINADOR: NavConfig = {
     { label: 'Programa académico', icon: 'book-open', route: '/modulos' },
     { label: 'Guías de aprendizaje', icon: 'notebook-tabs', route: '/guias' },
     { label: 'Sugerencias', icon: 'message-square', route: '/sugerencias', badge: 'sugerencias' },
-    { label: 'Reportes', icon: 'chart-no-axes-column', route: null },
   ],
 };
 

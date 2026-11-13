@@ -1,7 +1,7 @@
 <header class="ui-page-head">
   <div>
-    <h1>Hola, {{ primerNombre() }}</h1>
-    <p>Esto es lo que necesita tu atención hoy.</p>
+    <h1>Inicio</h1>
+    <p>{{ primerNombre() }}, aquí están tus pendientes y los accesos frecuentes de tu rol.</p>
   </div>
 </header>
 
@@ -12,9 +12,6 @@
 <section class="ui-stats">
   @for (i of resumen()?.indicadores ?? []; track i.titulo) {
     <article class="ui-stat">
-      <span class="ui-tile" [class.ui-tile--ok]="i.tono === 'ok'" [class.ui-tile--warn]="i.tono === 'warn'">
-        <app-icon [name]="i.icono" [size]="18" />
-      </span>
       <div>
         <small>{{ i.titulo }}</small>
         <strong>{{ i.valor }}</strong><em>{{ i.detalle }}</em>
@@ -48,7 +45,7 @@
     <nav class="inicio__grid" aria-label="Atajos">
       @for (a of atajos(); track a.ruta) {
         <a class="inicio__atajo" [routerLink]="a.ruta">
-          <span class="ui-tile ui-tile--sm"><app-icon [name]="a.icon" [size]="16" /></span>
+          <app-icon [name]="a.icon" [size]="16" />
           {{ a.label }}
         </a>
       }

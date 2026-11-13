@@ -56,6 +56,9 @@ import {
   isEmptyGuideValue,
 } from './guide-field-value.js';
 import { ListGuidesQuery } from './dto/list-guides.query.js';
+import { CreateGuideEditLockDto } from './dto/create-guide-edit-lock.dto.js';
+import { GuideEditLockRecord } from './entities/guide-edit-lock-record.entity.js';
+import { assertNoActiveEditLock } from './guide-edit-lock.js';
 
 @Injectable()
 export class AcademicService implements OnModuleInit {
@@ -228,10 +231,91 @@ export class AcademicService implements OnModuleInit {
     });
   }
 
+  async listGuideEditLocks() {
+    const records = await this.guideEditLocks().find({
+      order: { startsAt: 'ASC' },
+    });
+    return records.map((record) => this.toGuideEditLock(record));
+  }
+
+  async createGuideEditLock(
+    dto: CreateGuideEditLockDto,
+    actor: GuideActor = { id: 'system', name: 'Sistema' },
+  ) {
+    const startsAt = new Date(dto.startsAt);
+    const endsAt = new Date(dto.endsAt);
+    const now = new Date();
+    now.setSeconds(0, 0);
+    if (startsAt < now) {
+      throw new BadRequestException({
+        code: 'GUIDE_EDIT_LOCK_PAST',
+        message: 'La fecha de inicio no puede estar en el pasado',
+      });
+    }
+    if (startsAt >= endsAt) {
+      throw new BadRequestException(
+        'La fecha de inicio debe ser anterior a la fecha de finalización',
+      );
+    }
+
+    const overlapping = (await this.guideEditLocks().find()).find(
+      (lock) => lock.startsAt < endsAt && lock.endsAt > startsAt,
+    );
+    if (overlapping) {
+      throw new ConflictException({
+        code: 'GUIDE_EDIT_LOCK_OVERLAP',
+        message: 'El periodo se cruza con otro periodo de bloqueo existente',
+      });
+    }
+
+    const record = await this.guideEditLocks().save({
+      id: randomUUID(),
+      name: dto.name.trim(),
+      startsAt,
+      endsAt,
+      reason: dto.reason.trim(),
+      createdById: actor.id,
+      createdByName: actor.name,
+      createdAt: new Date(),
+    });
+    return this.toGuideEditLock(record);
+  }
+
+  async deleteGuideEditLock(id: string) {
+    const result = await this.guideEditLocks().delete(id);
+    if (!result.affected) throw new NotFoundException('Periodo no encontrado');
+    return { id, deleted: true };
+  }
+
+  async assertGuideEditingAllowed() {
+    await assertNoActiveEditLock(this.guideEditLocks());
+  }
+
+
+  private guideEditLocks(): Repository<GuideEditLockRecord> {
+    return this.dataSource.getRepository(GuideEditLockRecord);
+  }
+
+  private toGuideEditLock(record: GuideEditLockRecord) {
+    return {
+      id: record.id,
+      name: record.name,
+      startsAt: record.startsAt.toISOString(),
+      endsAt: record.endsAt.toISOString(),
+      reason: record.reason,
+      createdBy: { id: record.createdById, name: record.createdByName },
+      createdAt: record.createdAt.toISOString(),
+      active:
+        record.startsAt.getTime() <= Date.now() &&
+        record.endsAt.getTime() > Date.now(),
+    };
+  }
+
   async createGuide(
     dto: CreateGuideDto,
     actor: GuideActor = { id: 'system', name: 'Sistema' },
   ) {
+    await this.assertGuideEditingAllowed();
     const guide = await this.dataSource.transaction(async (manager) => {
       if (!isUuid(dto.moduleId)) {
         throw new NotFoundException('Módulo no encontrado');
@@ -363,6 +447,7 @@ export class AcademicService implements OnModuleInit {
     dto: UpdateGuideDto,
     actor: GuideActor = { id: 'system', name: 'Sistema' },
   ) {
+    await this.assertGuideEditingAllowed();
     const guide = await this.dataSource.transaction(async (manager) => {
       const guide = await manager.findOne(AcademicGuideRecord, {
         where: { id },
@@ -371,6 +456,19 @@ export class AcademicService implements OnModuleInit {
       if (!guide) throw new NotFoundException('Guía no encontrada');
       if (guide.status !== 'draft') {
         throw new ConflictException('Una guía publicada no se puede editar');
+      }
+      if (
+        dto.expectedUpdatedAt &&
+        guide.updatedAt &&
+        new Date(dto.expectedUpdatedAt).getTime() !== guide.updatedAt.getTime()
+      ) {
+        throw new ConflictException({
+          code: 'GUIDE_MODIFIED',
+          message:
+            'Otra persona guardó cambios en esta guía mientras la editabas. Recarga la guía para ver su versión y vuelve a aplicar tus cambios.',
+          updatedAt: guide.updatedAt.toISOString(),
+          updatedByName: guide.updatedByName ?? null,
+        });
       }
       if (
         dto.title === undefined &&
@@ -445,6 +543,7 @@ export class AcademicService implements OnModuleInit {
     id: string,
     actor: GuideActor = { id: 'system', name: 'Sistema' },
   ) {
+    await this.assertGuideEditingAllowed();
     const guide = await this.dataSource.transaction(async (manager) => {
       const guide = await manager.findOne(AcademicGuideRecord, {
         where: { id },
@@ -929,6 +1028,7 @@ export class AcademicService implements OnModuleInit {
     name?: string,
     roles: string[] = [],
   ) {
+    await this.assertGuideEditingAllowed();
     const guide = await this.getGuideOrFail(baseGuideId);
     if (guide.status !== 'published') {
       throw new ConflictException(
@@ -985,6 +1085,7 @@ export class AcademicService implements OnModuleInit {
     teacherId: string,
     dto: UpdatePersonalizedGuideVersionDto,
   ) {
+    await this.assertGuideEditingAllowed();
     const version = await this.getPersonalizedVersionOrFail(id);
     if (version.teacherId !== teacherId) {
       throw new ForbiddenException(

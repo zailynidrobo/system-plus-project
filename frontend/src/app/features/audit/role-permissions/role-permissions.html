@@ -1,0 +1,107 @@
+<header class="ui-page-head">
+  <div>
+    <h1>Matriz de permisos</h1>
+    <p>Verifica qué acciones puede y no puede ejecutar cada rol.</p>
+  </div>
+  <div class="ui-page-head__actions">
+    <label class="ui-select">
+      <select aria-label="Resaltar rol" (change)="resaltar($any($event.target).value)">
+        @for (r of roles(); track r.role) {
+          <option [value]="r.role" [selected]="r.role === resaltado()">Resaltar rol: {{ r.label }}</option>
+        }
+      </select>
+    </label>
+  </div>
+</header>
+
+@if (error(); as e) {
+  <div class="ui-card estado" role="alert">
+    <span class="ui-circle ui-circle--soft"><app-icon name="circle-alert" [size]="22" /></span>
+    <h3>No se pudieron cargar los permisos</h3>
+    <p>{{ e }}</p>
+    <button type="button" class="ui-btn ui-btn--outline" (click)="cargar()">
+      <app-icon name="rotate-ccw" [size]="15" /> Reintentar
+    </button>
+  </div>
+} @else if (cargando()) {
+  <p class="ui-state">Cargando permisos...</p>
+} @else {
+  <div class="ui-layout">
+    <section class="ui-panel">
+      <div class="ui-table-wrap">
+        <table class="ui-table matriz">
+          <thead>
+            <tr>
+              <th>Acción</th>
+              @for (r of roles(); track r.role) {
+                <th class="matriz__rol" [class.matriz__resaltado]="r.role === resaltado()">{{ r.label }}</th>
+              }
+            </tr>
+          </thead>
+          @for (g of grupos(); track g.area) {
+            <tbody>
+              <tr class="matriz__area">
+                <td [attr.colspan]="roles().length + 1">{{ g.area }}</td>
+              </tr>
+              @for (f of g.filas; track f.action) {
+                <tr>
+                  <td>{{ f.action }}</td>
+                  @for (r of roles(); track r.role) {
+                    <td class="matriz__celda" [class.matriz__resaltado]="r.role === resaltado()">
+                      @if (f.roles.has(r.role)) {
+                        <app-icon name="circle-check" [size]="16" class="si" />
+                        <span class="sr-only">Permitido</span>
+                      } @else {
+                        <app-icon name="circle-x" [size]="16" class="no" />
+                        <span class="sr-only">No permitido</span>
+                      }
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          } @empty {
+            <tbody>
+              <tr><td class="ui-empty" [attr.colspan]="roles().length + 1">Todavía no hay permisos registrados.</td></tr>
+            </tbody>
+          }
+        </table>
+      </div>
+    </section>
+
+    <aside class="lateral">
+      <article class="ui-card resumen">
+        <small class="resumen__rol">Rol {{ resumen().etiqueta }}</small>
+        <h2>Resumen de permisos</h2>
+        <div class="resumen__dato">
+          <app-icon name="circle-check" [size]="16" class="si" />
+          <div>
+            <strong>{{ resumen().permitidas }} {{ resumen().permitidas === 1 ? 'acción permitida' : 'acciones permitidas' }}</strong>
+            <small>{{ resumen().areas.length ? listaAreas(resumen().areas) : 'Ninguna' }}</small>
+          </div>
+        </div>
+        <div class="resumen__dato">
+          <app-icon name="circle-x" [size]="16" class="no-permitido" />
+          <div>
+            <strong>{{ resumen().noPermitidas }} {{ resumen().noPermitidas === 1 ? 'acción no permitida' : 'acciones no permitidas' }}</strong>
+            <small>Acciones de otros roles</small>
+          </div>
+        </div>
+      </article>
+
+      <article class="ui-card leyenda">
+        <h2>Leyenda</h2>
+        <p><app-icon name="circle-check" [size]="16" class="si" /> Permitido</p>
+        <p><app-icon name="circle-x" [size]="16" class="no" /> No permitido</p>
+      </article>
+
+      <aside class="ui-box ui-box--gold consulta">
+        <app-icon name="triangle-alert" [size]="16" />
+        <div>
+          <strong>Vista de consulta</strong>
+          <p>Para cambiar el rol de un usuario usa "Asignar rol" en Usuarios.</p>
+        </div>
+      </aside>
+    </aside>
+  </div>
+}

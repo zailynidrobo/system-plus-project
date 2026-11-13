@@ -41,7 +41,7 @@
             <div>
               <strong>Módulo inhabilitado</strong>
               <p>
-                No admite nuevas guías ni competencias. Las {{ m.guidesCount }} guías existentes se conservan.
+                No admite nuevas guías ni competencias. {{ m.guidesCount === 1 ? 'La guía existente se conserva.' : 'Las ' + m.guidesCount + ' guías existentes se conservan.' }}
                 @if (m.inactivationReason) { Motivo: {{ m.inactivationReason }}. }
               </p>
             </div>

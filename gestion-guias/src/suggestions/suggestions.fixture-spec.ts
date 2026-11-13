@@ -131,6 +131,7 @@ export class MemoryStore {
 
   /** Transacción con rollback: si el callback falla, las tablas vuelven a como estaban. */
   readonly dataSource = {
+    getRepository: (entity: Function) => this.repository(entity),
     transaction: async <T>(
       callback: (manager: MemoryStore['manager']) => Promise<T>,
     ) => {

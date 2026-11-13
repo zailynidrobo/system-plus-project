@@ -12,6 +12,8 @@ import { HttpCompetencyApi } from './features/academic-program/http-competency-a
 import { HttpModuleApi } from './features/academic-program/http-module-api';
 import { ModuleApi } from './features/academic-program/module-api';
 import { UserApi } from './features/users/user-api';
+import { AuditApi } from './features/audit/audit-api';
+import { HttpAuditApi } from './features/audit/http-audit-api';
 import { FieldConfigApi } from './features/guides/field-config-api';
 import { HttpFieldConfigApi } from './features/guides/http-field-config-api';
 import { GuideApi } from './features/guides/guide-api';
@@ -24,6 +26,10 @@ import { HttpNotificationApi } from './features/suggestions/http-notification-ap
 import { HttpSuggestionApi } from './features/suggestions/http-suggestion-api';
 import { NotificationApi } from './features/suggestions/notification-api';
 import { SuggestionApi } from './features/suggestions/suggestion-api';
+import { GuideEditLockApi } from './features/guides/guide-edit-lock-api';
+import { HttpSuggestionSettingsApi } from './features/settings/http-suggestion-settings-api';
+import { SuggestionSettingsApi } from './features/settings/suggestion-settings-api';
+import { HttpGuideEditLockApi } from './features/guides/http-guide-edit-lock-api';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -36,6 +42,8 @@ export const appConfig: ApplicationConfig = {
     provideAuth(),
     // HE-01: con api = 'http' las pantallas de usuarios hablan con el backend; si no, con el mock.
     ...(environment.api === 'http' ? [{ provide: UserApi, useClass: HttpUserApi }] : []),
+    // HE-08: auditoria del administrador, mismo switch que usuarios
+    ...(environment.api === 'http' ? [{ provide: AuditApi, useClass: HttpAuditApi }] : []),
     // HE-02: con apiAcademico = 'http' módulos y competencias usan el backend; si no, el mock.
     ...(environment.apiAcademico === 'http'
       ? [
@@ -50,6 +58,8 @@ export const appConfig: ApplicationConfig = {
           // HE-05: sugerencias de cambio y campana de notificaciones.
           { provide: SuggestionApi, useClass: HttpSuggestionApi },
           { provide: NotificationApi, useClass: HttpNotificationApi },
+          { provide: GuideEditLockApi, useClass: HttpGuideEditLockApi },
+          { provide: SuggestionSettingsApi, useClass: HttpSuggestionSettingsApi },
         ]
       : []),
   ],

@@ -4,6 +4,8 @@
  */
 export const FULL_NAME_PATTERN = /^\s*\S+(\s+\S+)+\s*$/;
 export const FULL_NAME_MESSAGE = 'El nombre debe incluir nombre y apellido';
+/** DEF-03: límite del nombre completo (Keycloak admite 255 por parte; 100 es suficiente y legible). */
+export const FULL_NAME_MAX_LENGTH = 100;
 
 /**
  * La API maneja un solo campo `name`; Keycloak guarda nombre y apellido por separado.

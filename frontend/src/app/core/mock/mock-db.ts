@@ -17,6 +17,7 @@ import { crearVersiones } from './seed-versions';
 import { NotificacionMock, crearSugerencias, eventosDeSugerencias, notificacionesDeSugerencias } from './seed-suggestions';
 import { Suggestion } from '../../shared/models/suggestion';
 import { SupportMaterial } from '../../shared/models/support-material';
+import { GuideEditLock } from '../../shared/models/guide-edit-lock';
 import { EventoUsuarioMock, UsuarioMock, crearEventosUsuarios, crearUsuarios } from './seed-users';
 
 /**
@@ -40,6 +41,17 @@ export class MockDb {
   // HE-03
   estructuras: FieldConfig[] = crearEstructuras();
   guias: Guide[] = crearGuias();
+  bloqueosEdicion: Omit<GuideEditLock, 'active'>[] = [
+    {
+      id: 'bloqueo-2026-1',
+      name: 'Cierre de semestre 2026-1',
+      startsAt: '2026-06-01T05:00:00.000Z',
+      endsAt: '2026-06-16T04:59:00.000Z',
+      reason: 'La edición de guías está bloqueada por cierre de semestre. Podrás consultar las guías, pero no modificarlas hasta el 15 de junio.',
+      createdBy: { id: '4', name: 'Diana Marcela Ruiz' },
+      createdAt: '2026-05-20T15:00:00.000Z',
+    },
+  ];
   // HE-05 (antes del historial de guías: las aprobadas dejan eventos)
   sugerencias: Suggestion[] = crearSugerencias(this.guias, this.usuarios);
   eventosGuias: GuideEvent[] = [...crearEventosGuias(this.guias), ...eventosDeSugerencias(this.sugerencias)];

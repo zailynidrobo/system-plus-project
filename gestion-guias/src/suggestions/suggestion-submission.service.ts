@@ -23,6 +23,8 @@ import {
   suggestionForbidden,
   suggestionNotFound,
 } from './suggestion-errors.js';
+import { GuideEditLockRecord } from '../academic/entities/guide-edit-lock-record.entity.js';
+import { assertNoActiveEditLock } from '../academic/guide-edit-lock.js';
 import { SUGGESTION_RULES, type SuggestionRules } from './suggestion-rules.js';
 import { SuggestionViewsService, isUuid } from './suggestion-views.service.js';
 
@@ -68,6 +70,7 @@ export class SuggestionSubmissionService {
     dto: CreateSuggestionDto,
     teacher: SuggestionActor,
   ) {
+    await assertNoActiveEditLock(this.dataSource.getRepository(GuideEditLockRecord));
     const guide = isUuid(guideId)
       ? await this.guides.findOneBy({ id: guideId })
       : null;

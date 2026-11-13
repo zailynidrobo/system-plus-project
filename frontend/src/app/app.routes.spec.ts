@@ -47,6 +47,11 @@ describe('Rutas: redirección por rol', () => {
     [CORREOS.coordinador, '/mis-versiones'],
     [CORREOS.coordinador, '/mis-sugerencias'],
     [CORREOS.admin, '/sugerencias'],
+    [CORREOS.coordinador, '/auditoria'],
+    [CORREOS.docente, '/roles/matriz'],
+    [CORREOS.coordinador, '/roles/matriz'],
+    [CORREOS.coordinador, '/configuracion'],
+    [CORREOS.docente, '/configuracion/periodos-bloqueo'],
   ])('%s no puede abrir %s', async (correo, ruta) => {
     await entrarComo(correo);
     await harness.navigateByUrl(ruta);
@@ -60,6 +65,8 @@ describe('Rutas: redirección por rol', () => {
     [CORREOS.coordinador, '/guias/buscar'],
     [CORREOS.coordinador, '/guias/2/historial'],
     [CORREOS.coordinador, '/guias/2/versiones/v1.0'],
+    [CORREOS.admin, '/auditoria'],
+    [CORREOS.admin, '/roles/matriz'],
   ])('%s sí puede abrir %s', async (correo, ruta) => {
     await entrarComo(correo);
     await harness.navigateByUrl(ruta);

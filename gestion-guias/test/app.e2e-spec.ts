@@ -49,9 +49,9 @@ describe('AppController (e2e)', () => {
       .expect(200);
   });
 
-  it('/academic/modules (GET) accepts a valid Keycloak token', () => {
+  it('/programs (GET) accepts a valid Keycloak token', () => {
     return request(app.getHttpServer())
-      .get('/academic/modules')
+      .get('/programs')
       .set('Authorization', `Bearer ${keycloak.createToken()}`)
       .expect(200);
   });

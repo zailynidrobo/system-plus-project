@@ -141,3 +141,8 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Instalación en la intranet (se generan con deploy/scripts)
+paquete-systemplus/
+respaldos/
+*.tar

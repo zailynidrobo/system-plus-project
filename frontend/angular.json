@@ -31,6 +31,10 @@
               }
             ],
             "styles": [
+              "@fontsource/inter/latin-300.css",
+              "@fontsource/inter/latin-400.css",
+              "@fontsource/inter/latin-500.css",
+              "@fontsource/inter/latin-600.css",
               "src/styles.scss"
             ]
           },
@@ -49,6 +53,27 @@
                 }
               ],
               "outputHashing": "all"
+            },
+            "intranet": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.intranet.ts"
+                }
+              ]
             },
             "development": {
               "optimization": false,

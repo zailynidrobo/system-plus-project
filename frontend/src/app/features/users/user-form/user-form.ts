@@ -12,7 +12,7 @@ import { Role, ROLE_LABELS } from '../../../shared/models/user';
 import { Icon } from '../../../shared/ui/icon/icon';
 import { UserApi } from '../user-api';
 import { validarCorreo } from '../../../shared/utils/correo';
-import { NOMBRE_COMPLETO } from '../nombre-completo';
+import { MAX_NOMBRE_COMPLETO, NOMBRE_COMPLETO } from '../nombre-completo';
 
 
 @Component({
@@ -22,6 +22,7 @@ import { NOMBRE_COMPLETO } from '../nombre-completo';
   styleUrl: './user-form.scss',
 })
 export class UserForm {
+  readonly maxNombre = MAX_NOMBRE_COMPLETO;
   private fb = inject(FormBuilder);
   private api = inject(UserApi);
   private auth = inject(Auth);
@@ -31,7 +32,7 @@ export class UserForm {
   roles = (Object.keys(ROLE_LABELS) as Role[]).map((r) => ({ value: r, label: ROLE_LABELS[r] }));
 
   form = this.fb.nonNullable.group({
-    nombre: ['', [Validators.required, Validators.pattern(NOMBRE_COMPLETO)]],
+    nombre: ['', [Validators.required, Validators.maxLength(MAX_NOMBRE_COMPLETO), Validators.pattern(NOMBRE_COMPLETO)]],
     correo: ['', [Validators.required, validarCorreo]],
     rol: ['' as Role | '', [Validators.required]],
   });
@@ -100,7 +101,9 @@ export class UserForm {
   mensajeNombre(): string | null {
     const c = this.form.controls.nombre;
     if (!c.touched || c.valid) return null;
-    return c.hasError('required') ? 'Ingresa el nombre completo.' : 'Escribe nombre y apellido.';
+    if (c.hasError('required')) return 'Ingresa el nombre completo.';
+    if (c.hasError('maxlength')) return `El nombre completo admite máximo ${MAX_NOMBRE_COMPLETO} caracteres.`;
+    return 'Escribe nombre y apellido.';
   }
 
   mensajeCorreo(): string | null {

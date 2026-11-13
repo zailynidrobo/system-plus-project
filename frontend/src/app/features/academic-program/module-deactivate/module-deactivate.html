@@ -61,7 +61,7 @@
             </div>
             <div class="ui-effect">
               <span class="ui-tile ui-tile--xs ui-tile--ok"><app-icon name="archive" [size]="14" /></span>
-              Las {{ m.guidesCount }} guías existentes seguirán visibles y consultables.
+              {{ m.guidesCount === 1 ? 'La guía existente seguirá visible y consultable.' : 'Las ' + m.guidesCount + ' guías existentes seguirán visibles y consultables.' }}
             </div>
             <div class="ui-effect">
               <span class="ui-tile ui-tile--xs ui-tile--ok"><app-icon name="history" [size]="14" /></span>

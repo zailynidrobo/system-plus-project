@@ -22,7 +22,6 @@
 
 <section class="ui-stats">
   <article class="ui-stat">
-    <span class="ui-tile"><app-icon name="file-text" [size]="18" /></span>
     <div>
       <small>Guías registradas</small>
       <strong>{{ resumen()?.total ?? '–' }}</strong
@@ -30,7 +29,6 @@
     </div>
   </article>
   <article class="ui-stat">
-    <span class="ui-tile ui-tile--ok"><app-icon name="circle-check" [size]="18" /></span>
     <div>
       <small>Publicadas</small>
       <strong>{{ resumen()?.publicadas ?? '–' }}</strong
@@ -38,7 +36,6 @@
     </div>
   </article>
   <article class="ui-stat">
-    <span class="ui-tile ui-tile--warn"><app-icon name="pencil" [size]="18" /></span>
     <div>
       <small>En borrador</small>
       <strong>{{ resumen()?.borradores ?? '–' }}</strong

@@ -147,7 +147,8 @@ describe('Academic API (e2e)', () => {
     expect(guideResponse.body).toMatchObject({
       code: 'GB-MAT-01',
       title: 'Guía base · Matemáticas',
-      structureVersion: 1,
+      // La estructura cambió dos veces: campos de la competencia y campos editables por el docente.
+      structureVersion: 2,
       version: 'v0',
       competencyDeleted: false,
     });

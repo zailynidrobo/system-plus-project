@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { DataSource, EntityManager } from 'typeorm';
 import { AcademicService } from '../academic/academic.service.js';
 import { AcademicGuideRecord } from '../academic/entities/academic-guide-record.entity.js';
+import { AcademicGuideVersionRecord } from '../academic/entities/academic-guide-version-record.entity.js';
 import { GuideEventRecord } from '../academic/entities/guide-event-record.entity.js';
 import { ModuleTeacherAssignmentRecord } from '../academic/entities/module-teacher-assignment-record.entity.js';
 import { PersonalizedGuideVersionRecord } from '../academic/entities/personalized-guide-version-record.entity.js';
@@ -73,6 +74,15 @@ export class SuggestionApprovalService {
         );
       }
 
+      // HE-07: la versión vigente debe quedar en el historial antes de cambiarla.
+      await this.recordVersion(manager, guide, {
+        description: 'Versión publicada',
+        authorId: guide.publishedById ?? guide.updatedById ?? null,
+        authorName: guide.publishedByName ?? guide.updatedByName ?? null,
+        createdAt: guide.publishedAt ?? guide.updatedAt ?? now,
+        onlyIfMissing: true,
+      });
+
       guide.content = {
         ...guide.content,
         [suggestion.fieldKey]: suggestion.proposedValue ?? null,
@@ -82,6 +92,16 @@ export class SuggestionApprovalService {
       guide.updatedById = coordinator.id;
       guide.updatedByName = coordinator.name;
       await manager.save(AcademicGuideRecord, guide);
+      // DEF-12: cada aprobación agrega una versión al historial (HE-07).
+      await this.recordVersion(manager, guide, {
+        description: truncate(
+          `Sugerencia ${suggestion.code} aprobada · ${suggestion.fieldLabel}`,
+          500,
+        ),
+        authorId: coordinator.id,
+        authorName: coordinator.name,
+        createdAt: now,
+      });
       await manager.save(GuideEventRecord, {
         id: randomUUID(),
         guideId: guide.id,
@@ -148,6 +168,42 @@ export class SuggestionApprovalService {
   }
 
   /** Quién recibe "Nueva versión" (regla configurable; el autor ya recibe "aprobada"). */
+  /** Guarda la versión actual de la guía en el historial (academic_guide_versions). */
+  private async recordVersion(
+    manager: EntityManager,
+    guide: AcademicGuideRecord,
+    entry: {
+      description: string;
+      authorId: string | null;
+      authorName: string | null;
+      createdAt: Date;
+      onlyIfMissing?: boolean;
+    },
+  ) {
+    const existing = await manager.findOneBy(AcademicGuideVersionRecord, {
+      guideId: guide.id,
+      version: guide.version,
+    });
+    if (existing && entry.onlyIfMissing) return;
+    await manager.save(AcademicGuideVersionRecord, {
+      id: existing?.id ?? randomUUID(),
+      guideId: guide.id,
+      version: guide.version,
+      status: 'current' as const,
+      description: entry.description,
+      authorId: entry.authorId,
+      authorName: entry.authorName,
+      createdAt: entry.createdAt,
+      isPublication: true,
+      structureVersion: guide.structureVersion,
+      fields: guide.fields,
+      content: guide.content,
+      publishedAt: guide.publishedAt,
+      publishedById: guide.publishedById,
+      publishedByName: guide.publishedByName,
+    });
+  }
+
   private async newVersionRecipients(
     manager: EntityManager,
     guide: AcademicGuideRecord,

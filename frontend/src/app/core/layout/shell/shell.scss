@@ -30,15 +30,6 @@
     p { margin: 0; font-size: 12px; line-height: 1.45; color: rgba(255, 255, 255, 0.78); }
   }
 
-  &__help {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.66);
-
-    &--bottom { margin-top: auto; }
-  }
 }
 
 .brand {
@@ -255,7 +246,6 @@
   .menu__item { position: relative; }
   .menu__accent { position: absolute; left: 0; }
   .sidebar__box { display: none; }
-  .sidebar__help { font-size: 0; gap: 0; }
   .topbar { height: auto; min-height: 64px; padding: 10px 16px; }
   .content { padding: 20px 16px; }
 }

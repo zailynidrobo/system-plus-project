@@ -11,7 +11,6 @@
 <section class="ui-stats">
   @for (r of roles; track r.value) {
     <article class="ui-stat">
-      <span class="ui-tile"><app-icon [name]="r.icono" [size]="18" /></span>
       <div>
         <small>{{ r.label }}</small>
         <strong>{{ conteo()?.[r.value] ?? '–' }}</strong><em>usuarios</em>

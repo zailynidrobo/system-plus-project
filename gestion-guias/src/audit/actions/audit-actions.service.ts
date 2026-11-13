@@ -111,7 +111,8 @@ export class AuditActionsService {
     const [users, modules, areas] = await Promise.all([
       this.events
         .createQueryBuilder('event')
-        .select('DISTINCT ON (event.actorId) event.actorId', 'id')
+        .distinctOn(['event.actorId'])
+        .select('event.actorId', 'id')
         .addSelect('event.actorName', 'name')
         .addSelect('event.actorEmail', 'email')
         .where('event.actorId IS NOT NULL')
@@ -120,7 +121,8 @@ export class AuditActionsService {
         .getRawMany<AuditFilterOptions['users'][number]>(),
       this.events
         .createQueryBuilder('event')
-        .select('DISTINCT ON (event.moduleId) event.moduleId', 'id')
+        .distinctOn(['event.moduleId'])
+        .select('event.moduleId', 'id')
         .addSelect('event.moduleName', 'name')
         .where('event.moduleId IS NOT NULL')
         .orderBy('event.moduleId')

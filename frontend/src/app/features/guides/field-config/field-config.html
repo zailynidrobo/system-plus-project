@@ -233,7 +233,7 @@
           <p>
             La nueva estructura (v{{ imp.versionNueva }}) aplicará a las guías que se creen desde ahora
             @if (imp.borradores) { y {{ imp.borradores === 1 ? 'al borrador existente' : 'a los borradores existentes' }} }.
-            @if (imp.publicadas) { Las {{ imp.publicadas }} guías publicadas conservarán su estructura v{{ imp.versionActual }} y su contenido sin cambios. }
+            @if (imp.publicadas === 1) { La guía publicada conservará su estructura v{{ imp.versionActual }} y su contenido sin cambios. } @else if (imp.publicadas) { Las {{ imp.publicadas }} guías publicadas conservarán su estructura v{{ imp.versionActual }} y su contenido sin cambios. }
           </p>
         </div>
       </div>

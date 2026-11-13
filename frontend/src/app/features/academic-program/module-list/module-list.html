@@ -10,21 +10,18 @@
 
 <section class="ui-stats">
   <article class="ui-stat">
-    <span class="ui-tile"><app-icon name="graduation-cap" [size]="18" /></span>
     <div>
       <small>Plan curricular</small>
       <strong>Vigente</strong><em>Cohorte 2026</em>
     </div>
   </article>
   <article class="ui-stat">
-    <span class="ui-tile"><app-icon name="book-check" [size]="18" /></span>
     <div>
       <small>Módulos activos</small>
       <strong>{{ resumen()?.disponiblesParaGuias ?? '–' }}</strong><em>Disponibles para nuevas guías</em>
     </div>
   </article>
   <article class="ui-stat">
-    <span class="ui-tile"><app-icon name="files" [size]="18" /></span>
     <div>
       <small>Guías publicadas</small>
       <strong>{{ resumen()?.guiasPublicadas ?? '–' }}</strong><em>Historial protegido</em>

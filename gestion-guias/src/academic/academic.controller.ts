@@ -489,10 +489,9 @@ export class AcademicController {
       : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
   }
 
+  /** DEF-11: autor y publicador se muestran con el nombre de la persona, no con su correo. */
   private guideActor(user: KeycloakJwtPayload) {
-    return {
-      id: user.sub,
-      name: user.preferred_username ?? user.email ?? user.sub,
-    };
+    const { id, name } = actorFromToken(user);
+    return { id, name };
   }
 }

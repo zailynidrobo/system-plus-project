@@ -13,7 +13,7 @@ describe('Menú lateral por rol', () => {
   it('Coordinador: Gestión académica con Programa académico y Sugerencias (con contador)', () => {
     const nav = navPara('COORDINADOR');
     expect(nav.seccion).toBe('Gestión académica');
-    expect(etiquetas('COORDINADOR')).toEqual(['Inicio', 'Programa académico', 'Guías de aprendizaje', 'Sugerencias', 'Reportes']);
+    expect(etiquetas('COORDINADOR')).toEqual(['Inicio', 'Programa académico', 'Guías de aprendizaje', 'Sugerencias']);
     expect(nav.items.find((i) => i.label === 'Sugerencias')?.badge).toBe('sugerencias');
     expect(nav.recuadro).toBe('programa');
   });
@@ -26,9 +26,11 @@ describe('Menú lateral por rol', () => {
     expect(navPara('DOCENTE').items.filter((i) => i.route).map((i) => i.route)).toEqual(['/inicio', '/mis-modulos', '/mis-versiones', '/mis-sugerencias']);
   });
 
-  it('"Inicio" lleva al resumen de cada rol; "Reportes" sigue deshabilitado', () => {
-    const coordinador = navPara('COORDINADOR').items;
-    expect(coordinador.find((i) => i.label === 'Inicio')?.route).toBe('/inicio');
-    expect(coordinador.find((i) => i.label === 'Reportes')?.route).toBeNull();
+  it('"Inicio" lleva al resumen de cada rol y el menú no muestra opciones sin desarrollar', () => {
+    for (const rol of ['ADMINISTRADOR', 'COORDINADOR', 'DOCENTE', 'DOCENTE_AUTORIZADO'] as const) {
+      const items = navPara(rol).items;
+      expect(items.find((i) => i.label === 'Inicio')?.route).toBe('/inicio');
+      expect(items.every((i) => i.route)).toBe(true);
+    }
   });
 });

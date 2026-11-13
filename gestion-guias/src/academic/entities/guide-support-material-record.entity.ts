@@ -21,8 +21,9 @@ export class GuideSupportMaterialRecord {
   @Column({ type: 'bytea', select: false })
   data: Buffer;
 
-  /** Quién subió el archivo (vacío en los materiales cargados antes de guardar este dato). */
-  @Column({ type: 'uuid', nullable: true })
+  /** Quién subió el archivo (vacío en los materiales cargados antes de guardar este dato).
+   *  Texto, como en el resto de tablas: el id viene del token y no siempre es un UUID. */
+  @Column({ type: 'varchar', length: 100, nullable: true })
   uploadedById: string | null;
 
   @Column({ type: 'varchar', length: 150, nullable: true })

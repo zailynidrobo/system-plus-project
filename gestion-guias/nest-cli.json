@@ -9,6 +9,15 @@
         "include": "academic/templates/**/*",
         "outDir": "dist"
       }
+    ],
+    "plugins": [
+      {
+        "name": "@nestjs/swagger",
+        "options": {
+          "introspectComments": true,
+          "classValidatorShim": true
+        }
+      }
     ]
   }
 }

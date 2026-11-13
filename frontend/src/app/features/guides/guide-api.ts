@@ -195,12 +195,13 @@ export class GuideApi {
   /** Solo las guías en Borrador se editan; no afecta a ninguna guía publicada. */
   actualizar(
     id: number,
-    d: { competencyId: number; content: GuideContent },
+    d: { competencyId: number; content: GuideContent; expectedUpdatedAt?: string },
   ): Observable<GuideView> {
     return simular(this.ms, () => {
       this.assertEditingAllowed();
       const actual = this.buscar(id);
       if (actual.status !== 'Borrador') throw new ApiError('GUIDE_NOT_EDITABLE');
+      if (d.expectedUpdatedAt && d.expectedUpdatedAt !== actual.updatedAt) throw new ApiError('GUIDE_MODIFIED');
       this.validarCompetencia(actual.moduleId, d.competencyId);
       this.validarObligatorios(actual.fields, d.content);
 

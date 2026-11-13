@@ -1,3 +1,4 @@
+import { actorFromToken } from '../suggestions/suggestion-actor.js';
 import {
   BadRequestException,
   Body,

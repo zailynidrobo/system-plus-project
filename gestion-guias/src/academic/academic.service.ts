@@ -458,6 +458,19 @@ export class AcademicService implements OnModuleInit {
         throw new ConflictException('Una guía publicada no se puede editar');
       }
       if (
+        dto.expectedUpdatedAt &&
+        guide.updatedAt &&
+        new Date(dto.expectedUpdatedAt).getTime() !== guide.updatedAt.getTime()
+      ) {
+        throw new ConflictException({
+          code: 'GUIDE_MODIFIED',
+          message:
+            'Otra persona guardó cambios en esta guía mientras la editabas. Recarga la guía para ver su versión y vuelve a aplicar tus cambios.',
+          updatedAt: guide.updatedAt.toISOString(),
+          updatedByName: guide.updatedByName ?? null,
+        });
+      }
+      if (
         dto.title === undefined &&
         dto.content === undefined &&
         dto.competencyId === undefined

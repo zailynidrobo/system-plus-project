@@ -521,9 +521,23 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
       BadRequestException,
     );
 
-    await service.updateGuide(draft.id, {
+    const opened = await service.findGuide(draft.id);
+    const firstSave = await service.updateGuide(draft.id, {
       content: { sourceType: 'secundaria', year: 2020 },
+      expectedUpdatedAt: new Date(opened.updatedAt).toISOString(),
     });
+    // DEF-05: quien abrió la guía antes de ese guardado no puede sobrescribirlo.
+    const stale = await service
+      .updateGuide(draft.id, {
+        content: { sourceType: 'primaria', year: 1990 },
+        expectedUpdatedAt: new Date(new Date(opened.updatedAt).getTime() - 60_000).toISOString(),
+      })
+      .catch((error: unknown) => error);
+    expect(stale).toBeInstanceOf(ConflictException);
+    expect((stale as ConflictException).getResponse()).toMatchObject({
+      code: 'GUIDE_MODIFIED',
+    });
+    expect((await service.findGuide(draft.id)).content).toEqual(firstSave.content);
     const published = await service.publishGuide(draft.id);
 
     expect(published).toMatchObject({

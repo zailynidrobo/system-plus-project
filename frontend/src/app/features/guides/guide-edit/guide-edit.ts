@@ -2,6 +2,7 @@ import { Component, computed, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Observable, of } from 'rxjs';
 import { Miga } from '../../../core/layout/miga';
+import { ApiError } from '../../../shared/models/api-error';
 import { CompetencyView } from '../../../shared/models/competency';
 import { GuideEvent, GuideView } from '../../../shared/models/guide';
 import { GuideContent, camposFaltantes } from '../../../shared/models/guide-field';
@@ -146,7 +147,13 @@ export class GuideEdit {
 
     this.guardando.set(true);
     return new Observable<boolean>((sub) => {
-      this.api.actualizar(this.id, { competencyId: this.competenciaId()!, content: form.valor() }).subscribe({
+      this.api
+        .actualizar(this.id, {
+          competencyId: this.competenciaId()!,
+          content: form.valor(),
+          expectedUpdatedAt: this.guia()?.updatedAt,
+        })
+        .subscribe({
         next: (g) => {
           this.guardando.set(false);
           this.guardado.set(true);
@@ -155,9 +162,15 @@ export class GuideEdit {
           sub.next(true);
           sub.complete();
         },
-        error: () => {
+        error: (e: ApiError) => {
           this.guardando.set(false);
-          this.error.set('No pudimos guardar los cambios. Inténtalo de nuevo en unos minutos.');
+          this.error.set(
+            e?.code === 'GUIDE_MODIFIED'
+              ? 'Otra persona guardó cambios en esta guía mientras la editabas. Recarga la página para ver su versión; copia antes lo que escribiste si lo necesitas.'
+              : e?.code === 'GUIDE_EDITING_LOCKED'
+                ? 'La edición de guías está inhabilitada por un periodo de bloqueo. Tus cambios no se guardaron.'
+                : 'No pudimos guardar los cambios. Inténtalo de nuevo en unos minutos.',
+          );
           sub.next(false);
           sub.complete();
         },

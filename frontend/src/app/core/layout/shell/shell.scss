@@ -240,7 +240,7 @@
     gap: 20px;
     padding: 16px 8px;
   }
-  .brand { align-items: center; > div { display: none; } &__logo { box-sizing: border-box; width: 52px; height: 44px; padding: 4px; object-fit: cover; object-position: left center; } }
+  .brand { align-items: center; > div { display: none; } &__logo { box-sizing: border-box; width: 44px; height: 44px; padding: 3px 12px 3px 4px; object-fit: cover; object-position: 0 center; background-clip: border-box; } }
   .menu { width: 100%; &__section { display: none; } &__item { justify-content: center; font-size: 0; gap: 0; padding: 12px 0; } }
   .menu__badge { position: absolute; top: 4px; right: 6px; margin: 0; font-size: 10px; }
   .menu__item { position: relative; }

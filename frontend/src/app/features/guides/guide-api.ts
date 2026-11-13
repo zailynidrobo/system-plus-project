@@ -13,6 +13,7 @@ import { User } from '../../shared/models/user';
 import { formatGuideCode, normalizeForComparison } from '../../shared/utils/curricular';
 import { ahoraIso } from '../../shared/utils/fechas';
 import { construirVersiones, resumirVersiones } from '../../shared/utils/versiones';
+import { GuideEditLockApi } from './guide-edit-lock-api';
 
 export interface FiltroGuias {
   busqueda: string;
@@ -51,6 +52,7 @@ export class GuideApi {
   private db = inject(MockDb);
   private auth = inject(Auth);
   private ms = inject(MOCK_LATENCY);
+  private editLocks = inject(GuideEditLockApi);
 
   listar(f: FiltroGuias): Observable<PaginaGuias> {
     return simular(this.ms, () => {
@@ -154,6 +156,7 @@ export class GuideApi {
    */
   crear(d: NuevaGuia): Observable<GuideView> {
     return simular(this.ms, () => {
+      this.assertEditingAllowed();
       const modulo = this.db.modulos.find((m) => m.id === d.moduleId);
       if (!modulo) throw new ApiError('NOT_FOUND');
       if (!vistaModulo(this.db, modulo).availableForGuides)
@@ -195,6 +198,7 @@ export class GuideApi {
     d: { competencyId: number; content: GuideContent },
   ): Observable<GuideView> {
     return simular(this.ms, () => {
+      this.assertEditingAllowed();
       const actual = this.buscar(id);
       if (actual.status !== 'Borrador') throw new ApiError('GUIDE_NOT_EDITABLE');
       this.validarCompetencia(actual.moduleId, d.competencyId);
@@ -213,6 +217,7 @@ export class GuideApi {
   /** Borrador -> Publicada: queda visible para los docentes del módulo con fecha y autor. */
   publicar(id: number): Observable<GuideView> {
     return simular(this.ms, () => {
+      this.assertEditingAllowed();
       const actual = this.buscar(id);
       if (actual.status !== 'Borrador') throw new ApiError('GUIDE_ALREADY_PUBLISHED');
       this.validarObligatorios(actual.fields, actual.content);
@@ -225,6 +230,11 @@ export class GuideApi {
         publishedBy: personaActual(this.auth),
       });
     });
+  }
+
+  private assertEditingAllowed(): void {
+    const lock = this.editLocks.activo();
+    if (lock) throw new ApiError('GUIDE_EDITING_LOCKED', lock);
   }
 
   private versionesDe(id: number): GuideVersionDetail[] {

@@ -28,6 +28,7 @@ import { UpdatePersonalizedGuideVersionDto } from './dto/update-personalized-gui
 import { GuideDocumentExportService } from './guide-document-export.service.js';
 import { GuideFieldsImpactDto } from './dto/guide-fields-impact.dto.js';
 import { ListGuidesQuery } from './dto/list-guides.query.js';
+import { CreateGuideEditLockDto } from './dto/create-guide-edit-lock.dto.js';
 
 @Controller('academic')
 export class AcademicController {
@@ -35,6 +36,30 @@ export class AcademicController {
     private readonly academicService: AcademicService,
     private readonly documentExportService: GuideDocumentExportService,
   ) {}
+
+  @Get('guide-edit-locks')
+  @Roles('admin', 'coordinador', 'docente', 'docente_autorizado')
+  listGuideEditLocks() {
+    return this.academicService.listGuideEditLocks();
+  }
+
+  @Post('guide-edit-locks')
+  @Roles('admin')
+  createGuideEditLock(
+    @Body() dto: CreateGuideEditLockDto,
+    @Req() request: { user: KeycloakJwtPayload },
+  ) {
+    return this.academicService.createGuideEditLock(
+      dto,
+      this.guideActor(request.user),
+    );
+  }
+
+  @Delete('guide-edit-locks/:id')
+  @Roles('admin')
+  deleteGuideEditLock(@Param('id') id: string) {
+    return this.academicService.deleteGuideEditLock(id);
+  }
 
   @Put('modules/:moduleId/guide-fields')
   @Roles('coordinador')

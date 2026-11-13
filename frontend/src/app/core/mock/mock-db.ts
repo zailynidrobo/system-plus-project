@@ -17,6 +17,7 @@ import { crearVersiones } from './seed-versions';
 import { NotificacionMock, crearSugerencias, eventosDeSugerencias, notificacionesDeSugerencias } from './seed-suggestions';
 import { Suggestion } from '../../shared/models/suggestion';
 import { SupportMaterial } from '../../shared/models/support-material';
+import { GuideEditLock } from '../../shared/models/guide-edit-lock';
 import { EventoUsuarioMock, UsuarioMock, crearEventosUsuarios, crearUsuarios } from './seed-users';
 
 /**
@@ -40,6 +41,7 @@ export class MockDb {
   // HE-03
   estructuras: FieldConfig[] = crearEstructuras();
   guias: Guide[] = crearGuias();
+  bloqueosEdicion: Omit<GuideEditLock, 'active'>[] = [];
   // HE-05 (antes del historial de guías: las aprobadas dejan eventos)
   sugerencias: Suggestion[] = crearSugerencias(this.guias, this.usuarios);
   eventosGuias: GuideEvent[] = [...crearEventosGuias(this.guias), ...eventosDeSugerencias(this.sugerencias)];

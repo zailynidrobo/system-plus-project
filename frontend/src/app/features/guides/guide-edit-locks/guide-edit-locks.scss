@@ -1,0 +1,38 @@
+.ui-date-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ui-date-control .ui-control {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.guide-lock-date-input {
+  width: 11.5rem;
+}
+
+.guide-lock-time-controls {
+  display: flex;
+  gap: 0.25rem;
+
+  .ui-control {
+    width: 4.1rem;
+    padding-inline: 0.35rem;
+    font-size: 0.72rem;
+  }
+
+  .ui-control:last-child {
+    width: 3.8rem;
+  }
+}
+
+.ui-table td:first-child strong,
+.ui-table td:first-child small {
+  display: block;
+}
+
+.ui-table td:first-child small {
+  margin-top: 0.2rem;
+}

@@ -86,6 +86,12 @@
     @if (errorCarga(); as e) {
       <p class="ui-help ui-help--error" role="alert">{{ e }}</p>
     }
+    @if (bloqueo(); as motivo) {
+      <div class="ui-notice ui-notice--warn" role="alert">
+        <app-icon name="lock" [size]="18" />
+        <div><strong>Creación de guías temporalmente inhabilitada</strong><p>{{ motivo }}</p></div>
+      </div>
+    }
 
     <ol class="ui-stepper ui-stepper--spaced">
       <li class="is-active"><span>1</span> Estructura de la guía</li>
@@ -170,7 +176,7 @@
 
         <div class="ui-actions">
           <a class="ui-btn" routerLink="/guias">Cancelar</a>
-          <button type="submit" class="ui-btn ui-btn--primary" [disabled]="guardando()">
+          <button type="submit" class="ui-btn ui-btn--primary" [disabled]="guardando() || !!bloqueo()">
             <app-icon name="save" [size]="15" />
             {{ guardando() ? 'Guardando...' : 'Guardar borrador' }}
           </button>

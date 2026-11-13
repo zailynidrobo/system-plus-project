@@ -83,6 +83,15 @@
     </div>
     <p><a class="ui-btn ui-btn--primary" [routerLink]="['/guias', g.id]"><app-icon name="eye" [size]="15" /> Ver guía publicada</a></p>
   } @else {
+    @if (bloqueo(); as motivo) {
+      <div class="ui-notice ui-notice--warn" role="alert">
+        <app-icon name="lock" [size]="18" />
+        <div>
+          <strong>Edición temporalmente inhabilitada</strong>
+          <p>{{ motivo }}. El periodo de protección está activo; podrás consultar la guía cuando finalice.</p>
+        </div>
+      </div>
+    }
     <div class="ui-layout">
       <section class="ui-card">
         <div class="ui-hero ui-hero--divided">
@@ -109,7 +118,7 @@
               @if (competenciaId() !== g.competencyId) { <span class="ui-tag">Modificado</span> }
             </label>
             <div class="ui-control">
-              <select id="competencia" (change)="competenciaId.set(+$any($event.target).value)">
+              <select id="competencia" [disabled]="!!bloqueo()" (change)="competenciaId.set(+$any($event.target).value)">
                 @for (c of competencias(); track c.id) {
                   <option [value]="c.id" [selected]="c.id === competenciaId()">{{ c.code }} · {{ c.text }}</option>
                 }
@@ -118,7 +127,7 @@
           </div>
         </div>
 
-        <app-dynamic-form [fields]="g.fields" [valores]="g.content" [original]="g.content" (cambio)="contenido.set($event)" />
+        <app-dynamic-form [fields]="g.fields" [valores]="g.content" [original]="g.content" [bloqueados]="bloqueo() ? g.fields.map(f => f.key) : []" (cambio)="contenido.set($event)" />
 
         <div class="ui-notice ui-notice--info">
           <app-icon name="info" [size]="16" />
@@ -139,12 +148,12 @@
         }
 
         <div class="ui-actions">
-          <button type="button" class="ui-btn" (click)="descartar()" [disabled]="!hayCambios()">Descartar cambios</button>
+          <button type="button" class="ui-btn" (click)="descartar()" [disabled]="!!bloqueo() || !hayCambios()">Descartar cambios</button>
           <div class="ui-actions__right">
-            <button type="button" class="ui-btn ui-btn--outline" (click)="abrirPublicar()" [disabled]="guardando()">
+            <button type="button" class="ui-btn ui-btn--outline" (click)="abrirPublicar()" [disabled]="!!bloqueo() || guardando()">
               <app-icon name="send" [size]="14" /> Publicar...
             </button>
-            <button type="button" class="ui-btn ui-btn--primary" (click)="guardar()" [disabled]="guardando() || !hayCambios()">
+            <button type="button" class="ui-btn ui-btn--primary" (click)="guardar()" [disabled]="!!bloqueo() || guardando() || !hayCambios()">
               <app-icon name="save" [size]="15" /> {{ guardando() ? 'Guardando...' : 'Guardar cambios' }}
             </button>
           </div>

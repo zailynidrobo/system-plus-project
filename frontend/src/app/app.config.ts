@@ -26,6 +26,8 @@ import { HttpNotificationApi } from './features/suggestions/http-notification-ap
 import { HttpSuggestionApi } from './features/suggestions/http-suggestion-api';
 import { NotificationApi } from './features/suggestions/notification-api';
 import { SuggestionApi } from './features/suggestions/suggestion-api';
+import { GuideEditLockApi } from './features/guides/guide-edit-lock-api';
+import { HttpGuideEditLockApi } from './features/guides/http-guide-edit-lock-api';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -54,6 +56,7 @@ export const appConfig: ApplicationConfig = {
           // HE-05: sugerencias de cambio y campana de notificaciones.
           { provide: SuggestionApi, useClass: HttpSuggestionApi },
           { provide: NotificationApi, useClass: HttpNotificationApi },
+          { provide: GuideEditLockApi, useClass: HttpGuideEditLockApi },
         ]
       : []),
   ],

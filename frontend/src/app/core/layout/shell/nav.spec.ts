@@ -3,11 +3,11 @@ import { navPara } from './nav';
 const etiquetas = (rol: Parameters<typeof navPara>[0]) => navPara(rol).items.map((i) => i.label);
 
 describe('Menú lateral por rol', () => {
-  it('Administrador: Usuarios y Roles y permisos habilitados', () => {
+  it('Administrador: Usuarios, Roles y permisos y Auditoría habilitados', () => {
     const nav = navPara('ADMINISTRADOR');
     expect(nav.seccion).toBe('Administración');
     expect(etiquetas('ADMINISTRADOR')).toEqual(['Inicio', 'Usuarios', 'Roles y permisos', 'Auditoría']);
-    expect(nav.items.filter((i) => i.route).map((i) => i.route)).toEqual(['/inicio', '/usuarios', '/roles']);
+    expect(nav.items.filter((i) => i.route).map((i) => i.route)).toEqual(['/inicio', '/usuarios', '/roles', '/auditoria']);
   });
 
   it('Coordinador: Gestión académica con Programa académico y Sugerencias (con contador)', () => {

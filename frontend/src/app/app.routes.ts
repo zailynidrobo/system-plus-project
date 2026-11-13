@@ -13,6 +13,7 @@ const guias = { roles: ['COORDINADOR'] as Role[], titulo: 'Guías de aprendizaje
 const guiasBase = { roles: ROLES_DOCENTES, titulo: 'Guías base' };
 const misVersiones = { roles: ROLES_DOCENTES, titulo: 'Mis versiones' };
 const misSugerencias = { roles: ROLES_DOCENTES, titulo: 'Mis sugerencias' };
+const auditoria = { roles: ['ADMINISTRADOR'] as Role[], titulo: 'Auditoría' };
 const sugerencias = { roles: ['COORDINADOR'] as Role[], titulo: 'Sugerencias' };
 
 export const routes: Routes = [
@@ -31,8 +32,12 @@ export const routes: Routes = [
       { path: 'usuarios/:id/desactivar', loadComponent: () => import('./features/users/user-deactivate/user-deactivate').then((m) => m.UserDeactivate), canActivate: [roleGuard], data: usuarios },
       // "Asignar rol" vive bajo "Roles y permisos", como en Figma (HE-01-HU-04)
       { path: 'roles', loadComponent: () => import('./features/users/role-list/role-list').then((m) => m.RoleList), canActivate: [roleGuard], data: { ...usuarios, titulo: 'Roles y permisos' } },
+      { path: 'roles/matriz', loadComponent: () => import('./features/audit/role-permissions/role-permissions').then((m) => m.RolePermissions), canActivate: [roleGuard], data: { ...usuarios, titulo: 'Roles y permisos', subtitulo: 'Matriz de permisos' } },
       { path: 'roles/:id', loadComponent: () => import('./features/users/user-role/user-role').then((m) => m.UserRole), canActivate: [roleGuard], data: usuarios },
       { path: 'usuarios/:id/rol', redirectTo: 'roles/:id' },
+
+      // HE-08 · Auditoría (solo Administrador); la matriz de permisos vive bajo Roles y permisos como en Figma
+      { path: 'auditoria', loadComponent: () => import('./features/audit/audit-log/audit-log').then((m) => m.AuditLog), canActivate: [roleGuard], data: auditoria },
 
       // HE-02 · Coordinador Académico (carga diferida para no inflar el bundle inicial)
       { path: 'modulos', loadComponent: () => import('./features/academic-program/module-list/module-list').then((m) => m.ModuleList), canActivate: [roleGuard], data: programa },

@@ -1,0 +1,98 @@
+.activos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px 12px;
+
+  &__titulo { font-size: 11px; color: var(--color-muted-figma); }
+
+  &__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px 4px 10px;
+    border-radius: 999px;
+    background: var(--color-chip);
+    color: var(--color-primary);
+    font-size: 12px;
+
+    button {
+      display: grid;
+      place-items: center;
+      padding: 2px;
+      border: 0;
+      border-radius: 50%;
+      background: none;
+      color: inherit;
+      cursor: pointer;
+
+      &:hover { background: rgba(59, 59, 152, 0.12); }
+    }
+  }
+
+  &__cuenta {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--color-muted-figma);
+
+    strong { font-weight: 500; color: var(--color-text-figma); }
+  }
+}
+
+.tabla {
+  min-width: 1020px; // en pantallas chicas la tabla se desliza de lado y no se aplasta
+
+  // el css global parte las palabras en cualquier lado y deja las columnas de una letra
+  td,
+  th,
+  strong,
+  small { overflow-wrap: normal; word-break: normal; }
+
+  td:nth-child(1) { min-width: 230px; white-space: nowrap; }
+  td:nth-child(2) { min-width: 190px; }
+  td:nth-child(3) { min-width: 210px; }
+  td:nth-child(4) { min-width: 70px; }
+}
+
+.fila {
+  cursor: pointer;
+
+  &:hover td,
+  &:focus-visible td { background: var(--color-surface-2); }
+  &:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+}
+
+.is-loading { opacity: 0.55; transition: opacity 0.15s; }
+.nowrap { white-space: nowrap; }
+
+.solo-consulta {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--color-chip);
+  color: var(--color-primary);
+
+  strong { display: block; font-size: 13px; font-weight: 500; }
+  p { margin: 2px 0 0; font-size: 12px; color: var(--color-text-figma); }
+}
+
+.estado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 44px 16px;
+  text-align: center;
+
+  h3 { margin: 6px 0 0; font-size: 18px; font-weight: 400; color: var(--color-text-figma); }
+  p { max-width: 380px; margin: 0 0 8px; font-size: 13px; line-height: 1.5; color: var(--color-muted-figma); }
+}
+
+.corta {
+  min-width: 0;
+  text-align: right;
+  word-break: break-all;
+}

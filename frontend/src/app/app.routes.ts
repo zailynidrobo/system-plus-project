@@ -35,7 +35,10 @@ export const routes: Routes = [
       { path: 'roles/matriz', loadComponent: () => import('./features/audit/role-permissions/role-permissions').then((m) => m.RolePermissions), canActivate: [roleGuard], data: { ...usuarios, titulo: 'Roles y permisos', subtitulo: 'Matriz de permisos' } },
       { path: 'roles/:id', loadComponent: () => import('./features/users/user-role/user-role').then((m) => m.UserRole), canActivate: [roleGuard], data: usuarios },
       { path: 'usuarios/:id/rol', redirectTo: 'roles/:id' },
-      { path: 'cierres-edicion', loadComponent: () => import('./features/guides/guide-edit-locks/guide-edit-locks').then((m) => m.GuideEditLocks), canActivate: [roleGuard], data: { ...usuarios, titulo: 'Cierres de edición' } },
+      // HE-09 · Configuración del sistema (periodos de bloqueo)
+      { path: 'configuracion', pathMatch: 'full', redirectTo: 'configuracion/periodos-bloqueo' },
+      { path: 'configuracion/periodos-bloqueo', loadComponent: () => import('./features/settings/edit-lock-periods/edit-lock-periods').then((m) => m.EditLockPeriods), canActivate: [roleGuard], data: { ...usuarios, titulo: 'Configuración del sistema', subtitulo: 'Periodos de bloqueo' } },
+      { path: 'cierres-edicion', redirectTo: 'configuracion/periodos-bloqueo' },
 
       // HE-08 · Auditoría (solo Administrador); la matriz de permisos vive bajo Roles y permisos como en Figma
       { path: 'auditoria', loadComponent: () => import('./features/audit/audit-log/audit-log').then((m) => m.AuditLog), canActivate: [roleGuard], data: auditoria },

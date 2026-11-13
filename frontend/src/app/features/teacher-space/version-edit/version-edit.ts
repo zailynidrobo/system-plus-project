@@ -4,10 +4,13 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subject, debounceTime } from 'rxjs';
 import { Miga } from '../../../core/layout/miga';
 import { ApiError } from '../../../shared/models/api-error';
+import { GuideEditLock } from '../../../shared/models/guide-edit-lock';
 import { GuideField, GuideValue } from '../../../shared/models/guide-field';
 import { TeacherVersionView } from '../../../shared/models/teacher-version';
 import { Icon } from '../../../shared/ui/icon/icon';
 import { fechaCorta, haceCuanto, hora } from '../../../shared/utils/fechas';
+import { diaDeReapertura, vigenciaPeriodo } from '../../../shared/utils/periodos';
+import { GuideEditLockApi } from '../../guides/guide-edit-lock-api';
 import { TeacherApi } from '../teacher-api';
 import { AvisoGuardado } from '../version-list/version-list';
 
@@ -32,6 +35,7 @@ const MENSAJES: Record<string, string> = {
 })
 export class VersionEdit {
   private api = inject(TeacherApi);
+  private bloqueos = inject(GuideEditLockApi);
   private miga = inject(Miga);
   private id = Number(inject(ActivatedRoute).snapshot.paramMap.get('id'));
   private autoguardado = new Subject<void>();
@@ -51,6 +55,10 @@ export class VersionEdit {
   /** Campos guardados en esta visita, para el aviso de "Mis versiones". */
   guardados = signal<string[]>([]);
   ahora = signal(Date.now());
+  /** Periodo de bloqueo vigente (HE-09): solo consulta mientras dura. */
+  bloqueo = signal<GuideEditLock | null>(null);
+  vigencia = computed(() => { const b = this.bloqueo(); return b ? vigenciaPeriodo(b.startsAt, b.endsAt) : ''; });
+  reapertura = computed(() => { const b = this.bloqueo(); return b ? diaDeReapertura(b.endsAt) : ''; });
 
   campoEditando = computed(() => this.version()?.fields.find((f) => f.key === this.editando()) ?? null);
   progreso = computed(() => {
@@ -103,6 +111,8 @@ export class VersionEdit {
       if (this.pendiente) this.guardar(false);
     });
 
+    this.bloqueos.vigente().subscribe({ next: (b) => this.bloqueo.set(b), error: () => this.bloqueo.set(null) });
+
     this.api.obtenerVersion(this.id).subscribe({
       next: (v) => {
         this.version.set(v);
@@ -128,7 +138,7 @@ export class VersionEdit {
   }
 
   editar(f: GuideField): void {
-    if (!this.editable(f) || this.editando() === f.key) return;
+    if (this.bloqueo() || !this.editable(f) || this.editando() === f.key) return;
     const actual = this.campoEditando();
     if (actual) {
       // No deja saltar a otro campo si el actual tiene un cambio inválido sin guardar

@@ -6,15 +6,7 @@
 </header>
 
 <div class="config">
-  <nav class="ui-card menu" aria-label="Secciones de configuración">
-    @for (m of menu; track m.texto) {
-      @if (m.activo) {
-        <span class="menu__item menu__item--activo" aria-current="page"><app-icon [name]="m.icono" [size]="15" /> {{ m.texto }}</span>
-      } @else {
-        <span class="menu__item menu__item--off" title="Próximamente" aria-disabled="true"><app-icon [name]="m.icono" [size]="15" /> {{ m.texto }}</span>
-      }
-    }
-  </nav>
+  <app-settings-menu />
 
   <section class="ui-card formulario">
     <div class="ui-card__head">

@@ -99,6 +99,8 @@ export const PERMISSION_CATALOG: Record<string, PermissionDescription> = {
   'GET /academic/suggestions/:id': { area: SUGERENCIAS, action: 'Revisar una sugerencia' },
   'PATCH /academic/suggestions/:id/approve': { area: SUGERENCIAS, action: 'Aprobar sugerencias' },
   'PATCH /academic/suggestions/:id/reject': { area: SUGERENCIAS, action: 'Rechazar sugerencias' },
+  'GET /academic/settings/suggestion-deadline': { area: SUGERENCIAS, action: 'Consultar el tiempo límite de respuesta a sugerencias' },
+  'PUT /academic/settings/suggestion-deadline': { area: SUGERENCIAS, action: 'Configurar el tiempo límite de respuesta a sugerencias' },
 
   'GET /academic/notifications': { area: NOTIFICACIONES, action: 'Consultar sus notificaciones' },
   'PATCH /academic/notifications/read-all': { area: NOTIFICACIONES, action: 'Marcar todas las notificaciones como leídas' },

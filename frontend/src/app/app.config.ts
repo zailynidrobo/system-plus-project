@@ -27,6 +27,8 @@ import { HttpSuggestionApi } from './features/suggestions/http-suggestion-api';
 import { NotificationApi } from './features/suggestions/notification-api';
 import { SuggestionApi } from './features/suggestions/suggestion-api';
 import { GuideEditLockApi } from './features/guides/guide-edit-lock-api';
+import { HttpSuggestionSettingsApi } from './features/settings/http-suggestion-settings-api';
+import { SuggestionSettingsApi } from './features/settings/suggestion-settings-api';
 import { HttpGuideEditLockApi } from './features/guides/http-guide-edit-lock-api';
 
 export const appConfig: ApplicationConfig = {
@@ -57,6 +59,7 @@ export const appConfig: ApplicationConfig = {
           { provide: SuggestionApi, useClass: HttpSuggestionApi },
           { provide: NotificationApi, useClass: HttpNotificationApi },
           { provide: GuideEditLockApi, useClass: HttpGuideEditLockApi },
+          { provide: SuggestionSettingsApi, useClass: HttpSuggestionSettingsApi },
         ]
       : []),
   ],

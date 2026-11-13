@@ -11,6 +11,8 @@ import { SuggestionRecord } from './entities/suggestion-record.entity.js';
 import { UserNotificationRecord } from './entities/user-notification-record.entity.js';
 import { SuggestionActor } from './suggestion-actor.js';
 import { suggestionConflict, suggestionNotFound } from './suggestion-errors.js';
+import { GuideEditLockRecord } from '../academic/entities/guide-edit-lock-record.entity.js';
+import { assertNoActiveEditLock } from '../academic/guide-edit-lock.js';
 import { SUGGESTION_RULES, type SuggestionRules } from './suggestion-rules.js';
 import { SuggestionViewsService, isUuid } from './suggestion-views.service.js';
 
@@ -35,9 +37,7 @@ export class SuggestionApprovalService {
   async approve(id: string, coordinator: SuggestionActor) {
     if (!isUuid(id))
       throw suggestionNotFound('NOT_FOUND', 'Sugerencia no encontrada');
-    if (typeof this.academic.assertGuideEditingAllowed === 'function') {
-      await this.academic.assertGuideEditingAllowed();
-    }
+    await assertNoActiveEditLock(this.dataSource.getRepository(GuideEditLockRecord));
     const now = this.views.now();
     const result = await this.dataSource.transaction(async (manager) => {
       const suggestion = await manager.findOne(SuggestionRecord, {

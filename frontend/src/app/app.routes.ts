@@ -36,7 +36,8 @@ export const routes: Routes = [
       { path: 'roles/:id', loadComponent: () => import('./features/users/user-role/user-role').then((m) => m.UserRole), canActivate: [roleGuard], data: usuarios },
       { path: 'usuarios/:id/rol', redirectTo: 'roles/:id' },
       // HE-09 · Configuración del sistema (periodos de bloqueo)
-      { path: 'configuracion', pathMatch: 'full', redirectTo: 'configuracion/periodos-bloqueo' },
+      { path: 'configuracion', pathMatch: 'full', redirectTo: 'configuracion/sugerencias' },
+      { path: 'configuracion/sugerencias', loadComponent: () => import('./features/settings/suggestion-deadline/suggestion-deadline').then((m) => m.SuggestionDeadline), canActivate: [roleGuard], data: { ...usuarios, titulo: 'Configuración del sistema', subtitulo: 'Sugerencias' } },
       { path: 'configuracion/periodos-bloqueo', loadComponent: () => import('./features/settings/edit-lock-periods/edit-lock-periods').then((m) => m.EditLockPeriods), canActivate: [roleGuard], data: { ...usuarios, titulo: 'Configuración del sistema', subtitulo: 'Periodos de bloqueo' } },
       { path: 'cierres-edicion', redirectTo: 'configuracion/periodos-bloqueo' },
 

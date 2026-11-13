@@ -5,25 +5,6 @@
   align-items: start;
 }
 
-.menu {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 10px;
-
-  &__item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    border-radius: 8px;
-    font-size: 13px;
-    color: var(--color-text-figma);
-
-    &--activo { background: var(--color-chip); color: var(--color-primary); }
-    &--off { color: var(--color-muted-figma); cursor: not-allowed; }
-  }
-}
 
 .formulario {
   display: flex;
@@ -116,7 +97,7 @@
 // tablet: el menú pasa arriba en una fila
 @media (max-width: 1100px) {
   .config { grid-template-columns: minmax(0, 1fr) 260px; }
-  .menu { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; }
+  app-settings-menu { grid-column: 1 / -1; }
 }
 
 // celular: todo en una columna

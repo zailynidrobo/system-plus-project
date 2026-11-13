@@ -9,6 +9,7 @@ import { PersonalizedGuideVersionRecord } from '../academic/entities/personalize
 import { CurricularModule } from '../academic-program/entities/curricular-module.entity.js';
 import { CLOCK, systemClock } from './clock.js';
 import { SuggestionRecord } from './entities/suggestion-record.entity.js';
+import { SuggestionSettingsRecord } from './entities/suggestion-settings-record.entity.js';
 import { UserNotificationRecord } from './entities/user-notification-record.entity.js';
 import { NotificationsController } from './notifications.controller.js';
 import { NotificationsService } from './notifications.service.js';
@@ -19,6 +20,8 @@ import { SuggestionInboxService } from './suggestion-inbox.service.js';
 import { SuggestionRejectionController } from './suggestion-rejection.controller.js';
 import { SuggestionRejectionService } from './suggestion-rejection.service.js';
 import { SUGGESTION_RULES, loadSuggestionRules } from './suggestion-rules.js';
+import { SuggestionSettingsController } from './suggestion-settings.controller.js';
+import { SuggestionSettingsService } from './suggestion-settings.service.js';
 import { SuggestionSubmissionService } from './suggestion-submission.service.js';
 import { SuggestionViewsService } from './suggestion-views.service.js';
 import { TeacherSuggestionsController } from './teacher-suggestions.controller.js';
@@ -32,6 +35,7 @@ import { TeacherSuggestionsController } from './teacher-suggestions.controller.j
     AcademicModule,
     TypeOrmModule.forFeature([
       SuggestionRecord,
+      SuggestionSettingsRecord,
       UserNotificationRecord,
       AcademicGuideRecord,
       GuideEventRecord,
@@ -47,6 +51,7 @@ import { TeacherSuggestionsController } from './teacher-suggestions.controller.j
     SuggestionApprovalController,
     SuggestionRejectionController,
     NotificationsController,
+    SuggestionSettingsController,
   ],
   providers: [
     { provide: CLOCK, useValue: systemClock },
@@ -56,6 +61,7 @@ import { TeacherSuggestionsController } from './teacher-suggestions.controller.j
       useFactory: (config: ConfigService) =>
         loadSuggestionRules((name) => config.get<string>(name)),
     },
+    SuggestionSettingsService,
     SuggestionViewsService,
     SuggestionSubmissionService,
     SuggestionInboxService,

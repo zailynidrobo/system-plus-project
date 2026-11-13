@@ -4,6 +4,7 @@ import { GuideEditLock } from '../../../shared/models/guide-edit-lock';
 import { Icon } from '../../../shared/ui/icon/icon';
 import { ahoraLocalBogota, aIsoBogota, estadoPeriodo, rangoPeriodo } from '../../../shared/utils/periodos';
 import { GuideEditLockApi } from '../../guides/guide-edit-lock-api';
+import { SettingsMenu } from '../settings-menu/settings-menu';
 
 export const MAX_NOMBRE = 150;
 export const MAX_MENSAJE = 500;
@@ -18,7 +19,7 @@ const MENSAJES: Record<string, string> = {
 // Figma HE-09-HU-02-CA-01 · Configuración del sistema > Periodos de bloqueo
 @Component({
   selector: 'app-edit-lock-periods',
-  imports: [Icon],
+  imports: [Icon, SettingsMenu],
   templateUrl: './edit-lock-periods.html',
   styleUrl: './edit-lock-periods.scss',
 })
@@ -30,12 +31,6 @@ export class EditLockPeriods {
   readonly maxMensaje = MAX_MENSAJE;
   /** Roles a los que les aplica el bloqueo: hoy el back bloquea a todos los que editan guías. */
   readonly roles = ['Coordinador Académico', 'Docente', 'Docente Autorizado'];
-  readonly menu = [
-    { texto: 'Sugerencias', icono: 'message-square', activo: false },
-    { texto: 'Periodos de bloqueo', icono: 'lock', activo: true },
-    { texto: 'Notificaciones', icono: 'bell', activo: false },
-    { texto: 'Seguridad y sesión', icono: 'shield-check', activo: false },
-  ];
   readonly minimo = ahoraLocalBogota();
   rango = rangoPeriodo;
   estado = (p: GuideEditLock) => estadoPeriodo(p);

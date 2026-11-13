@@ -58,6 +58,7 @@ import {
 import { ListGuidesQuery } from './dto/list-guides.query.js';
 import { CreateGuideEditLockDto } from './dto/create-guide-edit-lock.dto.js';
 import { GuideEditLockRecord } from './entities/guide-edit-lock-record.entity.js';
+import { assertNoActiveEditLock } from './guide-edit-lock.js';
 
 @Injectable()
 export class AcademicService implements OnModuleInit {
@@ -287,17 +288,9 @@ export class AcademicService implements OnModuleInit {
   }
 
   async assertGuideEditingAllowed() {
-    const now = new Date();
-    const active = (await this.guideEditLocks().find()).find(
-      (lock) => lock.startsAt <= now && lock.endsAt > now,
-    );
-    if (active) {
-      throw new ConflictException({
-        code: 'GUIDE_EDITING_LOCKED',
-        message: `La edición de guías está inhabilitada hasta ${active.endsAt.toISOString()}`,
-      });
-    }
+    await assertNoActiveEditLock(this.guideEditLocks());
   }
+
 
   private guideEditLocks(): Repository<GuideEditLockRecord> {
     return this.dataSource.getRepository(GuideEditLockRecord);
@@ -1022,6 +1015,7 @@ export class AcademicService implements OnModuleInit {
     name?: string,
     roles: string[] = [],
   ) {
+    await this.assertGuideEditingAllowed();
     const guide = await this.getGuideOrFail(baseGuideId);
     if (guide.status !== 'published') {
       throw new ConflictException(
@@ -1078,6 +1072,7 @@ export class AcademicService implements OnModuleInit {
     teacherId: string,
     dto: UpdatePersonalizedGuideVersionDto,
   ) {
+    await this.assertGuideEditingAllowed();
     const version = await this.getPersonalizedVersionOrFail(id);
     if (version.teacherId !== teacherId) {
       throw new ForbiddenException(

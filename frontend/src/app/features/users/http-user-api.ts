@@ -119,6 +119,22 @@ export class HttpUserApi implements ContratoUserApi {
     );
   }
 
+  reactivar(id: number): Observable<User> {
+    return this.uuid(id).pipe(
+      switchMap((uuid) => this.http.patch<UsuarioApi>(`${this.base}/${uuid}/reactivate`, {})),
+      map((u) => this.aUsuarioObligatorio(u)),
+      catchError((e) => throwError(() => this.aError(e))),
+    );
+  }
+
+  restablecerContrasena(id: number): Observable<string> {
+    return this.uuid(id).pipe(
+      switchMap((uuid) => this.http.patch<{ temporaryPassword: string }>(`${this.base}/${uuid}/reset-password`, {})),
+      map((r) => r.temporaryPassword),
+      catchError((e) => throwError(() => this.aError(e))),
+    );
+  }
+
   cambiarRol(id: number, rol: Role): Observable<User> {
     return this.uuid(id).pipe(
       switchMap((uuid) => this.http.patch<UsuarioApi>(`${this.base}/${uuid}/role`, { role: toBackendRole(rol) })),
@@ -167,7 +183,9 @@ export class HttpUserApi implements ContratoUserApi {
     if (e instanceof ApiError) return e;
     const estado = e instanceof HttpErrorResponse ? e.status : 0;
     const codigo = e instanceof HttpErrorResponse ? (e.error as { code?: unknown } | null)?.code : undefined;
-    if (codigo === 'ACCION_SOBRE_SI_MISMO' || codigo === 'ULTIMO_ADMINISTRADOR') return new ApiError(codigo);
+    if (codigo === 'ACCION_SOBRE_SI_MISMO' || codigo === 'ULTIMO_ADMINISTRADOR' || codigo === 'USUARIO_INACTIVO' || codigo === 'USUARIO_YA_ACTIVO') {
+      return new ApiError(codigo);
+    }
     if (estado === 409) return new ApiError('CORREO_EN_USO');
     if (estado === 404) return new ApiError('NO_ENCONTRADO');
     if (estado === 401 || estado === 403) return new ApiError('SIN_PERMISO');

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Optional } from '@nestjs/common';
+import { BadRequestException, Injectable, Optional, ConflictException } from '@nestjs/common';
 import { Role, User } from './entities/user.entity.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
@@ -142,6 +142,30 @@ export class UsersService {
     return this.findOne(id);
   }
 
+  /** Devuelve el acceso a una cuenta desactivada. Conserva su rol y su historial. */
+  async reactivate(id: string): Promise<User> {
+    const user = await this.findOne(id);
+    if (user.isActive) throw new ConflictException({ code: 'USUARIO_YA_ACTIVO', message: 'El usuario ya está activo' });
+    await this.keycloak.updateUser(id, { enabled: true });
+    return this.findOne(id);
+  }
+
+  /**
+   * Genera una contraseña temporal nueva para quien la olvidó. La persona debe cambiarla en su
+   * siguiente ingreso, y las sesiones que tuviera abiertas se cierran.
+   */
+  async resetPassword(id: string, actorId?: string): Promise<{ id: string; temporaryPassword: string }> {
+    this.assertNotSelf(id, actorId);
+    const user = await this.findOne(id);
+    if (!user.isActive) {
+      throw new ConflictException({ code: 'USUARIO_INACTIVO', message: 'Reactive la cuenta antes de restablecer la contraseña' });
+    }
+    const temporaryPassword = generateTemporaryPassword();
+    await this.keycloak.setPassword(id, temporaryPassword, true);
+    await this.keycloak.logoutUser(id).catch(() => undefined);
+    return { id, temporaryPassword };
+  }
+
   async updateRole(id: string, dto: UpdateRoleDto, actorId?: string): Promise<User> { // HU-04
     this.assertNotSelf(id, actorId);
     const user = await this.findOne(id);
@@ -159,7 +183,7 @@ export class UsersService {
     if (actorId && id === actorId) {
       throw new BadRequestException({
         code: 'ACCION_SOBRE_SI_MISMO',
-        message: 'No puede desactivar ni cambiar el rol de su propia cuenta',
+        message: 'No puede desactivar, cambiar el rol ni restablecer la contraseña de su propia cuenta',
       });
     }
   }

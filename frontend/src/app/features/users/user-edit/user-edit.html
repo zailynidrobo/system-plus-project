@@ -14,7 +14,11 @@
         <span class="avatar">{{ iniciales() }}</span>
         <div class="card__who">
           <strong>{{ u.nombre }}</strong>
-          <small>Creado el {{ creadoEl() }}</small>
+          @if (creadoEl()) {
+            <small>Creado el {{ creadoEl() }}</small>
+          } @else {
+            <small>{{ u.correo }}</small>
+          }
         </div>
         <div class="card__tags">
           @if (u.activo) {
@@ -82,6 +86,62 @@
     </form>
 
     <aside class="ui-side">
+      @if (!esUnoMismo()) {
+        <section class="ui-side-card acceso">
+          <h3><app-icon name="shield-check" [size]="17" /> Acceso a la cuenta</h3>
+
+          @if (contrasenaTemporal()) {
+            <div class="ui-notice ui-notice--ok" role="status">
+              <div>
+                <strong>Contraseña temporal generada</strong>
+                <p>Entrégala a {{ u.nombre }} por un medio seguro. Solo se muestra ahora; al ingresar deberá crear una propia.</p>
+                <code class="temp">{{ contrasenaTemporal() }}</code>
+              </div>
+            </div>
+          } @else if (reactivado()) {
+            <div class="ui-notice ui-notice--ok" role="status">
+              <div>
+                <strong>Cuenta reactivada</strong>
+                <p>{{ u.nombre }} puede ingresar de nuevo con su rol de {{ rolVisible() }}.</p>
+              </div>
+            </div>
+          } @else if (u.activo) {
+            <p class="acceso__texto">Si la persona olvidó su contraseña, genera una temporal nueva. Sus sesiones abiertas se cerrarán.</p>
+            @if (confirmando() === 'restablecer') {
+              <p class="acceso__confirmar">¿Generar una contraseña temporal nueva para {{ u.nombre }}?</p>
+              <div class="acceso__botones">
+                <button type="button" class="ui-btn ui-btn--outline ui-btn--sm" (click)="confirmando.set(null)" [disabled]="procesandoAcceso()">Cancelar</button>
+                <button type="button" class="ui-btn ui-btn--primary ui-btn--sm" (click)="restablecerContrasena()" [disabled]="procesandoAcceso()">
+                  {{ procesandoAcceso() ? 'Generando...' : 'Sí, generar' }}
+                </button>
+              </div>
+            } @else {
+              <button type="button" class="ui-btn ui-btn--outline ui-btn--sm" (click)="confirmando.set('restablecer')">
+                <app-icon name="rotate-ccw" [size]="15" /> Restablecer contraseña
+              </button>
+            }
+          } @else {
+            <p class="acceso__texto">La cuenta está desactivada. Al reactivarla, la persona vuelve a ingresar con el mismo rol.</p>
+            @if (confirmando() === 'reactivar') {
+              <p class="acceso__confirmar">¿Reactivar la cuenta de {{ u.nombre }}?</p>
+              <div class="acceso__botones">
+                <button type="button" class="ui-btn ui-btn--outline ui-btn--sm" (click)="confirmando.set(null)" [disabled]="procesandoAcceso()">Cancelar</button>
+                <button type="button" class="ui-btn ui-btn--ok ui-btn--sm" (click)="reactivar()" [disabled]="procesandoAcceso()">
+                  {{ procesandoAcceso() ? 'Reactivando...' : 'Sí, reactivar' }}
+                </button>
+              </div>
+            } @else {
+              <button type="button" class="ui-btn ui-btn--ok ui-btn--sm" (click)="confirmando.set('reactivar')">
+                <app-icon name="user-check" [size]="15" /> Reactivar usuario
+              </button>
+            }
+          }
+          @if (errorAcceso(); as msg) {
+            <small class="error" role="alert">{{ msg }}</small>
+          }
+        </section>
+      }
+
       <section class="ui-side-card">
         <h3><app-icon name="history" [size]="17" /> Historial reciente</h3>
         <ul class="ui-timeline">
@@ -93,6 +153,8 @@
                 <small>{{ e.detalle }}</small>
               </div>
             </li>
+          } @empty {
+            <li class="vacio">Sin cambios registrados todavía.</li>
           }
         </ul>
       </section>

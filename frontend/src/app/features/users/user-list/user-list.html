@@ -109,14 +109,12 @@
                <a class="action action--danger" [routerLink]="['/usuarios', u.id, 'desactivar']" title="Desactivar usuario" aria-label="Desactivar usuario">
                 <app-icon name="user-x" [size]="16" />
                </a>
+              } @else if (!u.activo) {
+               <a class="action action--ok" [routerLink]="['/usuarios', u.id, 'editar']" title="Reactivar usuario" aria-label="Reactivar usuario">
+                <app-icon name="user-check" [size]="16" />
+               </a>
               } @else {
-                <button
-                  type="button"
-                  class="action action--danger"
-                  disabled
-                  [title]="u.activo ? 'No puedes desactivar tu propia cuenta' : 'El usuario ya está desactivado'"
-                  [attr.aria-label]="u.activo ? 'No puedes desactivar tu propia cuenta' : 'Usuario ya desactivado'"
-                >
+                <button type="button" class="action action--danger" disabled title="No puedes desactivar tu propia cuenta" aria-label="No puedes desactivar tu propia cuenta">
                   <app-icon name="user-x" [size]="16" />
                 </button>
               }

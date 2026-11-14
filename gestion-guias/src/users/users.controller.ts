@@ -39,6 +39,16 @@ export class UsersController {
     return this.users.deactivate(id, actor.id);
   }
 
+  @Patch(':id/reactivate')
+  reactivate(@Param('id') id: string) {
+    return this.users.reactivate(id);
+  }
+
+  @Patch(':id/reset-password')
+  resetPassword(@Param('id') id: string, @CurrentUser() actor: AuthenticatedUser) {
+    return this.users.resetPassword(id, actor.id);
+  }
+
   @Patch(':id/role')
   updateRole(
     @Param('id') id: string,

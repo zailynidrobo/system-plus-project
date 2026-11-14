@@ -87,6 +87,24 @@ describe('HttpUserApi', () => {
     expect((await promesa).rol).toBe('COORDINADOR');
   });
 
+  it('reactivar llama a /reactivate y devuelve el usuario activo', async () => {
+    const promesa = firstValueFrom(api.reactivar(idDesdeUuid(LUIS.id)));
+    http.expectOne(URL).flush([LUIS]);
+    http.expectOne(`${URL}/${LUIS.id}/reactivate`).flush({ ...LUIS, isActive: true });
+    expect((await promesa).activo).toBe(true);
+  });
+
+  it('restablecer la contraseña devuelve la temporal y traduce USUARIO_INACTIVO', async () => {
+    const ok = firstValueFrom(api.restablecerContrasena(idDesdeUuid(LUIS.id)));
+    http.expectOne(URL).flush([LUIS]);
+    http.expectOne(`${URL}/${LUIS.id}/reset-password`).flush({ id: LUIS.id, temporaryPassword: 'Temporal-123' });
+    expect(await ok).toBe('Temporal-123');
+
+    const falla = firstValueFrom(api.restablecerContrasena(idDesdeUuid(LUIS.id)));
+    http.expectOne(`${URL}/${LUIS.id}/reset-password`).flush({ code: 'USUARIO_INACTIVO' }, { status: 409, statusText: 'Conflict' });
+    await expect(falla).rejects.toMatchObject({ code: 'USUARIO_INACTIVO' });
+  });
+
   it('desactivar llama a /deactivate y un usuario inexistente da NO_ENCONTRADO', async () => {
     const promesa = firstValueFrom(api.desactivar(idDesdeUuid(LUIS.id)));
     http.expectOne(URL).flush([LUIS]);

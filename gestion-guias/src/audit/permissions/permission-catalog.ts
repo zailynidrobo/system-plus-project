@@ -28,6 +28,8 @@ export const PERMISSION_CATALOG: Record<string, PermissionDescription> = {
   'PATCH /users/:id': { area: USUARIOS, action: 'Editar los datos de un usuario' },
   'PATCH /users/:id/deactivate': { area: USUARIOS, action: 'Desactivar usuarios' },
   'PATCH /users/:id/role': { area: USUARIOS, action: 'Asignar roles' },
+  'PATCH /users/:id/reactivate': { area: USUARIOS, action: 'Reactivar usuarios' },
+  'PATCH /users/:id/reset-password': { area: USUARIOS, action: 'Restablecer la contraseña de un usuario' },
   'GET /academic/teachers': { area: ASIGNACION, action: 'Consultar la lista de docentes' },
 
   'GET /programs': { area: PROGRAMA, action: 'Consultar los programas académicos' },

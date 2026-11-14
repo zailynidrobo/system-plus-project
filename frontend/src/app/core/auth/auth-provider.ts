@@ -34,9 +34,10 @@ export interface AuthProvider {
 
   /**
    * Token listo para usar: si está por vencer, primero renueva la sesión. Emite null si la
-   * sesión ya no se puede renovar. Sin esta función se usa token() tal cual.
+   * sesión ya no se puede renovar. Con `forzar` renueva aunque no esté por vencer (por ejemplo,
+   * cuando la API avisa que el rol cambió). Sin esta función se usa token() tal cual.
    */
-  tokenVigente?(): Observable<string | null>;
+  tokenVigente?(forzar?: boolean): Observable<string | null>;
 
   /** Primer ingreso con contraseña temporal: la cambia por una definitiva e inicia sesión. */
   cambiarContrasenaTemporal?(datos: CambioContrasenaTemporal, recordar: boolean): Observable<User>;

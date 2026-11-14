@@ -96,7 +96,7 @@
   padding: 14px 16px;
   border-radius: 10px;
   background: #faf6e6;
-  color: #9a7a2e;
+  color: var(--color-gold-text);
   font-size: 13px;
 
   strong { display: block; margin-bottom: 2px; }
@@ -174,9 +174,9 @@
     padding: 18px 20px;
     border-radius: 12px;
     background: #faf6e6;
-    color: #9a7a2e;
+    color: var(--color-gold-text);
 
     strong { display: block; margin: 10px 0 6px; font-size: 13px; color: var(--color-text); }
-    p { margin: 0; font-size: 12px; line-height: 1.5; color: var(--color-muted); }
+    p { margin: 0; font-size: 12px; line-height: 1.5; color: #5b6170; }
   }
 }

@@ -1,3 +1,4 @@
+import { of } from 'rxjs';
 import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
@@ -112,5 +113,73 @@ describe('authInterceptor con sesión vencida', () => {
     const req = backend.expectOne(`${environment.apiUrl}/auth/refresh`);
     expect(req.request.headers.has('Authorization')).toBe(false);
     req.flush({});
+  });
+});
+
+describe('authInterceptor cuando el administrador cambia el rol (DEF-02)', () => {
+  let http: HttpClient;
+  let backend: HttpTestingController;
+  let renovaciones: number;
+  let cerradas: number;
+  let nuevoToken: string | null;
+
+  beforeEach(() => {
+    renovaciones = 0;
+    cerradas = 0;
+    nuevoToken = 'token-con-rol-nuevo';
+    const authFalso = {
+      isLoggedIn: () => true,
+      tokenVigente: () => of('token-anterior'),
+      renovarSesion: () => {
+        renovaciones++;
+        return of(nuevoToken);
+      },
+      logout: () => cerradas++,
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(withInterceptors([authInterceptor])),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        { provide: Auth, useValue: authFalso },
+      ],
+    });
+    vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    http = TestBed.inject(HttpClient);
+    backend = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => backend.verify());
+
+  it('renueva la sesión y repite la petición con el token nuevo, sin pedir login', () => {
+    let respuesta: unknown;
+    http.get('/api/guias').subscribe((r) => (respuesta = r));
+
+    backend.expectOne('/api/guias').flush({ code: 'ROL_ACTUALIZADO', message: 'Su rol cambió' }, { status: 401, statusText: 'Unauthorized' });
+    const repetida = backend.expectOne('/api/guias');
+    expect(repetida.request.headers.get('Authorization')).toBe('Bearer token-con-rol-nuevo');
+    repetida.flush(['ok']);
+
+    expect(renovaciones).toBe(1);
+    expect(cerradas).toBe(0);
+    expect(respuesta).toEqual(['ok']);
+  });
+
+  it('si la sesión no se puede renovar, la cierra', () => {
+    nuevoToken = null;
+    http.get('/api/guias').subscribe({ error: () => undefined });
+
+    backend.expectOne('/api/guias').flush({ code: 'ROL_ACTUALIZADO' }, { status: 401, statusText: 'Unauthorized' });
+
+    expect(cerradas).toBe(1);
+  });
+
+  it('una cuenta desactivada cierra la sesión sin intentar renovarla (DEF-04)', () => {
+    http.get('/api/guias').subscribe({ error: () => undefined });
+
+    backend.expectOne('/api/guias').flush({ code: 'CUENTA_DESACTIVADA' }, { status: 401, statusText: 'Unauthorized' });
+
+    expect(renovaciones).toBe(0);
+    expect(cerradas).toBe(1);
   });
 });

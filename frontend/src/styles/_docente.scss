@@ -31,7 +31,7 @@
   &__head { display: flex; align-items: center; gap: 12px; }
   &__title { display: flex; flex: 1; flex-direction: column; min-width: 0; }
   &__title strong { font-size: 14.5px; font-weight: 500; line-height: 1.45; color: var(--color-text-figma); }
-  &__title small { font-size: 11px; color: #8a8fa3; }
+  &__title small { font-size: 11px; color: #6b6f82; }
   &__actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 2px; }
   &__eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-muted-figma); }
   &__eyebrow--primary { color: var(--color-primary); }
@@ -69,7 +69,7 @@
 }
 
 .ui-pill--info { background: var(--color-chip); color: var(--color-primary); }
-.ui-pill--gold { border: 1px solid #eadcaa; background: #fbf6e2; color: #9a7b33; }
+.ui-pill--gold { border: 1px solid #eadcaa; background: #fbf6e2; color: var(--color-gold-text); }
 .ui-pill--sm { padding: 2px 9px; }
 
 /* Campos de una guía con la cabecera "Solo lectura" de HE-04 y HE-05 */
@@ -80,7 +80,7 @@
   p { font-size: 12.5px; color: #3c4058; }
 }
 
-.ui-lock { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: #8a8fa3; }
+.ui-lock { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: #6b6f82; }
 
 /* Barra de progreso */
 .ui-progress {
@@ -103,7 +103,7 @@
 
   li { display: flex; gap: 9px; color: var(--color-primary); }
   strong { display: block; font-size: 12px; font-weight: 400; color: var(--color-text-figma); }
-  small { font-size: 11px; color: #8a8fa3; }
+  small { font-size: 11px; color: #6b6f82; }
 }
 
 .ui-btn--block { width: 100%; }
@@ -130,7 +130,7 @@
   background: #f6f7fa;
 
   strong { display: block; font-size: 12.5px; font-weight: 500; color: var(--color-text-figma); }
-  small { font-size: 11px; color: #8a8fa3; }
+  small { font-size: 11px; color: #6b6f82; }
 
   &--accent { background: #eeeef8; }
 }
@@ -165,7 +165,7 @@
 .ui-notice--gold {
   border: 1px solid #efe2b0;
   background: #fbf6e2;
-  color: #9a7b33;
+  color: var(--color-gold-text);
 
   p { color: #5b4a1c; }
 }

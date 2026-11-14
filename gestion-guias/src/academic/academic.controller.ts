@@ -24,11 +24,9 @@ import { AcademicService } from './academic.service.js';
 import { ConfigureGuideFieldsDto } from './dto/configure-guide-fields.dto.js';
 import { CreateGuideDto } from './dto/create-guide.dto.js';
 import { UpdateGuideDto } from './dto/update-guide.dto.js';
-import { CreatePersonalizedGuideVersionDto } from './dto/create-personalized-guide-version.dto.js';
-import { UpdatePersonalizedGuideVersionDto } from './dto/update-personalized-guide-version.dto.js';
 import { GuideDocumentExportService } from './guide-document-export.service.js';
+import { enviarDocumento } from './document-response.js';
 import { GuideFieldsImpactDto } from './dto/guide-fields-impact.dto.js';
-import { ListGuidesQuery } from './dto/list-guides.query.js';
 import { CreateGuideEditLockDto } from './dto/create-guide-edit-lock.dto.js';
 
 @Controller('academic')
@@ -130,28 +128,6 @@ export class AcademicController {
     return this.academicService.createGuide(dto, this.guideActor(request.user));
   }
 
-  @Get('guides')
-  @Roles('coordinador', 'docente', 'docente_autorizado')
-  findAllGuides(
-    @Query() query: ListGuidesQuery,
-    @Req() request: { user: KeycloakJwtPayload },
-  ) {
-    return this.academicService.findGuidesForUser(
-      query,
-      request.user.sub,
-      request.user.realm_access?.roles ?? [],
-    );
-  }
-
-  @Get('guides/summary')
-  @Roles('coordinador', 'docente', 'docente_autorizado')
-  getGuidesSummary(@Req() request: { user: KeycloakJwtPayload }) {
-    return this.academicService.getGuidesSummaryForUser(
-      request.user.sub,
-      request.user.realm_access?.roles ?? [],
-    );
-  }
-
   @Get('guides/:id')
   @Roles('coordinador', 'docente', 'docente_autorizado')
   findGuide(
@@ -176,63 +152,6 @@ export class AcademicController {
       request.user.sub,
       request.user.realm_access?.roles ?? [],
     );
-  }
-
-  @Get('guides/:id/versions')
-  @Roles('coordinador', 'docente', 'docente_autorizado')
-  findGuideVersions(
-    @Param('id') id: string,
-    @Req() request: { user: KeycloakJwtPayload },
-  ) {
-    return this.academicService.findGuideVersionsForUser(
-      id,
-      request.user.sub,
-      request.user.realm_access?.roles ?? [],
-    );
-  }
-
-  @Get('guides/:id/versions/:version')
-  @Roles('coordinador', 'docente', 'docente_autorizado')
-  findGuideVersion(
-    @Param('id') id: string,
-    @Param('version') version: string,
-    @Req() request: { user: KeycloakJwtPayload },
-  ) {
-    return this.academicService.findGuideVersionForUser(
-      id,
-      version,
-      request.user.sub,
-      request.user.realm_access?.roles ?? [],
-    );
-  }
-
-  @Get('guides/:id/versions/:version/export')
-  @Roles('coordinador', 'docente', 'docente_autorizado')
-  async exportGuideVersion(
-    @Param('id') id: string,
-    @Param('version') version: string,
-    @Query('format') format: string,
-    @Req() request: { user: KeycloakJwtPayload },
-    @Res() response: Response,
-  ) {
-    await this.academicService.findGuideVersionForUser(
-      id,
-      version,
-      request.user.sub,
-      request.user.realm_access?.roles ?? [],
-    );
-    const data = await this.academicService.getGuideVersionDocumentData(
-      id,
-      version,
-    );
-    const file = await this.exportDocument(data, format);
-    const extension = this.documentExtension(format);
-    response.setHeader('Content-Type', this.documentContentType(extension));
-    response.setHeader(
-      'Content-Disposition',
-      `attachment; filename="guia-${version}.${extension}"`,
-    );
-    response.send(file);
   }
 
   @Post('guides/:id/support-materials')
@@ -321,14 +240,7 @@ export class AcademicController {
       request.user.realm_access?.roles ?? [],
     );
     const data = await this.academicService.getGuideDocumentData(id);
-    const file = await this.exportDocument(data, format);
-    const extension = this.documentExtension(format);
-    response.setHeader('Content-Type', this.documentContentType(extension));
-    response.setHeader(
-      'Content-Disposition',
-      `attachment; filename="guia-base.${extension}"`,
-    );
-    response.send(file);
+    await enviarDocumento(this.documentExportService, data, format, 'guia-base', response);
   }
 
   @Patch('guides/:id')
@@ -376,118 +288,6 @@ export class AcademicController {
     @Param('teacherId') teacherId: string,
   ) {
     return this.academicService.unassignTeacherFromModule(moduleId, teacherId);
-  }
-
-  @Post('guides/:guideId/personalized-versions')
-  @Roles('docente', 'docente_autorizado')
-  createPersonalizedVersion(
-    @Param('guideId') guideId: string,
-    @Req() request: { user: KeycloakJwtPayload },
-    @Body() dto?: CreatePersonalizedGuideVersionDto,
-  ) {
-    return this.academicService.createPersonalizedVersion(
-      guideId,
-      request.user.sub,
-      dto?.name,
-      request.user.realm_access?.roles ?? [],
-    );
-  }
-
-  @Get('my-assignments')
-  @Roles('docente', 'docente_autorizado')
-  findMyAssignments(@Req() request: { user: KeycloakJwtPayload }) {
-    return this.academicService.findAssignmentsForTeacher(
-      request.user.sub,
-      request.user.realm_access?.roles ?? [],
-    );
-  }
-
-  @Get('personalized-versions')
-  @Roles('docente', 'docente_autorizado')
-  findMyPersonalizedVersions(@Req() request: { user: KeycloakJwtPayload }) {
-    return this.academicService.findPersonalizedVersionsForTeacher(
-      request.user.sub,
-    );
-  }
-
-  @Get('personalized-versions/:id')
-  @Roles('docente', 'docente_autorizado')
-  findPersonalizedVersion(
-    @Param('id') id: string,
-    @Req() request: { user: KeycloakJwtPayload },
-  ) {
-    return this.academicService.findPersonalizedVersionForTeacher(
-      id,
-      request.user.sub,
-    );
-  }
-
-  @Get('personalized-versions/:id/isolation')
-  @Roles('docente', 'docente_autorizado')
-  findPersonalizedVersionIsolation(
-    @Param('id') id: string,
-    @Req() request: { user: KeycloakJwtPayload },
-  ) {
-    return this.academicService.findPersonalizedVersionIsolation(
-      id,
-      request.user.sub,
-    );
-  }
-
-  @Get('personalized-versions/:id/export')
-  @Roles('docente', 'docente_autorizado')
-  async exportPersonalizedVersion(
-    @Param('id') id: string,
-    @Query('format') format: string,
-    @Req() request: { user: KeycloakJwtPayload },
-    @Res() response: Response,
-  ) {
-    const data = await this.academicService.getPersonalizedVersionDocumentData(
-      id,
-      request.user.sub,
-    );
-    const file = await this.exportDocument(data, format);
-    const extension = this.documentExtension(format);
-    response.setHeader('Content-Type', this.documentContentType(extension));
-    response.setHeader(
-      'Content-Disposition',
-      `attachment; filename="guia-docente.${extension}"`,
-    );
-    response.send(file);
-  }
-
-  @Patch('personalized-versions/:id')
-  @Roles('docente', 'docente_autorizado')
-  updatePersonalizedVersion(
-    @Param('id') id: string,
-    @Req() request: { user: KeycloakJwtPayload },
-    @Body() dto: UpdatePersonalizedGuideVersionDto,
-  ) {
-    return this.academicService.updatePersonalizedVersion(
-      id,
-      request.user.sub,
-      dto,
-    );
-  }
-
-  private exportDocument(
-    data: Awaited<ReturnType<AcademicService['getGuideDocumentData']>>,
-    format: string,
-  ) {
-    if (format === 'docx') return this.documentExportService.toDocx(data);
-    if (format === 'pdf') return this.documentExportService.toPdf(data);
-    throw new BadRequestException('El formato debe ser docx o pdf');
-  }
-
-  private documentExtension(format: string): 'docx' | 'pdf' {
-    if (format === 'docx' || format === 'pdf') return format;
-    throw new BadRequestException('El formato debe ser docx o pdf');
-  }
-
-  private documentContentType(extension: 'docx' | 'pdf') {
-    return extension === 'pdf'
-      ? 'application/pdf'
-      : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
   }
 
   /** DEF-11: autor y publicador se muestran con el nombre de la persona, no con su correo. */

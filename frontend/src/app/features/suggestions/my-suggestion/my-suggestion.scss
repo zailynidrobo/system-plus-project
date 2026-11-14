@@ -27,10 +27,10 @@
   gap: 8px;
   margin: 18px 0 0;
   font-size: 11px;
-  color: #8a8fa3;
+  color: #6b6f82;
 }
 
 .ui-options a { text-decoration: none; }
-.estado-Pendiente { color: #9a7b33 !important; }
+.estado-Pendiente { color: var(--color-gold-text) !important; }
 .estado-Aprobada { color: var(--color-success-figma) !important; }
 .estado-Rechazada { color: var(--color-danger-figma) !important; }

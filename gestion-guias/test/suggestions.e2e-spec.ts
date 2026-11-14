@@ -1,4 +1,5 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
+import { crearValidationPipe } from '../src/common/validation.js';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -77,7 +78,7 @@ describe('HE-05 Sugerencias (e2e)', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+    app.useGlobalPipes(crearValidationPipe());
     if (!app.get(ConfigService).get<string>('DB_NAME', '').endsWith('_test')) {
       throw new Error(
         'Las pruebas e2e reinician la base de datos: DB_NAME debe terminar en _test',

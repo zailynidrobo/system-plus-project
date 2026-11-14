@@ -1,11 +1,4 @@
-import {
-  IsBoolean,
-  IsOptional,
-  IsString,
-  Matches,
-  MaxLength,
-  ValidateIf,
-} from 'class-validator';
+import { IsDefined, IsBoolean, IsOptional, IsString, Matches, MaxLength, ValidateIf } from 'class-validator';
 
 const NOT_BLANK = /\S/;
 
@@ -22,6 +15,7 @@ export class CreateCurricularModuleDto {
     (dto: CreateCurricularModuleDto) =>
       dto.draft !== true || dto.description !== undefined,
   )
+  @IsDefined({ message: 'La descripción es obligatoria' })
   @IsString({ message: 'La descripción debe ser texto' })
   @Matches(NOT_BLANK, { message: 'La descripción es obligatoria' })
   @MaxLength(2000, { message: 'La descripción admite máximo 2000 caracteres' })

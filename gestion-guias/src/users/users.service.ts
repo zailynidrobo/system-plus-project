@@ -1,8 +1,9 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Optional } from '@nestjs/common';
 import { Role, User } from './entities/user.entity.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import { UpdateRoleDto } from './dto/update-role.dto.js';
+import { SessionRevocationService } from './session-revocation.service.js';
 import { KeycloakAdminService, KeycloakUser } from './keycloak-admin.service.js';
 import { generateTemporaryPassword } from './temporary-password.js';
 import { joinName, splitName } from './user-name.js';
@@ -23,7 +24,10 @@ export type CreatedUser = User & { temporaryPassword?: string };
 /** Gestión de usuarios (HE-01) sobre Keycloak: ahí viven las cuentas, las contraseñas y los roles. */
 @Injectable()
 export class UsersService {
-  constructor(private readonly keycloak: KeycloakAdminService) {}
+  constructor(
+    private readonly keycloak: KeycloakAdminService,
+    @Optional() private readonly revocation?: SessionRevocationService,
+  ) {}
 
   private pickRole(roleNames: string[]): Role | null {
     return ROLE_PRIORITY.find((role) => roleNames.includes(role)) ?? null;
@@ -133,6 +137,8 @@ export class UsersService {
     await this.keycloak.updateUser(id, { enabled: false });
     // Desactivar no borra al usuario; solo impide nuevos ingresos y cierra sus sesiones abiertas.
     await this.keycloak.logoutUser(id).catch(() => undefined);
+    // El token que ya tiene deja de servir de inmediato, sin esperar a que venza (DEF-04).
+    this.revocation?.revocar(id, 'CUENTA_DESACTIVADA');
     return this.findOne(id);
   }
 
@@ -143,6 +149,8 @@ export class UsersService {
       await this.assertAnotherActiveAdmin(id);
     }
     await this.keycloak.setRealmRole(id, dto.role, ROLES);
+    // El token anterior se rechaza; el frontend lo renueva y recibe el rol nuevo (DEF-02).
+    if (dto.role !== user.role) this.revocation?.revocar(id, 'ROL_ACTUALIZADO');
     return this.findOne(id);
   }
 

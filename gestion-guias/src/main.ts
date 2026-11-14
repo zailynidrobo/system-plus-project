@@ -1,12 +1,14 @@
-import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { NestFactory } from '@nestjs/core';
+import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module.js';
+import { ErrorLoggingFilter } from './common/error-logging.filter.js';
+import { crearValidationPipe } from './common/validation.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+  app.useGlobalPipes(crearValidationPipe());
+  app.useGlobalFilters(new ErrorLoggingFilter(app.get(HttpAdapterHost).httpAdapter));
 
   // El front corre en otro origen (Angular en :4200): sin CORS el navegador bloquea sus peticiones.
   const origins = app

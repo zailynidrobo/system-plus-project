@@ -67,11 +67,11 @@ export class HttpAuthProvider implements AuthProvider {
     return this.storage.getToken();
   }
 
-  tokenVigente(): Observable<string | null> {
+  tokenVigente(forzar = false): Observable<string | null> {
     const token = this.storage.getToken();
     const renovacion = this.storage.getRenovacion();
     if (!token || !renovacion) return of(token);
-    if (renovacion.venceEn - Date.now() > MARGEN_RENOVACION_MS) return of(token);
+    if (!forzar && renovacion.venceEn - Date.now() > MARGEN_RENOVACION_MS) return of(token);
 
     this.renovando ??= this.http
       .post<SesionApi>(`${this.url}/refresh`, { refreshToken: renovacion.refreshToken })

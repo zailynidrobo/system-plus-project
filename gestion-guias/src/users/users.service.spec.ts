@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { Role } from './entities/user.entity.js';
 import { KeycloakAdminService, KeycloakUser, NewKeycloakUser } from './keycloak-admin.service.js';
+import { SessionRevocationService } from './session-revocation.service.js';
 import { UsersService } from './users.service.js';
 
 /** Keycloak en memoria: imita lo justo de la API de administración para probar las reglas del servicio. */
@@ -362,6 +363,33 @@ describe('UsersService (HE-01 sobre Keycloak)', () => {
       await expect(
         service.updateRole(admin.id, { role: Role.DOCENTE }, 'otro'),
       ).rejects.toBeInstanceOf(BadRequestException);
+    });
+  });
+
+  describe('revocación de tokens vigentes (DEF-02, DEF-04)', () => {
+    let revocation: SessionRevocationService;
+    beforeEach(() => {
+      revocation = new SessionRevocationService();
+      service = new UsersService(keycloak as unknown as KeycloakAdminService, revocation);
+    });
+    const ahora = () => Math.floor(Date.now() / 1000);
+
+    it('al desactivar, el token que ya tenía el usuario deja de servir', async () => {
+      const created = await service.create({ name: 'Usuario Prueba', email: 'u1@example.com' });
+      await service.deactivate(created.id);
+      expect(revocation.motivo(created.id, ahora() - 30)).toBe('CUENTA_DESACTIVADA');
+    });
+
+    it('al cambiar el rol, el token anterior se rechaza para renovarlo con el rol nuevo', async () => {
+      const created = await service.create({ name: 'Usuario Prueba', email: 'u2@example.com', role: Role.DOCENTE });
+      await service.updateRole(created.id, { role: Role.COORDINADOR });
+      expect(revocation.motivo(created.id, ahora() - 30)).toBe('ROL_ACTUALIZADO');
+    });
+
+    it('asignar el mismo rol no cierra la sesión', async () => {
+      const created = await service.create({ name: 'Usuario Prueba', email: 'u3@example.com', role: Role.DOCENTE });
+      await service.updateRole(created.id, { role: Role.DOCENTE });
+      expect(revocation.motivo(created.id, ahora() - 30)).toBeNull();
     });
   });
 });

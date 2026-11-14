@@ -16,7 +16,7 @@ import { GuideDocumentExportService } from './guide-document-export.service.js';
 import { TypeOrmGuideStatsProvider } from './typeorm-guide-stats.provider.js';
 
 /**
- * HE-03/HE-04 - Guías, campos, asignación docente, versiones personalizadas y materiales.
+ * HE-03 - Guías base: estructura, borrador, publicación, materiales y asignación de docentes.
  * Los módulos y competencias son los de HE-02 (`curricular_modules` y `competencies`);
  * este componente solo los consulta para validar y no los administra.
  */
@@ -43,6 +43,7 @@ import { TypeOrmGuideStatsProvider } from './typeorm-guide-stats.provider.js';
   ],
   // HE-02 lo usa para mostrar cuántas guías tiene cada módulo y competencia.
   // HE-05 (sugerencias) usa AcademicService para devolver la guía actualizada al aprobar.
-  exports: [TypeOrmGuideStatsProvider, AcademicService],
+  // Búsqueda (HE-06), historial (HE-07) y espacio docente (HE-04) usan AcademicService y la exportación.
+  exports: [TypeOrmGuideStatsProvider, AcademicService, GuideDocumentExportService],
 })
 export class AcademicModule {}

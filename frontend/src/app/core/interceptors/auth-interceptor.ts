@@ -12,6 +12,12 @@ const RUTAS_DE_SESION = `${environment.apiUrl}/auth/`;
  * Agrega el token a cada petición, renovándolo antes si está por vencer. Si la sesión ya no se
  * puede renovar, o la API responde 401, borra la sesión y lleva al login con un aviso.
  */
+function codigoDe(error: HttpErrorResponse): string | undefined {
+  const cuerpo = error.error as { code?: unknown; message?: { code?: unknown } } | null;
+  const code = cuerpo?.code ?? cuerpo?.message?.code;
+  return typeof code === 'string' ? code : undefined;
+}
+
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   if (req.url.startsWith(RUTAS_DE_SESION)) return next(req);
 
@@ -32,9 +38,23 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       }
       return next(req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })).pipe(
         catchError((error: unknown) => {
-          if (error instanceof HttpErrorResponse && error.status === 401 && auth.isLoggedIn()) {
-            sesionTerminada();
+          if (!(error instanceof HttpErrorResponse) || error.status !== 401 || !auth.isLoggedIn()) {
+            return throwError(() => error);
           }
+          // El administrador cambió el rol: se renueva la sesión con el rol nuevo y se repite la
+          // petición una sola vez, sin pedir otro inicio de sesión (DEF-02).
+          if (codigoDe(error) === 'ROL_ACTUALIZADO') {
+            return auth.renovarSesion().pipe(
+              switchMap((nuevo) => {
+                if (!nuevo) {
+                  sesionTerminada();
+                  return throwError(() => error);
+                }
+                return next(req.clone({ setHeaders: { Authorization: `Bearer ${nuevo}` } }));
+              }),
+            );
+          }
+          sesionTerminada();
           return throwError(() => error);
         }),
       );

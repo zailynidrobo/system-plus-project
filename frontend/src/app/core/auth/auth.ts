@@ -58,6 +58,17 @@ export class Auth {
     );
   }
 
+  /**
+   * Renueva la sesión aunque el token no haya vencido y aplica el rol vigente. La usa el
+   * interceptor cuando la API responde que el rol del usuario cambió (DEF-02).
+   */
+  renovarSesion(): Observable<string | null> {
+    if (!this.provider.tokenVigente) return of(null);
+    return this.provider.tokenVigente(true).pipe(
+      tap((token) => this._user.set(token ? this.provider.restaurarSesion() : null)),
+    );
+  }
+
   logout(): void {
     this.provider.logout();
     this._user.set(null);

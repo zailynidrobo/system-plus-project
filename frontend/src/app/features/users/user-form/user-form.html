@@ -22,7 +22,7 @@
       @if (mensajeNombre(); as msg) {
         <small class="error">{{ msg }}</small>
       } @else {
-        <small class="hint">Escribe nombre y apellido.</small>
+        <small class="hint">Por ejemplo: María López</small>
       }
       <small class="contador" aria-live="polite">{{ form.controls.nombre.value.length }}/{{ maxNombre }}</small>
     </div>

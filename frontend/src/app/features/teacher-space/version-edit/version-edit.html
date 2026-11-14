@@ -140,7 +140,7 @@
     <aside class="ui-side">
       <section class="ui-side-card">
         <h3 class="ui-side-title">Progreso de adaptación</h3>
-        <div class="ui-progress" role="progressbar" [attr.aria-valuenow]="progreso()" aria-valuemin="0" aria-valuemax="100">
+        <div class="ui-progress" role="progressbar" aria-label="Progreso de adaptación de la guía" [attr.aria-valuenow]="progreso()" aria-valuemin="0" aria-valuemax="100">
           <span [style.width.%]="progreso()"></span>
         </div>
         <small class="ui-muted">{{ v.adaptedKeys.length }} de {{ v.editableCount }} campos adaptados</small>

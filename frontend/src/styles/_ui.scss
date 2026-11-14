@@ -115,7 +115,7 @@
 
   &--sm { width: 34px; height: 34px; }
   &--ok { background: var(--color-success-bg-figma); color: var(--color-success-figma); }
-  &--warn { background: var(--color-notice); color: var(--color-gold-accent); }
+  &--warn { background: var(--color-notice); color: var(--color-gold-text); }
   &--danger { background: var(--color-danger-bg-figma); color: var(--color-danger-figma); }
 }
 
@@ -204,6 +204,9 @@
   min-width: 760px; // si la pantalla es mas chica la tabla se desliza de lado y no se aplasta
   border-collapse: collapse;
 
+  // En tablas las palabras no se parten a la mitad: la columna se ensancha o pasa a la siguiente línea.
+  :is(td, th, strong, small) { overflow-wrap: normal; }
+
   th {
     height: 38px;
     padding: 0 16px;
@@ -279,7 +282,7 @@
 
   &--ok { background: var(--color-success-bg-figma); color: var(--color-success-figma); }
   &--off { background: var(--color-danger-bg-figma); color: var(--color-danger-figma); }
-  &--warn { background: var(--color-notice); color: #9a7a2e; }
+  &--warn { background: var(--color-notice); color: var(--color-gold-text); }
   &--neutral { background: #f1f2f6; color: var(--color-muted-figma); }
   &--tag { padding: 3px 7px; font-size: 9px; font-weight: 700; }
 }
@@ -355,7 +358,7 @@
   padding: 18px;
   border-radius: 16px;
   background: var(--color-notice);
-  color: var(--color-gold-accent);
+  color: var(--color-gold-text);
 
   strong { font-size: 12px; color: var(--color-text-figma); }
   p { margin: 0; font-size: 11px; line-height: 1.5; color: var(--color-text-figma); }
@@ -462,7 +465,7 @@
   padding: 14px;
   border-radius: 10px;
   background: var(--color-notice);
-  color: var(--color-gold-accent);
+  color: var(--color-gold-text);
   font-size: 12px;
 
   > app-icon { flex-shrink: 0; }
@@ -530,7 +533,7 @@
 
     &--danger { background: var(--color-danger-bg-figma); color: var(--color-danger-figma); }
     &--ok { background: var(--color-success-bg-figma); color: var(--color-success-figma); }
-    &--warn { background: var(--color-notice); color: var(--color-gold-accent); }
+    &--warn { background: var(--color-notice); color: var(--color-gold-text); }
   }
 }
 
@@ -811,7 +814,7 @@
 .ui-layout--wide-side { grid-template-columns: minmax(0, 1fr) 340px; }
 @media (max-width: 1100px) { .ui-layout--wide-side { grid-template-columns: minmax(0, 1fr); } }
 
-.ui-label--gold { color: var(--color-gold-accent); }
+.ui-label--gold { color: var(--color-gold-text); }
 .ui-code--md { font-size: 11px; }
 .ui-box p.ui-box__text { font-size: 13px; }
 
@@ -991,8 +994,8 @@
 .ui-icon-btn.is-current { border-color: var(--color-primary); background: var(--color-primary); color: #fff; }
 
 .ui-stepper--spaced { margin-bottom: 14px; }
-.ui-validations div.is-warn { color: var(--color-gold-accent); }
-.ui-circle--gold-soft { width: 54px; height: 54px; background: var(--color-notice); color: #9a7b33; }
+.ui-validations div.is-warn { color: var(--color-gold-text); }
+.ui-circle--gold-soft { width: 54px; height: 54px; background: var(--color-notice); color: var(--color-gold-text); }
 .ui-success__card--narrow { width: min(600px, 100%); }
 .ui-success__card h2.ui-success__title--sm { font-size: 21px; font-weight: 500; }
 
@@ -1002,7 +1005,7 @@
   font-size: 12px;
   color: var(--color-muted-figma);
 
-  strong { color: #9a7b33; }
+  strong { color: var(--color-gold-text); }
   span { color: #c4c7d3; }
 }
 

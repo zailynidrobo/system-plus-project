@@ -18,14 +18,16 @@
   --color-border: #e3e5ee;
   /* Valores exactos de Figma, para las pantallas nuevas y el menú */
   --color-gold-accent: #c1a460;
+  /* Dorado oscuro para texto: el dorado de acento no alcanza el contraste AA (DEF-11). */
+  --color-gold-text: #7d6224;
   --color-text-figma: #26263d;
-  --color-muted-figma: #6f7087;
+  --color-muted-figma: #5f6175;
   --color-border-figma: #e2e3ec;
   --color-surface-2: #f9f9fc;
   --color-chip: #eeeefa;
   --color-avatar: #f1e29d;
   --color-notice: #fbf7e7;
-  --color-danger-figma: #cf4a3b;
+  --color-danger-figma: #b23a2c;
   --color-danger-bg-figma: #fcedea;
   --color-success-figma: #247a52;
   --color-success-bg-figma: #eaf6ef;

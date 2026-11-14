@@ -47,7 +47,7 @@
     <div class="filters">
       <label class="select">
         <app-icon name="sliders" [size]="16" />
-        <select [value]="rol()" (change)="filtrarRol($any($event.target).value)">
+        <select aria-label="Filtrar por rol" [value]="rol()" (change)="filtrarRol($any($event.target).value)">
           <option value="TODOS">Todos los roles</option>
           @for (r of roles; track r.value) {
             <option [value]="r.value">{{ r.label }}</option>
@@ -56,7 +56,7 @@
       </label>
 
       <label class="select">
-        <select [value]="estado()" (change)="filtrarEstado($any($event.target).value)">
+        <select aria-label="Filtrar por estado" [value]="estado()" (change)="filtrarEstado($any($event.target).value)">
           <option value="TODOS">Estado: Todos</option>
           <option value="ACTIVO">Estado: Activos</option>
           <option value="DESACTIVADO">Estado: Desactivados</option>

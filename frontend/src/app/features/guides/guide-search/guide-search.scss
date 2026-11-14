@@ -4,7 +4,9 @@
   gap: 20px;
   align-items: start;
 
-  @media (max-width: 1000px) {
+  // Hasta 1200 px los filtros van arriba: así la tabla de resultados tiene todo el ancho y la
+  // página no se desborda en pantallas de 1024 px o menos (DEF-12).
+  @media (max-width: 1200px) {
     grid-template-columns: minmax(0, 1fr);
   }
 }

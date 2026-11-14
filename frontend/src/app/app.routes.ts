@@ -18,6 +18,7 @@ const sugerencias = { roles: ['COORDINADOR'] as Role[], titulo: 'Sugerencias' };
 
 export const routes: Routes = [
   { path: 'login', component: Login, canActivate: [guestGuard] },
+  { path: 'privacidad', title: 'Aviso de privacidad', loadComponent: () => import('./features/legal/privacy').then((m) => m.Privacy) },
   {
     path: '',
     component: Shell,

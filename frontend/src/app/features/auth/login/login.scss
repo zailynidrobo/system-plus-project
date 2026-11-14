@@ -107,7 +107,13 @@
 
   &__main { flex: 1; display: grid; place-items: center; }
 
-  &__footer { text-align: center; font-size: 12px; color: var(--color-muted); }
+  &__footer {
+    text-align: center;
+    font-size: 12px;
+    color: var(--color-muted);
+
+    a { color: var(--color-primary); text-decoration: underline; }
+  }
 }
 
 /* ---------- Tarjeta ---------- */

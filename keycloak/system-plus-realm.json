@@ -103,12 +103,13 @@
       }
     },
     {
+      "id": "5b1f2c9e-0a01-4a1e-9b10-000000000001",
       "username": "admin@example.com",
       "email": "admin@example.com",
       "emailVerified": true,
       "enabled": true,
-      "firstName": "admin",
-      "lastName": "1",
+      "firstName": "Andrea",
+      "lastName": "Salazar",
       "credentials": [
         {
           "type": "password",
@@ -121,12 +122,13 @@
       ]
     },
     {
+      "id": "5b1f2c9e-0a01-4a1e-9b10-000000000002",
       "username": "coordinador@example.com",
       "email": "coordinador@example.com",
       "emailVerified": true,
       "enabled": true,
-      "firstName": "coordinador",
-      "lastName": "1",
+      "firstName": "Carolina",
+      "lastName": "Ruiz",
       "credentials": [
         {
           "type": "password",
@@ -139,12 +141,13 @@
       ]
     },
     {
+      "id": "5b1f2c9e-0a01-4a1e-9b10-000000000003",
       "username": "docente@example.com",
       "email": "docente@example.com",
       "emailVerified": true,
       "enabled": true,
-      "firstName": "docente",
-      "lastName": "1",
+      "firstName": "Andrés",
+      "lastName": "Muñoz",
       "credentials": [
         {
           "type": "password",
@@ -157,12 +160,13 @@
       ]
     },
     {
+      "id": "5b1f2c9e-0a01-4a1e-9b10-000000000004",
       "username": "autorizado@example.com",
       "email": "autorizado@example.com",
       "emailVerified": true,
       "enabled": true,
-      "firstName": "autorizado",
-      "lastName": "1",
+      "firstName": "Paula",
+      "lastName": "Rojas",
       "credentials": [
         {
           "type": "password",

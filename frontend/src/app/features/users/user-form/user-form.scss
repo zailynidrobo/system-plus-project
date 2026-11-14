@@ -180,3 +180,14 @@
     p { margin: 0; font-size: 12px; line-height: 1.5; color: #5b6170; }
   }
 }
+// Ayuda o error a la izquierda y contador de caracteres a la derecha
+.ayuda {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 6px 0 18px;
+
+  .hint, .error { margin: 0; }
+}
+.contador { flex-shrink: 0; font-size: 12px; color: var(--color-muted); font-variant-numeric: tabular-nums; }

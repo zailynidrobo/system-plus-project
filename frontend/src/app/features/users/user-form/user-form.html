@@ -18,11 +18,14 @@
     <div class="control" [class.control--error]="mensajeNombre()">
       <input id="nombre" type="text" formControlName="nombre" autocomplete="off" [attr.maxlength]="maxNombre" />
     </div>
-    @if (mensajeNombre(); as msg) {
-      <small class="error">{{ msg }}</small>
-    } @else {
-      <small class="hint">Escribe nombre y apellido · {{ form.controls.nombre.value.length }}/{{ maxNombre }}</small>
-    }
+    <div class="ayuda">
+      @if (mensajeNombre(); as msg) {
+        <small class="error">{{ msg }}</small>
+      } @else {
+        <small class="hint">Escribe nombre y apellido.</small>
+      }
+      <small class="contador" aria-live="polite">{{ form.controls.nombre.value.length }}/{{ maxNombre }}</small>
+    </div>
 
     <label for="correo">Correo electrónico *</label>
     <div class="control" [class.control--error]="mensajeCorreo()">

@@ -1,10 +1,14 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
+import { crearValidationPipe } from '../src/common/validation.js';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { randomUUID } from 'node:crypto';
 import { DataSource } from 'typeorm';
+import { GuideSearchModule } from '../src/guide-search/guide-search.module.js';
+import { GuideHistoryModule } from '../src/guide-history/guide-history.module.js';
+import { TeacherSpaceModule } from '../src/teacher-space/teacher-space.module.js';
 import { AcademicModule } from '../src/academic/academic.module.js';
 import { AcademicProgramModule } from '../src/academic-program/academic-program.module.js';
 import { ProgramsService } from '../src/academic-program/services/programs.service.js';
@@ -39,14 +43,18 @@ describe('Academic API (e2e)', () => {
           envFilePath: ['.env.test', '.env'],
         }),
         DatabaseModule,
+        // Búsqueda, guías base, historial y espacio docente son módulos separados (RNF-32).
+        GuideSearchModule,
         AcademicModule,
+        GuideHistoryModule,
+        TeacherSpaceModule,
         // Los módulos y competencias son los de HE-02: las guías se crean sobre ellos.
         AcademicProgramModule,
       ],
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+    app.useGlobalPipes(crearValidationPipe());
     const config = app.get(ConfigService);
     if (!config.get<string>('DB_NAME', '').endsWith('_test')) {
       throw new Error(

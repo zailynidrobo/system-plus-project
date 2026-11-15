@@ -1,13 +1,16 @@
 import type { INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module.js';
 import { ErrorLoggingFilter } from './common/error-logging.filter.js';
 import { crearValidationPipe } from './common/validation.js';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // No anunciar que la API usa Express (OWASP ZAP 10037): es información útil para un atacante.
+  app.disable('x-powered-by');
   app.useGlobalPipes(crearValidationPipe());
   app.useGlobalFilters(
     new ErrorLoggingFilter(app.get(HttpAdapterHost).httpAdapter),

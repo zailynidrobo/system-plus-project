@@ -38,6 +38,19 @@ describe('Registro de errores del servidor (DEF-18, RNF-34)', () => {
     expect(log).not.toHaveBeenCalled();
   });
 
+  it('responde 400 cuando la base de datos rechaza un identificador mal formado', () => {
+    const log = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    adaptador.reply.mockClear();
+    const errorBd = Object.assign(new Error('invalid input syntax for type uuid: "abc"'), { driverError: { code: '22P02' } });
+    new ErrorLoggingFilter(adaptador as never).catch(errorBd, host('/academic/guides/abc'));
+    expect(log).not.toHaveBeenCalled();
+    expect(adaptador.reply).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ code: 'IDENTIFICADOR_INVALIDO' }),
+      400,
+    );
+  });
+
   it('ubica el módulo de negocio por la ruta', () => {
     expect(moduloDeRuta('/academic/guides/abc/versions/2')).toBe('historial');
     expect(moduloDeRuta('/academic/guides?q=poo')).toBe('busqueda');

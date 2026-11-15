@@ -6,6 +6,7 @@ import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { randomUUID } from 'node:crypto';
 import { DataSource } from 'typeorm';
+import type { NextFunction, Request, Response } from 'express';
 import { GuideSearchModule } from '../src/guide-search/guide-search.module.js';
 import { GuideHistoryModule } from '../src/guide-history/guide-history.module.js';
 import { TeacherSpaceModule } from '../src/teacher-space/teacher-space.module.js';
@@ -14,7 +15,7 @@ import { AcademicProgramModule } from '../src/academic-program/academic-program.
 import { ProgramsService } from '../src/academic-program/services/programs.service.js';
 import { DatabaseModule } from '../src/database/database.module.js';
 
-const parseBinaryResponse = (
+const parseBinaryResponse = ((
   response: NodeJS.ReadableStream & {
     setEncoding: (encoding: BufferEncoding) => NodeJS.ReadableStream;
     on: (
@@ -30,7 +31,10 @@ const parseBinaryResponse = (
     output += chunk;
   });
   response.on('end', () => callback(null, Buffer.from(output, 'binary')));
-};
+}) as unknown as (
+  response: request.Response,
+  callback: (error: Error | null, body: unknown) => void,
+) => void;
 
 describe('Academic API (e2e)', () => {
   let app: INestApplication<App>;
@@ -61,7 +65,7 @@ describe('Academic API (e2e)', () => {
         'Las pruebas e2e reinician la base de datos: DB_NAME debe terminar en _test',
       );
     }
-    app.use((request, _response, next) => {
+    app.use((request: Request, _response: Response, next: NextFunction) => {
       const role = request.header('x-test-role') ?? 'coordinador';
       const userId = request.header('x-test-user') ?? 'test-coordinator';
       Object.assign(request, {

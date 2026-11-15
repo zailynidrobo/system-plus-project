@@ -393,3 +393,41 @@ describe('UsersService (HE-01 sobre Keycloak)', () => {
     });
   });
 });
+
+describe('UsersService · reactivar y restablecer contraseña', () => {
+  let keycloak: FakeKeycloakAdmin;
+  let service: UsersService;
+  beforeEach(() => {
+    keycloak = new FakeKeycloakAdmin();
+    service = new UsersService(keycloak as unknown as KeycloakAdminService);
+  });
+
+  it('reactiva una cuenta desactivada conservando su rol', async () => {
+    const u = await service.create({ name: 'Ana Ruiz', email: 'ana@example.com', role: Role.DOCENTE });
+    await service.deactivate(u.id);
+    const r = await service.reactivate(u.id);
+    expect(r.isActive).toBe(true);
+    expect(r.role).toBe(Role.DOCENTE);
+  });
+
+  it('no reactiva una cuenta que ya está activa', async () => {
+    const u = await service.create({ name: 'Ana Ruiz', email: 'ana2@example.com' });
+    await expect(service.reactivate(u.id)).rejects.toMatchObject({ response: { code: 'USUARIO_YA_ACTIVO' } });
+  });
+
+  it('genera una contraseña temporal nueva y cierra las sesiones', async () => {
+    const u = await service.create({ name: 'Ana Ruiz', email: 'ana3@example.com' });
+    const anterior = keycloak.passwords.get(u.id)!.value;
+    const r = await service.resetPassword(u.id, 'otro-admin');
+    expect(r.temporaryPassword).not.toBe(anterior);
+    expect(keycloak.passwords.get(u.id)).toEqual({ value: r.temporaryPassword, temporary: true });
+    expect(keycloak.loggedOut).toContain(u.id);
+  });
+
+  it('no restablece la contraseña de una cuenta desactivada ni la propia', async () => {
+    const u = await service.create({ name: 'Ana Ruiz', email: 'ana4@example.com' });
+    await expect(service.resetPassword(u.id, u.id)).rejects.toMatchObject({ response: { code: 'ACCION_SOBRE_SI_MISMO' } });
+    await service.deactivate(u.id);
+    await expect(service.resetPassword(u.id, 'otro-admin')).rejects.toMatchObject({ response: { code: 'USUARIO_INACTIVO' } });
+  });
+});

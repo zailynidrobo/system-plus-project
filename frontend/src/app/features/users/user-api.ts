@@ -158,6 +158,25 @@ export class UserApi {
     });
   }
 
+  // Reactivar devuelve el acceso con el mismo rol; el historial se conserva.
+  reactivar(id: number): Observable<User> {
+    return simular(this.ms, () => {
+      const actualizado = this.reemplazar(id, { activo: true });
+      this.registrarEvento(id, 'Usuario reactivado');
+      return actualizado;
+    });
+  }
+
+  // Genera una contraseña temporal nueva; la persona la cambia en su siguiente ingreso.
+  restablecerContrasena(id: number): Observable<string> {
+    return simular(this.ms, () => {
+      const usuario = this.buscar(id);
+      if (!usuario.activo) throw new ApiError('USUARIO_INACTIVO');
+      this.registrarEvento(id, 'Contraseña restablecida');
+      return 'Tmp-' + Math.random().toString(36).slice(2, 10);
+    });
+  }
+
   // Un usuario tiene un solo rol activo: este cambio reemplaza al anterior.
   cambiarRol(id: number, rol: Role): Observable<User> {
     return simular(this.ms, () => {

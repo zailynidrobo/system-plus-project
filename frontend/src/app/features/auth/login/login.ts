@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Auth } from '../../../core/auth/auth';
 import { homeForRole } from '../../../core/auth/role-home';
 import { ApiError } from '../../../shared/models/api-error';
@@ -34,7 +34,7 @@ const AVISOS_DEL_CAMBIO: readonly string[] = ['CONTRASENA_REPETIDA', 'SERVICIO_N
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, Icon],
+  imports: [ReactiveFormsModule, RouterLink, Icon],
   templateUrl: './login.html',
   styleUrl: './login.scss',
 })

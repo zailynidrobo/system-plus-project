@@ -9,7 +9,9 @@ export function esMismoUsuario(sesion: User | null | undefined, otro: User | nul
 }
 
 const MENSAJES: Record<string, string> = {
-  ACCION_SOBRE_SI_MISMO: 'No puedes desactivar ni cambiar el rol de tu propia cuenta.',
+  ACCION_SOBRE_SI_MISMO: 'No puedes hacer esta acción sobre tu propia cuenta.',
+  USUARIO_INACTIVO: 'Reactiva la cuenta antes de restablecer la contraseña.',
+  USUARIO_YA_ACTIVO: 'La cuenta ya está activa.',
   ULTIMO_ADMINISTRADOR: 'Debe quedar al menos un administrador activo en el sistema.',
   SIN_PERMISO: 'No tienes permiso para hacer esta acción.',
   NO_ENCONTRADO: 'El usuario ya no existe.',

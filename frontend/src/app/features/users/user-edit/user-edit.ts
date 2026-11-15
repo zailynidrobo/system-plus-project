@@ -13,6 +13,8 @@ import { Icon } from '../../../shared/ui/icon/icon';
 import { UserApi } from '../user-api';
 import { validarCorreo } from '../../../shared/utils/correo';
 import { MAX_NOMBRE_COMPLETO, NOMBRE_COMPLETO } from '../nombre-completo';
+import { Auth } from '../../../core/auth/auth';
+import { esMismoUsuario, mensajeDeError } from '../mismo-usuario';
 
 
 @Component({
@@ -26,6 +28,7 @@ export class UserEdit {
   private fb = inject(FormBuilder);
   private api = inject(UserApi);
   private route = inject(ActivatedRoute);
+  private auth = inject(Auth);
 
   private id = Number(this.route.snapshot.paramMap.get('id'));
 
@@ -68,6 +71,14 @@ export class UserEdit {
 
   historial = signal<EventoUsuario[]>([]);
 
+  // Acceso a la cuenta: restablecer la contraseña o reactivar (solo sobre otras cuentas).
+  esUnoMismo = computed(() => esMismoUsuario(this.auth.user(), this.usuario()));
+  confirmando = signal<'restablecer' | 'reactivar' | null>(null);
+  procesandoAcceso = signal(false);
+  contrasenaTemporal = signal('');
+  reactivado = signal(false);
+  errorAcceso = signal('');
+
   creadoEl = computed(() => fechaCorta(this.usuario()?.creadoEn));
 
   constructor() {
@@ -106,6 +117,41 @@ export class UserEdit {
 
   private cargarHistorial(): void {
     this.api.historial(this.id).subscribe({ next: (h) => this.historial.set(h), error: () => {} });
+  }
+
+  restablecerContrasena(): void {
+    this.procesandoAcceso.set(true);
+    this.errorAcceso.set('');
+    this.api.restablecerContrasena(this.id).subscribe({
+      next: (temporal) => {
+        this.contrasenaTemporal.set(temporal);
+        this.confirmando.set(null);
+        this.procesandoAcceso.set(false);
+        this.cargarHistorial();
+      },
+      error: (e: unknown) => {
+        this.errorAcceso.set(mensajeDeError(e, 'No se pudo restablecer la contraseña. Intenta de nuevo.'));
+        this.procesandoAcceso.set(false);
+      },
+    });
+  }
+
+  reactivar(): void {
+    this.procesandoAcceso.set(true);
+    this.errorAcceso.set('');
+    this.api.reactivar(this.id).subscribe({
+      next: (u) => {
+        this.usuario.set(u);
+        this.reactivado.set(true);
+        this.confirmando.set(null);
+        this.procesandoAcceso.set(false);
+        this.cargarHistorial();
+      },
+      error: (e: unknown) => {
+        this.errorAcceso.set(mensajeDeError(e, 'No se pudo reactivar la cuenta. Intenta de nuevo.'));
+        this.procesandoAcceso.set(false);
+      },
+    });
   }
 
   descartar(): void {

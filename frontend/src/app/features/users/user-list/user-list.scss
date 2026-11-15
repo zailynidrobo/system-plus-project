@@ -134,7 +134,13 @@
 
 .table-wrap { overflow-x: auto; }
 
-table { width: 100%; border-collapse: collapse; }
+// En celular la tabla se desliza de lado en vez de partir nombres y etiquetas letra por letra.
+table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  :is(td, th, strong, small, span) { overflow-wrap: normal; }
+}
 
 th {
   padding: 12px 16px;

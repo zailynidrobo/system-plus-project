@@ -39,9 +39,18 @@ services:
       KC_CACHE: local
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      # Valores que Keycloak pone en el realm al importarlo la primera vez (ver generar-realm-produccion.mjs).
+      KEYCLOAK_API_SECRET: ${KEYCLOAK_API_SECRET}
+      ADMIN_CORREO: ${ADMIN_CORREO}
+      ADMIN_NOMBRE: ${ADMIN_NOMBRE}
+      ADMIN_APELLIDO: ${ADMIN_APELLIDO}
+      ADMIN_CLAVE_TEMPORAL: ${ADMIN_CLAVE_TEMPORAL}
+      # Tildes y eñes del nombre del administrador al importar el realm.
+      LANG: C.UTF-8
       JAVA_OPTS_KC_HEAP: "-XX:MaxRAMPercentage=25"
     volumes:
-      - ./keycloak/system-plus-realm.json:/opt/keycloak/data/import/system-plus-realm.json:ro
+      # Realm sin usuarios de prueba: solo el primer administrador, con contraseña temporal.
+      - ./keycloak/system-plus-realm.produccion.json:/opt/keycloak/data/import/system-plus-realm.json:ro
     # Consola de administración solo desde el propio servidor: http://localhost:8080
     ports:
       - "127.0.0.1:8080:8080"
@@ -70,8 +79,11 @@ services:
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
-      # El proyecto aún no tiene migraciones: TypeORM crea y actualiza las tablas al iniciar.
-      DB_SYNCHRONIZE: "true"
+      # Las tablas salen de las migraciones (src/database/migrations), que la API aplica al iniciar.
+      # Nunca "true" aquí: TypeORM podría borrar columnas con datos al cambiar una entidad.
+      DB_SYNCHRONIZE: "false"
+      # La documentación de la API (/docs) solo se publica en desarrollo.
+      API_DOCS: "false"
       LIBREOFFICE_PATH: soffice
       # La API está detrás de Nginx: la auditoría toma la IP real del equipo desde X-Forwarded-For.
       TRUST_PROXY: "true"

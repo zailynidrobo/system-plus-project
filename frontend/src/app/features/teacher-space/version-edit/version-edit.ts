@@ -2,12 +2,14 @@ import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subject, debounceTime } from 'rxjs';
+import { Auth } from '../../../core/auth/auth';
 import { Miga } from '../../../core/layout/miga';
 import { ApiError } from '../../../shared/models/api-error';
 import { GuideEditLock } from '../../../shared/models/guide-edit-lock';
 import { GuideField, GuideValue } from '../../../shared/models/guide-field';
 import { TeacherVersionView } from '../../../shared/models/teacher-version';
 import { Icon } from '../../../shared/ui/icon/icon';
+import { complementoDe, esCampoDeTexto, unirComplemento } from '../../../shared/utils/complemento';
 import { fechaCorta, haceCuanto, hora } from '../../../shared/utils/fechas';
 import { diaDeReapertura, vigenciaPeriodo } from '../../../shared/utils/periodos';
 import { GuideEditLockApi } from '../../guides/guide-edit-lock-api';
@@ -24,7 +26,18 @@ const MENSAJES: Record<string, string> = {
   VALUE_TOO_LONG: 'El texto supera el límite de caracteres.',
   INVALID_OPTION: 'Elige una de las opciones de la lista.',
   FIELD_NOT_EDITABLE: 'Coordinación definió este campo como no editable.',
+  BASE_TEXT_REQUIRED: 'El texto de la guía base se conserva: escribe tu complemento después de él.',
 };
+
+/** "POO · Grupo 2026-1" -> "POO-Grupo-2026-1": sin caracteres que Windows no acepta en un nombre de archivo. */
+export function nombreDeArchivo(nombre: string): string {
+  const limpio = nombre
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9._-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return limpio || 'mi-version';
+}
 
 // Figma HE-04-HU-03-CA-01, CA-02 · Editar mi versión (4002:1110)
 @Component({
@@ -37,6 +50,7 @@ export class VersionEdit {
   private api = inject(TeacherApi);
   private bloqueos = inject(GuideEditLockApi);
   private miga = inject(Miga);
+  private auth = inject(Auth);
   private id = Number(inject(ActivatedRoute).snapshot.paramMap.get('id'));
   private autoguardado = new Subject<void>();
   private pendiente = false;
@@ -57,6 +71,12 @@ export class VersionEdit {
   ahora = signal(Date.now());
   /** Periodo de bloqueo vigente (HE-09): solo consulta mientras dura. */
   bloqueo = signal<GuideEditLock | null>(null);
+  /** El docente autorizado conserva el texto base y solo le agrega su complemento. */
+  esAutorizado = computed(() => this.auth.user()?.rol === 'DOCENTE_AUTORIZADO');
+  exportando = signal<'pdf' | 'docx' | null>(null);
+  errorExportar = signal('');
+  /** Mientras hay un cambio sin guardar, el documento saldría sin él: se espera a que se guarde. */
+  puedeExportar = computed(() => !this.exportando() && this.estado() !== 'pendiente' && this.estado() !== 'guardando');
   vigencia = computed(() => { const b = this.bloqueo(); return b ? vigenciaPeriodo(b.startsAt, b.endsAt) : ''; });
   reapertura = computed(() => { const b = this.bloqueo(); return b ? diaDeReapertura(b.endsAt) : ''; });
 
@@ -137,12 +157,28 @@ export class VersionEdit {
     return valor === null || valor === undefined ? '' : String(valor);
   }
 
+  /** Campo de texto con contenido base en la versión de un docente autorizado. */
+  conComplemento(f: GuideField): boolean {
+    return this.esAutorizado() && esCampoDeTexto(f.type) && this.texto(f.key, true).trim() !== '';
+  }
+
+  /** Caracteres que le quedan al complemento después del texto base y el salto de línea. */
+  maximoComplemento(f: GuideField): number | null {
+    if (!f.maxLength) return null;
+    return Math.max(0, f.maxLength - this.texto(f.key, true).trim().length - 2);
+  }
+
+  /** Valor completo que se guarda: en modo complemento, base + complemento. */
+  valorDe(f: GuideField): string {
+    return this.conComplemento(f) ? unirComplemento(this.texto(f.key, true), this.borrador()) : this.borrador();
+  }
+
   editar(f: GuideField): void {
     if (this.bloqueo() || !this.editable(f) || this.editando() === f.key) return;
     const actual = this.campoEditando();
     if (actual) {
       // No deja saltar a otro campo si el actual tiene un cambio inválido sin guardar
-      const error = this.validar(actual, this.borrador());
+      const error = this.validar(actual, this.valorDe(actual));
       if (error && this.pendiente) {
         this.errorCampo.set(error);
         return;
@@ -151,7 +187,7 @@ export class VersionEdit {
     }
     this.editando.set(f.key);
     this.valorInicial = this.version()?.content[f.key] ?? null;
-    this.borrador.set(this.texto(f.key));
+    this.borrador.set(this.conComplemento(f) ? complementoDe(this.texto(f.key), this.texto(f.key, true)) : this.texto(f.key));
     this.errorCampo.set('');
     this.guardadoEnEdicion = false;
   }
@@ -175,7 +211,8 @@ export class VersionEdit {
       return;
     }
     // Un cambio inválido queda pendiente: no se guarda ni deja cerrar el campo
-    const error = this.validar(campo, this.borrador());
+    const valor = this.valorDe(campo);
+    const error = this.validar(campo, valor);
     if (error) {
       this.errorCampo.set(error);
       this.estado.set('error');
@@ -184,7 +221,7 @@ export class VersionEdit {
 
     this.pendiente = false;
     this.estado.set('guardando');
-    this.api.guardarCampo(v.id, campo.key, this.borrador()).subscribe({
+    this.api.guardarCampo(v.id, campo.key, valor).subscribe({
       next: (actualizada) => {
         this.version.set(actualizada);
         this.ultimoGuardado.set(new Date().toISOString());
@@ -238,6 +275,34 @@ export class VersionEdit {
     if (campo.required && !t) return MENSAJES['FIELD_REQUIRED'];
     if (campo.maxLength && t.length > campo.maxLength) return MENSAJES['VALUE_TOO_LONG'];
     return '';
+  }
+
+  /** PDF en una pestaña nueva; Word se descarga con el nombre de la versión. */
+  exportar(formato: 'pdf' | 'docx'): void {
+    const v = this.version();
+    if (!v || !this.puedeExportar()) return;
+    this.exportando.set(formato);
+    this.errorExportar.set('');
+    this.api.exportar(this.id, formato).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const enlace = document.createElement('a');
+        enlace.href = url;
+        if (formato === 'pdf') {
+          enlace.target = '_blank';
+          enlace.rel = 'noopener noreferrer';
+        } else {
+          enlace.download = `${nombreDeArchivo(v.name)}.docx`;
+        }
+        enlace.click();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        this.exportando.set(null);
+      },
+      error: () => {
+        this.exportando.set(null);
+        this.errorExportar.set('No se pudo generar el documento. Intenta de nuevo en un momento.');
+      },
+    });
   }
 
   private guardadoEl(iso: string): string {

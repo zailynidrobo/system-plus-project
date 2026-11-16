@@ -45,7 +45,7 @@ const comparable = (v: unknown) => (v === null || v === undefined ? '' : String(
 /**
  * Espacio del docente (HE-04) contra el backend real. Misma API pública que TeacherApi (el mock):
  *   GET /academic/my-assignments · GET /academic/guides · POST /academic/guides/:id/personalized-versions
- *   GET /academic/personalized-versions[/:id[/isolation]] · PATCH /academic/personalized-versions/:id
+ *   GET /academic/personalized-versions[/:id[/isolation|/export]] · PATCH /academic/personalized-versions/:id
  *
  * Qué no guarda el backend y cómo se resuelve aquí:
  *  · `baseVersion` y `structureVersion` salen de la guía base actual.
@@ -167,6 +167,19 @@ export class HttpTeacherApi {
         cantidadDocentes: r.otherTeachers,
         moduleName: r.moduleName,
       })),
+      catchError(falla()),
+    );
+  }
+
+  /** Documento de la versión con la plantilla del docente: PDF o Word. */
+  exportar(id: number, formato: 'pdf' | 'docx'): Observable<Blob> {
+    return this.uuidVersion(id).pipe(
+      switchMap((uuid) =>
+        this.http.get(`${this.base}/personalized-versions/${uuid}/export`, {
+          params: { format: formato },
+          responseType: 'blob',
+        }),
+      ),
       catchError(falla()),
     );
   }

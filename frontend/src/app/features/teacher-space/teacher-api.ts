@@ -10,6 +10,7 @@ import { Guide, GuideView } from '../../shared/models/guide';
 import { GuideValue } from '../../shared/models/guide-field';
 import { AislamientoVersion, TeacherVersion, TeacherVersionView } from '../../shared/models/teacher-version';
 import { normalizeForComparison } from '../../shared/utils/curricular';
+import { conservaTextoBase } from '../../shared/utils/complemento';
 import { ahoraIso } from '../../shared/utils/fechas';
 
 /** Búsqueda sin tildes ni mayúsculas ("validacion" encuentra "Validación"). */
@@ -34,7 +35,8 @@ export interface GuiasAsignadas {
 /**
  * Espacio del docente (HE-04): todo se filtra por los módulos asignados a quien tiene la sesión.
  * Imita GET /academic/guides (vista docente), POST /academic/guides/:guideId/personalized-versions,
- * GET /academic/personalized-versions y GET/PATCH /academic/personalized-versions/:id.
+ * GET /academic/personalized-versions, GET/PATCH /academic/personalized-versions/:id
+ * y GET /academic/personalized-versions/:id/export.
  */
 @Injectable({ providedIn: 'root' })
 export class TeacherApi {
@@ -126,6 +128,19 @@ export class TeacherApi {
     return simular(this.ms, () => vistaVersion(this.db, this.versionPropia(id)));
   }
 
+  /** Documento de la versión con la plantilla del docente (Plantilla B). */
+  exportar(id: number, formato: 'pdf' | 'docx'): Observable<Blob> {
+    return simular(this.ms, () => {
+      const v = this.versionPropia(id);
+      return new Blob([`Documento de la versión ${v.name}`], {
+        type:
+          formato === 'pdf'
+            ? 'application/pdf'
+            : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      });
+    });
+  }
+
   /** Tarjeta "Versiones de otros docentes": cuántas hay en el módulo y que ninguna cambió. */
   aislamiento(id: number): Observable<AislamientoVersion> {
     return simular(this.ms, () => {
@@ -152,6 +167,9 @@ export class TeacherApi {
       if (campo.required && !texto) throw new ApiError('FIELD_REQUIRED');
       if (campo.maxLength && texto.length > campo.maxLength) throw new ApiError('VALUE_TOO_LONG');
       if (campo.type === 'select' && texto && !campo.options?.includes(texto)) throw new ApiError('INVALID_OPTION');
+      if (this.auth.user()?.rol === 'DOCENTE_AUTORIZADO' && !conservaTextoBase(campo.type, version.baseContent[key], texto)) {
+        throw new ApiError('BASE_TEXT_REQUIRED');
+      }
       const nuevo: GuideValue = !texto ? null : campo.type === 'number' ? Number(texto) : texto;
 
       if (version.content[key] !== nuevo) {

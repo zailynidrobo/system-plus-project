@@ -21,7 +21,8 @@ export type AcademicErrorCode =
   | 'NAME_REQUIRED'
   | 'NAME_TOO_LONG'
   | 'VERSION_NAME_DUPLICATED'
-  | 'FIELD_NOT_EDITABLE';
+  | 'FIELD_NOT_EDITABLE'
+  | 'BASE_TEXT_REQUIRED';
 
 export const notFound = (code: AcademicErrorCode, message: string) =>
   new NotFoundException({

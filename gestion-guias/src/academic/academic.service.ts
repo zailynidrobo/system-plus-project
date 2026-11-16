@@ -45,6 +45,7 @@ import {
 import { buildCompetencyPrefix } from '../academic-program/curricular-codes.js';
 import { Competency } from '../academic-program/entities/competency.entity.js';
 import { badRequest, conflict } from '../academic-program/api-errors.js';
+import { conservaTextoBase } from './complemento-docente.js';
 import { ConfigureGuideFieldsDto } from './dto/configure-guide-fields.dto.js';
 import { CreateGuideDto } from './dto/create-guide.dto.js';
 import { UpdateGuideDto } from './dto/update-guide.dto.js';
@@ -290,7 +291,6 @@ export class AcademicService implements OnModuleInit {
   async assertGuideEditingAllowed() {
     await assertNoActiveEditLock(this.guideEditLocks());
   }
-
 
   private guideEditLocks(): Repository<GuideEditLockRecord> {
     return this.dataSource.getRepository(GuideEditLockRecord);
@@ -1084,6 +1084,7 @@ export class AcademicService implements OnModuleInit {
     id: string,
     teacherId: string,
     dto: UpdatePersonalizedGuideVersionDto,
+    roles: string[] = [],
   ) {
     await this.assertGuideEditingAllowed();
     const version = await this.getPersonalizedVersionOrFail(id);
@@ -1105,6 +1106,16 @@ export class AcademicService implements OnModuleInit {
         throw badRequest(
           'FIELD_NOT_EDITABLE',
           `El campo '${field.label}' no se puede editar en una versión docente`,
+        );
+      }
+      if (
+        field &&
+        this.isAuthorizedTeacher(roles) &&
+        !conservaTextoBase(field, version.baseContent[key], dto.content[key])
+      ) {
+        throw badRequest(
+          'BASE_TEXT_REQUIRED',
+          `En '${field.label}' el texto de la guía base se conserva: agrega tu complemento después de él`,
         );
       }
     }

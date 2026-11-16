@@ -128,4 +128,26 @@ describe('VersionEdit (editar mi versión campo por campo)', () => {
     expect(nombreDeArchivo('Programación: ¿sesión 3?')).toBe('Programacion-sesion-3');
     expect(nombreDeArchivo('···')).toBe('mi-version');
   });
+
+  it('el docente autorizado conserva el texto base y solo escribe su complemento', async () => {
+    vi.useRealTimers();
+    limpiarSesion();
+    await entrarComo(CORREOS.autorizado);
+    vi.useFakeTimers();
+    guardada().teacherId = 3; // la versión pasa a ser de autorizado@ (Paola Valencia)
+    const editor = abrir();
+    const objetivos = editor.version()!.fields.find((f) => f.key === 'objetivos')!;
+    const base = editor.texto('objetivos', true);
+    expect(editor.conComplemento(objetivos)).toBe(true);
+
+    editor.editar(objetivos);
+    expect(editor.borrador()).toBe('');
+    editor.escribir('Incluye un caso de la empresa local.');
+    editor.guardar(true);
+    respuesta();
+
+    expect(guardada().content['objetivos']).toBe(`${base}\n\nIncluye un caso de la empresa local.`);
+    editor.editar(objetivos);
+    expect(editor.borrador()).toBe('Incluye un caso de la empresa local.');
+  });
 });

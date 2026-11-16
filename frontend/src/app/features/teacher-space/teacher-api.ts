@@ -10,6 +10,7 @@ import { Guide, GuideView } from '../../shared/models/guide';
 import { GuideValue } from '../../shared/models/guide-field';
 import { AislamientoVersion, TeacherVersion, TeacherVersionView } from '../../shared/models/teacher-version';
 import { normalizeForComparison } from '../../shared/utils/curricular';
+import { conservaTextoBase } from '../../shared/utils/complemento';
 import { ahoraIso } from '../../shared/utils/fechas';
 
 /** Búsqueda sin tildes ni mayúsculas ("validacion" encuentra "Validación"). */
@@ -166,6 +167,9 @@ export class TeacherApi {
       if (campo.required && !texto) throw new ApiError('FIELD_REQUIRED');
       if (campo.maxLength && texto.length > campo.maxLength) throw new ApiError('VALUE_TOO_LONG');
       if (campo.type === 'select' && texto && !campo.options?.includes(texto)) throw new ApiError('INVALID_OPTION');
+      if (this.auth.user()?.rol === 'DOCENTE_AUTORIZADO' && !conservaTextoBase(campo.type, version.baseContent[key], texto)) {
+        throw new ApiError('BASE_TEXT_REQUIRED');
+      }
       const nuevo: GuideValue = !texto ? null : campo.type === 'number' ? Number(texto) : texto;
 
       if (version.content[key] !== nuevo) {

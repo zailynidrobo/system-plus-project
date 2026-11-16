@@ -108,7 +108,35 @@
             </span>
           </div>
 
-          @if (editando() === f.key) {
+          @if (editando() === f.key && conComplemento(f)) {
+            <div class="base-fija">
+              <small><app-icon name="lock" [size]="11" /> Texto de la guía base · se conserva</small>
+              <p>{{ texto(f.key, true) }}</p>
+            </div>
+            <label class="complemento" [for]="'complemento-' + f.key">Tu complemento</label>
+            <div class="ui-control" [class.ui-control--error]="errorCampo()">
+              <textarea
+                [id]="'complemento-' + f.key"
+                placeholder="Agrega aquí lo que adaptas para tu grupo"
+                [attr.maxlength]="maximoComplemento(f)"
+                [value]="borrador()"
+                (input)="escribir($any($event.target).value)"
+              ></textarea>
+            </div>
+            @if (errorCampo()) {
+              <p class="ui-help ui-help--error">{{ errorCampo() }}</p>
+            }
+            <div class="campo__foot">
+              <small class="campo__base">Se guarda el texto base seguido de tu complemento.</small>
+              @if (f.maxLength) {
+                <small class="campo__base">{{ valorDe(f).length }}/{{ f.maxLength }}</small>
+              }
+              <button type="button" class="ui-btn ui-btn--xs" (click)="descartar()">Descartar</button>
+              <button type="button" class="ui-btn ui-btn--primary ui-btn--xs" [disabled]="estado() === 'guardando'" (click)="guardar(true)">
+                <app-icon name="check" [size]="13" /> Guardar campo
+              </button>
+            </div>
+          } @else if (editando() === f.key) {
             <div class="ui-control" [class.ui-control--error]="errorCampo()">
               @switch (f.type) {
                 @case ('textarea') {

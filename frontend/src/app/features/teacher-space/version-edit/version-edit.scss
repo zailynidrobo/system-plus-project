@@ -57,3 +57,14 @@
 .campo__vacio { font-style: italic; color: var(--color-muted-figma) !important; }
 
 .reciente { color: var(--color-success-figma) !important; }
+
+// Docente autorizado: texto base fijo y su complemento debajo
+.base-fija {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--color-surface-2);
+  small { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--color-muted-figma); }
+  p { margin-top: 4px; }
+}
+
+.complemento { font-size: 12.5px; font-weight: 500; color: #3c4058; }

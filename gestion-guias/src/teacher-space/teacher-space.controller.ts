@@ -98,6 +98,7 @@ export class TeacherSpaceController {
       id,
       request.user.sub,
       dto,
+      request.user.realm_access?.roles ?? [],
     );
   }
 }

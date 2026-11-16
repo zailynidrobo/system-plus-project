@@ -750,6 +750,66 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
     expect(edited.content).toEqual({ activity: 'Mi actividad' });
   });
 
+  it('an authorized teacher keeps the base text and only appends to it, but can change the lists', async () => {
+    const module = await seedModule('Bases de Datos');
+    await service.configureModuleGuideFields(module.id, {
+      fields: [
+        {
+          key: 'activity',
+          label: 'Actividad',
+          type: 'textarea',
+          required: true,
+        },
+        {
+          key: 'evaluation',
+          label: 'Tipo de evaluación',
+          type: 'select',
+          required: true,
+          options: ['Por proyecto', 'Por evidencias'],
+        },
+      ],
+    });
+    const draft = await createGuide(module, {
+      activity: 'Taller de modelado',
+      evaluation: 'Por proyecto',
+    });
+    await service.publishGuide(draft.id);
+    const autorizado = ['docente_autorizado'];
+    const version = await service.createPersonalizedVersion(
+      draft.id,
+      'teacher-9',
+      'Grupo B',
+      autorizado,
+    );
+
+    await expect(
+      service.updatePersonalizedVersion(
+        version.id,
+        'teacher-9',
+        { content: { activity: 'Otra actividad distinta' } },
+        autorizado,
+      ),
+    ).rejects.toMatchObject({ response: { code: 'BASE_TEXT_REQUIRED' } });
+
+    const edited = await service.updatePersonalizedVersion(
+      version.id,
+      'teacher-9',
+      {
+        content: {
+          activity:
+            'Taller de modelado\n\nIncluye un caso de la empresa local.',
+          evaluation: 'Por evidencias',
+        },
+      },
+      autorizado,
+    );
+    expect(edited.content).toMatchObject({ evaluation: 'Por evidencias' });
+    expect((await service.findGuide(draft.id)).content).toMatchObject({
+      activity: 'Taller de modelado',
+      evaluation: 'Por proyecto',
+    });
+  });
+
   it('tells a teacher which modules are assigned and how many guides stay hidden', async () => {
     const assigned = await seedModule('Asignado');
     const other = await seedModule('Otro módulo');

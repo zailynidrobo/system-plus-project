@@ -19,6 +19,28 @@ export async function enviarDocumento(
     'Content-Type',
     formato === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   );
-  response.setHeader('Content-Disposition', `attachment; filename="${nombreArchivo}.${formato}"`);
+  response.setHeader(
+    'Content-Disposition',
+    `attachment; filename="${nombreArchivoDesdeDatos(datos, nombreArchivo)}.${formato}"`,
+  );
   response.send(archivo);
+}
+
+function nombreArchivoDesdeDatos(
+  datos: DatosDocumento,
+  fallback: string,
+): string {
+  const metadata = (label: string) =>
+    datos.metadata.find((item) => item.label.toLowerCase() === label.toLowerCase())?.value;
+  const partes = [
+    metadata('Nombre de la guía') ?? datos.title,
+    metadata('Versión'),
+  ].filter((value): value is string | number => typeof value === 'string' || typeof value === 'number');
+  const nombre = partes
+    .join(' - ')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9._-]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  return nombre || fallback;
 }

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import JSZip from 'jszip';
 import { execFile as execFileCallback } from 'node:child_process';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
@@ -46,6 +46,14 @@ export class GuideDocumentExportService {
     const documentXml = await documentFile.async('string');
     const populatedXml = this.populateTemplate(documentXml, data);
     archive.file('word/document.xml', populatedXml);
+    await this.populateLogo(archive);
+    for (const fileName of Object.keys(archive.files)) {
+      if (!/^word\/header\d+\.xml$/.test(fileName)) continue;
+      const header = archive.file(fileName);
+      if (!header) continue;
+      const headerXml = await header.async('string');
+      archive.file(fileName, this.populateHeader(headerXml, data));
+    }
     return archive.generateAsync({ type: 'nodebuffer' });
   }
 
@@ -62,7 +70,7 @@ export class GuideDocumentExportService {
     try {
       await writeFile(inputPath, docx);
       try {
-        await execFile(
+        const conversion = await execFile(
           libreOfficePath,
           [
             '--headless',
@@ -75,6 +83,15 @@ export class GuideDocumentExportService {
           ],
           { timeout: 120_000 },
         );
+        try {
+          await access(outputPath);
+        } catch (error) {
+          const files = await readdir(tempDirectory).catch(() => []);
+          throw new Error(
+            `LibreOffice no generó el PDF. Archivos producidos: ${files.join(', ') || 'ninguno'}. ${conversion.stderr || conversion.stdout || 'Sin diagnóstico.'}`,
+            { cause: error },
+          );
+        }
       } catch (error) {
         if (
           typeof error === 'object' &&
@@ -106,6 +123,11 @@ export class GuideDocumentExportService {
       );
       return field ? data.content[field.key] : undefined;
     };
+    const version = metadata('Versión');
+    if (version !== undefined) {
+      xml = this.replaceParagraphText(xml, /Plantilla\s+[AB]\s*·/i, `${data.subtitle} · Versión: ${this.displayValue(version)}`);
+      xml = this.replaceParagraphText(xml, /^Versión\s*:/i, `Versión: ${this.displayValue(version)}`);
+    }
 
     if (data.template === 'base') {
       xml = this.fillRowByLabel(
@@ -167,10 +189,15 @@ export class GuideDocumentExportService {
           data.content,
         );
       }
-      return xml;
+
+      return this.appendUnmappedMetadata(xml, data.metadata, [
+        'Módulo',
+        'Competencia',
+      ]);
     }
 
     xml = this.fillRowByLabel(xml, 'Módulo', 1, metadata('Módulo'));
+    xml = this.fillRowByLabel(xml, 'Código de nivel', 3, metadata('Código'));
     xml = this.fillRowByLabel(
       xml,
       'Competencia (N.C.L.)',
@@ -178,11 +205,42 @@ export class GuideDocumentExportService {
       metadata('Competencia'),
     );
     xml = this.fillRowByLabel(xml, 'Tema general', 1, data.title);
+    xml = this.fillRowByLabel(xml, 'Guía N.°', 3, metadata('Versión'));
     xml = this.fillRowByLabel(
       xml,
       'Docente autor',
       1,
       metadata('Docente autor'),
+    );
+    xml = this.fillRowByLabel(
+      xml,
+      'Clases de esta guía',
+      1,
+      fieldValue(/clases|classes/),
+    );
+    xml = this.fillRowByLabel(
+      xml,
+      'Horas totales',
+      3,
+      fieldValue(/horas|hours/),
+    );
+    xml = this.fillRowByLabel(
+      xml,
+      'Fecha de inicio',
+      1,
+      metadata('Fecha de inicio'),
+    );
+    xml = this.fillRowByLabel(
+      xml,
+      'Fecha de fin',
+      3,
+      metadata('Fecha de fin'),
+    );
+    xml = this.fillRowByLabel(
+      xml,
+      'Visibilidad del material',
+      1,
+      metadata('Visibilidad del material'),
     );
 
     const baseFields = data.reference?.fields ?? [];
@@ -224,7 +282,122 @@ export class GuideDocumentExportService {
         data.content,
       );
     }
-    return xml;
+    return this.appendUnmappedMetadata(xml, data.metadata, [
+      'Módulo',
+      'Competencia',
+      'Docente autor',
+    ]);
+  }
+
+  private replaceParagraphText(xml: string, marker: RegExp, value: string) {
+    return xml.replace(/<w:p\b[\s\S]*?<\/w:p>/g, (paragraph) => {
+      if (!marker.test(this.cellText(paragraph))) return paragraph;
+      let replaced = false;
+      return paragraph.replace(
+        /<w:t(?:\s[^>]*)?>[\s\S]*?<\/w:t>/g,
+        (textElement) => {
+          if (replaced) return textElement.replace(/>[\s\S]*<\/w:t>/, '></w:t>');
+          replaced = true;
+          const openingTag =
+            textElement.match(/^<w:t(?:\s[^>]*)?>/)?.[0] ?? '<w:t>';
+          return `${openingTag}${this.escapeXml(value)}</w:t>`;
+        },
+      );
+    });
+  }
+
+  private populateHeader(xml: string, data: GuideDocumentData) {
+    const version = data.metadata.find(
+      (item) => this.normalize(item.label) === this.normalize('Versión'),
+    )?.value;
+    if (version === undefined || version === null || version === '') return xml;
+    return this.replaceParagraphText(
+      xml,
+      /^\s*Versión\s*:/i,
+      `Versión: ${this.displayValue(version)}`,
+    );
+  }
+
+  private async populateLogo(archive: JSZip) {
+    const logoPath = fileURLToPath(
+      new URL('./templates/logo-system-plus.png', import.meta.url),
+    );
+    archive.file('word/media/logo-system-plus.png', await readFile(logoPath));
+
+    const contentTypes = archive.file('[Content_Types].xml');
+    if (contentTypes) {
+      const xml = await contentTypes.async('string');
+      if (!xml.includes('Extension="png"')) {
+        archive.file(
+          '[Content_Types].xml',
+          xml.replace(
+            '</Types>',
+            '<Default Extension="png" ContentType="image/png"/></Types>',
+          ),
+        );
+      }
+    }
+
+    const relationships = archive.file('word/_rels/header1.xml.rels');
+    if (relationships) {
+      const xml = await relationships.async('string');
+      if (!xml.includes('logo-system-plus.png')) {
+        const relationship =
+          '<Relationship Id="rIdLogo" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/logo-system-plus.png"/>';
+        archive.file(
+          'word/_rels/header1.xml.rels',
+          xml.includes('</Relationships>')
+            ? xml.replace('</Relationships>', `${relationship}</Relationships>`)
+            : xml.replace('/>', `>${relationship}</Relationships>`),
+        );
+      }
+    }
+
+    const header = archive.file('word/header1.xml');
+    if (header) {
+      const xml = await header.async('string');
+      archive.file('word/header1.xml', this.replaceLogoPlaceholder(xml));
+    }
+  }
+
+  private replaceLogoPlaceholder(xml: string) {
+    const drawing = `<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="1828800" cy="535000"/><wp:docPr id="1" name="Logo System Plus"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="0" name="logo-system-plus.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rIdLogo"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="1828800" cy="535000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>`;
+    const withNamespaces = xml.replace(
+      '<w:hdr ',
+      '<w:hdr xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" ',
+    );
+    return withNamespaces.replace(
+      /<w:p\b[\s\S]*?<\/w:p>/g,
+      (paragraph) =>
+        this.normalize(this.cellText(paragraph)) === 'logo'
+          ? paragraph.replace(/<w:r\b[\s\S]*?<\/w:r>/g, '').replace('</w:p>', `${drawing}</w:p>`)
+          : paragraph,
+    );
+  }
+
+  private appendUnmappedMetadata(
+    xml: string,
+    items: Array<{ label: string; value: unknown }>,
+    mappedLabels: string[],
+  ) {
+    const mapped = new Set(mappedLabels.map((label) => this.normalize(label)));
+    const unmapped = items.filter(
+      (item) => !mapped.has(this.normalize(item.label)),
+    );
+    if (!unmapped.length) return xml;
+
+    const paragraphs = [
+      `<w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:rPr><w:b/><w:color w:val="${COLORS.primary}"/></w:rPr><w:t>Información adicional</w:t></w:r></w:p>`,
+      ...unmapped.map(
+        (item) =>
+          `<w:p><w:pPr><w:spacing w:after="100"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>${this.escapeXml(item.label)}: </w:t></w:r><w:r><w:t>${this.escapeXml(this.displayValue(item.value))}</w:t></w:r></w:p>`,
+      ),
+    ];
+    const sectionProperties = xml.search(/<w:sectPr\b/);
+    if (sectionProperties === -1) {
+      return xml.replace('</w:body>', `${paragraphs.join('')}</w:body>`);
+    }
+    return `${xml.slice(0, sectionProperties)}${paragraphs.join('')}${xml.slice(sectionProperties)}`;
   }
 
   private fillTopicRows(

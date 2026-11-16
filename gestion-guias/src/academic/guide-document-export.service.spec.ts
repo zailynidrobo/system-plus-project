@@ -27,7 +27,16 @@ describe('GuideDocumentExportService', () => {
     template: 'teacher' as const,
     title: 'GUÍA DOCENTE',
     subtitle: 'Plantilla B · Módulo de prueba',
-    metadata: [{ label: 'Módulo', value: 'Ciencias' }],
+    metadata: [
+      { label: 'Módulo', value: 'Ciencias' },
+      { label: 'Estado', value: 'Publicada' },
+      { label: 'Fecha de publicación', value: '2026-11-16' },
+      { label: 'Código interno', value: 'GUIA-001' },
+      { label: 'Código', value: 'GUIA-001' },
+      { label: 'Competencia', value: 'COMP-01 · Analizar datos' },
+      { label: 'Versión', value: 'v1.0' },
+      { label: 'Docente autor', value: 'Ana Gómez' },
+    ],
     reference: {
       title: 'Guía base del módulo',
       fields: [
@@ -60,9 +69,23 @@ describe('GuideDocumentExportService', () => {
     const documentXml = await archive
       .file('word/document.xml')
       ?.async('string');
+    const headerXml = await archive
+      .file('word/header1.xml')
+      ?.async('string');
     expect(documentXml).toContain('GUÍA DOCENTE');
     expect(documentXml).toContain('Comprender los ecosistemas');
     expect(documentXml).toContain('Clase 1: práctica guiada');
+    expect(documentXml).toContain('Código interno');
+    expect(documentXml).toContain('GUIA-001');
+    expect(documentXml).toContain('COMP-01 · Analizar datos');
+    expect(documentXml).toContain('Ana Gómez');
+    expect(documentXml).toContain('Versión: v1.0');
+    expect(headerXml).toContain('Versión: v1.0');
+    expect(headerXml).not.toContain('Versión: ______');
+    expect(headerXml).toContain('rIdLogo');
+    expect((await archive.file('word/media/logo-system-plus.png')?.async('nodebuffer'))?.subarray(0, 8)).toEqual(
+      Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    );
   });
 
   it('fills the provided base-module Word template', async () => {
@@ -73,6 +96,8 @@ describe('GuideDocumentExportService', () => {
       metadata: [
         { label: 'Módulo', value: 'Bases de datos' },
         { label: 'Competencia', value: 'Administrar información' },
+        { label: 'Estado', value: 'Publicada' },
+        { label: 'Fecha de publicación', value: '2026-11-16' },
       ],
       fields: data.reference.fields,
       content: data.reference.content,
@@ -86,6 +111,8 @@ describe('GuideDocumentExportService', () => {
     expect(documentXml).toContain('Administrar información');
     expect(documentXml).toContain('Guía de bases de datos');
     expect(documentXml).toContain('Comprender los ecosistemas');
+    expect(documentXml).toContain('Publicada');
+    expect(documentXml).toContain('2026-11-16');
     expect(documentXml).not.toContain('Nombre completo del módulo');
   });
 

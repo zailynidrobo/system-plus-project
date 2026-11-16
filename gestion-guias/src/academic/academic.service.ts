@@ -947,11 +947,13 @@ export class AcademicService implements OnModuleInit {
       title: 'GUÍA BASE DEL MÓDULO',
       subtitle: `Plantilla A · ${guide.title}`,
       metadata: [
+        { label: 'Nombre de la guía', value: guide.title },
         { label: 'Módulo', value: guide.moduleName },
         {
           label: 'Competencia',
           value: guide.competencyName ?? 'No especificada',
         },
+        { label: 'Versión', value: guide.version },
         { label: 'Estado', value: guide.status },
         {
           label: 'Fecha de publicación',
@@ -981,6 +983,7 @@ export class AcademicService implements OnModuleInit {
       title: 'GUÍA BASE DEL MÓDULO',
       subtitle: `Plantilla A · ${guide.title} · ${version}`,
       metadata: [
+        { label: 'Nombre de la guía', value: guide.title },
         { label: 'Módulo', value: guide.moduleName },
         {
           label: 'Competencia',
@@ -1001,15 +1004,30 @@ export class AcademicService implements OnModuleInit {
   async getPersonalizedVersionDocumentData(
     id: string,
     teacherId: string,
+    teacherName?: string,
   ): Promise<GuideDocumentData> {
     const version = await this.findPersonalizedVersionForTeacher(id, teacherId);
+    const guide = await this.getGuideOrFail(version.baseGuideId);
     return {
       template: 'teacher',
-      title: 'GUÍA DOCENTE',
+      title: version.name,
       subtitle: `Plantilla B · ${version.title}`,
       metadata: [
+        { label: 'Nombre de la guía', value: version.name },
         { label: 'Módulo', value: version.moduleName },
-        { label: 'Docente autor', value: teacherId },
+        {
+          label: 'Código',
+          value: guide.code ?? 'No disponible',
+        },
+        {
+          label: 'Competencia',
+          value: guide.competencyName ?? 'No especificada',
+        },
+        { label: 'Versión', value: guide.version },
+        {
+          label: 'Docente autor',
+          value: teacherName?.trim() || teacherId,
+        },
         { label: 'Última actualización', value: version.updatedAt },
       ],
       reference: {

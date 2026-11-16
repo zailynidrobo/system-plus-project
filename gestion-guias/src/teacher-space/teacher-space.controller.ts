@@ -83,6 +83,9 @@ export class TeacherSpaceController {
     const data = await this.academicService.getPersonalizedVersionDocumentData(
       id,
       request.user.sub,
+      typeof request.user.name === 'string'
+        ? request.user.name
+        : request.user.email,
     );
     await enviarDocumento(this.documentExportService, data, format, 'guia-docente', response);
   }

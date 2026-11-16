@@ -34,7 +34,8 @@ export interface GuiasAsignadas {
 /**
  * Espacio del docente (HE-04): todo se filtra por los módulos asignados a quien tiene la sesión.
  * Imita GET /academic/guides (vista docente), POST /academic/guides/:guideId/personalized-versions,
- * GET /academic/personalized-versions y GET/PATCH /academic/personalized-versions/:id.
+ * GET /academic/personalized-versions, GET/PATCH /academic/personalized-versions/:id
+ * y GET /academic/personalized-versions/:id/export.
  */
 @Injectable({ providedIn: 'root' })
 export class TeacherApi {
@@ -124,6 +125,19 @@ export class TeacherApi {
   /** Solo el dueño puede abrir su versión; para cualquier otro docente "no existe". */
   obtenerVersion(id: number): Observable<TeacherVersionView> {
     return simular(this.ms, () => vistaVersion(this.db, this.versionPropia(id)));
+  }
+
+  /** Documento de la versión con la plantilla del docente (Plantilla B). */
+  exportar(id: number, formato: 'pdf' | 'docx'): Observable<Blob> {
+    return simular(this.ms, () => {
+      const v = this.versionPropia(id);
+      return new Blob([`Documento de la versión ${v.name}`], {
+        type:
+          formato === 'pdf'
+            ? 'application/pdf'
+            : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      });
+    });
   }
 
   /** Tarjeta "Versiones de otros docentes": cuántas hay en el módulo y que ninguna cambió. */

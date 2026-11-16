@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { CORREOS, SIN_LATENCIA, entrarComo, limpiarSesion } from '../../../../testing/test-helpers';
 import { MockDb } from '../../../core/mock/mock-db';
-import { AUTOGUARDADO_MS, VersionEdit } from './version-edit';
+import { AUTOGUARDADO_MS, VersionEdit, nombreDeArchivo } from './version-edit';
 
 const VERSION_DE_JULIAN = 1; // POO · Grupo 2026-1
 
@@ -26,6 +26,7 @@ describe('VersionEdit (editar mi versión campo por campo)', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.restoreAllMocks();
     limpiarSesion();
   });
 
@@ -94,5 +95,37 @@ describe('VersionEdit (editar mi versión campo por campo)', () => {
     const intensidad = editor.version()!.fields.find((f) => f.key === 'intensidad')!;
     editor.editar(intensidad);
     expect(editor.editando()).toBeNull();
+  });
+
+  it('descarga la versión en Word con su nombre y no exporta mientras hay un cambio sin guardar', () => {
+    const editor = abrir();
+    const clic = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:version');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    const objetivos = editor.version()!.fields.find((f) => f.key === 'objetivos')!;
+
+    editor.editar(objetivos);
+    editor.escribir('Diseñar clases en Java');
+    expect(editor.puedeExportar()).toBe(false);
+    editor.exportar('docx');
+    expect(clic).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(AUTOGUARDADO_MS);
+    respuesta();
+    expect(editor.puedeExportar()).toBe(true);
+
+    editor.exportar('docx');
+    expect(editor.exportando()).toBe('docx');
+    respuesta();
+    expect(clic).toHaveBeenCalledTimes(1);
+    const enlace = clic.mock.contexts[0] as HTMLAnchorElement;
+    expect(enlace.download).toBe(`${nombreDeArchivo(editor.version()!.name)}.docx`);
+    expect(editor.exportando()).toBeNull();
+  });
+
+  it('arma un nombre de archivo sin tildes ni caracteres que Windows rechaza', () => {
+    expect(nombreDeArchivo('POO · Grupo 2026-1')).toBe('POO-Grupo-2026-1');
+    expect(nombreDeArchivo('Programación: ¿sesión 3?')).toBe('Programacion-sesion-3');
+    expect(nombreDeArchivo('···')).toBe('mi-version');
   });
 });

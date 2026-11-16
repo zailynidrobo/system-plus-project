@@ -26,6 +26,16 @@ const MENSAJES: Record<string, string> = {
   FIELD_NOT_EDITABLE: 'Coordinación definió este campo como no editable.',
 };
 
+/** "POO · Grupo 2026-1" -> "POO-Grupo-2026-1": sin caracteres que Windows no acepta en un nombre de archivo. */
+export function nombreDeArchivo(nombre: string): string {
+  const limpio = nombre
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9._-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return limpio || 'mi-version';
+}
+
 // Figma HE-04-HU-03-CA-01, CA-02 · Editar mi versión (4002:1110)
 @Component({
   selector: 'app-version-edit',
@@ -57,6 +67,10 @@ export class VersionEdit {
   ahora = signal(Date.now());
   /** Periodo de bloqueo vigente (HE-09): solo consulta mientras dura. */
   bloqueo = signal<GuideEditLock | null>(null);
+  exportando = signal<'pdf' | 'docx' | null>(null);
+  errorExportar = signal('');
+  /** Mientras hay un cambio sin guardar, el documento saldría sin él: se espera a que se guarde. */
+  puedeExportar = computed(() => !this.exportando() && this.estado() !== 'pendiente' && this.estado() !== 'guardando');
   vigencia = computed(() => { const b = this.bloqueo(); return b ? vigenciaPeriodo(b.startsAt, b.endsAt) : ''; });
   reapertura = computed(() => { const b = this.bloqueo(); return b ? diaDeReapertura(b.endsAt) : ''; });
 
@@ -238,6 +252,34 @@ export class VersionEdit {
     if (campo.required && !t) return MENSAJES['FIELD_REQUIRED'];
     if (campo.maxLength && t.length > campo.maxLength) return MENSAJES['VALUE_TOO_LONG'];
     return '';
+  }
+
+  /** PDF en una pestaña nueva; Word se descarga con el nombre de la versión. */
+  exportar(formato: 'pdf' | 'docx'): void {
+    const v = this.version();
+    if (!v || !this.puedeExportar()) return;
+    this.exportando.set(formato);
+    this.errorExportar.set('');
+    this.api.exportar(this.id, formato).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const enlace = document.createElement('a');
+        enlace.href = url;
+        if (formato === 'pdf') {
+          enlace.target = '_blank';
+          enlace.rel = 'noopener noreferrer';
+        } else {
+          enlace.download = `${nombreDeArchivo(v.name)}.docx`;
+        }
+        enlace.click();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        this.exportando.set(null);
+      },
+      error: () => {
+        this.exportando.set(null);
+        this.errorExportar.set('No se pudo generar el documento. Intenta de nuevo en un momento.');
+      },
+    });
   }
 
   private guardadoEl(iso: string): string {

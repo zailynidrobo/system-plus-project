@@ -164,6 +164,21 @@ pnpm.cmd run test:e2e    # requiere .env.test
 pruebas e2e reinician la base configurada, por lo que `DB_NAME` en `.env.test` debe terminar
 en `_test` y apuntar a una base distinta de la de desarrollo.
 
+### Migraciones
+
+En la instalación de la sala (`DB_SYNCHRONIZE=false`) las tablas salen de las migraciones de
+`src/database/migrations`, que la API aplica sola al iniciar. Si cambias una entidad (columna, índice
+o tabla nueva), genera la migración contra una base con el esquema anterior y agrégala a
+`src/database/migrations/index.ts`:
+
+```bash
+pnpm run build
+pnpm run migration:generate src/database/migrations/DescripcionDelCambio
+```
+
+Si el comando responde *No changes in database schema were found*, las entidades y las migraciones
+están al día.
+
 ### Autenticación
 
 Usa la autenticación con Keycloak descrita arriba. Lecturas: cualquier usuario con token válido. Escrituras: rol de realm `coordinador`. Para la auditoría ("Creado por …") se toma `name`, `preferred_username` o `email` del token.

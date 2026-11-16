@@ -193,7 +193,7 @@ Keycloak se puede correr de dos formas:
 - **Con Docker.** Es la forma que usa el equipo.
 - **Sin Docker, con Java 21.** Es más liviana y conviene en equipos con poca memoria RAM.
 
-En ambos casos se importa el realm `system-plus`, que ya trae los roles, los clientes y los usuarios de prueba. Los comandos y las credenciales de la consola de administración están en [`keycloak/README.md`](keycloak/README.md).
+En ambos casos se importa el realm `system-plus`, que ya trae los roles, los clientes y los usuarios de prueba. La instalación de la sala usa otro archivo, `keycloak/system-plus-realm.produccion.json`, sin usuarios de prueba (ver [la guía de instalación](docs/intranet/guia-instalacion-sala.md)). Los comandos y las credenciales de la consola de administración están en [`keycloak/README.md`](keycloak/README.md).
 
 ### 7.2 PostgreSQL
 

@@ -87,8 +87,12 @@ function memoryRepository<T extends { id: string }>() {
         .sort((left, right) => {
           const direction = options.order?.['updatedAt'];
           if (!direction) return 0;
-          const a = String(left['updatedAt'] ?? '');
-          const b = String(right['updatedAt'] ?? '');
+          const a = String(
+            (left as Record<string, unknown>)['updatedAt'] ?? '',
+          );
+          const b = String(
+            (right as Record<string, unknown>)['updatedAt'] ?? '',
+          );
           return direction === 'DESC' ? b.localeCompare(a) : a.localeCompare(b);
         });
       const total = filtered.length;
@@ -193,7 +197,11 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
         options: { where: FindOptionsWhere<{ id: string }> },
       ) => repositoryFor(entity).find(options),
       save: (entity: Function, record: { id: string }) =>
-        repositoryFor(entity).save(record),
+        (
+          repositoryFor(entity) as {
+            save: (value: { id: string }) => Promise<unknown>;
+          }
+        ).save(record),
     };
     dataSource = {
       transaction: <T>(
@@ -530,14 +538,18 @@ describe('AcademicService HE-03 sobre módulos y competencias de HE-02', () => {
     const stale = await service
       .updateGuide(draft.id, {
         content: { sourceType: 'primaria', year: 1990 },
-        expectedUpdatedAt: new Date(new Date(opened.updatedAt).getTime() - 60_000).toISOString(),
+        expectedUpdatedAt: new Date(
+          new Date(opened.updatedAt).getTime() - 60_000,
+        ).toISOString(),
       })
       .catch((error: unknown) => error);
     expect(stale).toBeInstanceOf(ConflictException);
     expect((stale as ConflictException).getResponse()).toMatchObject({
       code: 'GUIDE_MODIFIED',
     });
-    expect((await service.findGuide(draft.id)).content).toEqual(firstSave.content);
+    expect((await service.findGuide(draft.id)).content).toEqual(
+      firstSave.content,
+    );
     const published = await service.publishGuide(draft.id);
 
     expect(published).toMatchObject({

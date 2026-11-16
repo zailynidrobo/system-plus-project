@@ -28,7 +28,8 @@ const PLANTILLAS: Plantilla[] = [
   { area: 'Sesión', action: 'Cierre de sesión', rol: null, entidad: 'session', metodo: 'POST', ruta: '/auth/logout', details: null },
 ];
 
-const IPS = ['192.168.1.20', '192.168.1.33', '10.0.0.15', '127.0.0.1'];
+// Direcciones reservadas para ejemplos (RFC 5737): no son de ninguna red real.
+const IPS = ['198.51.100.20', '198.51.100.33', '203.0.113.15', '127.0.0.1'];
 const NAVEGADOR = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/130.0 Safari/537.36';
 
 /** Unos 50 eventos de los últimos días (el más reciente es de hace un rato), del más reciente al más antiguo. */

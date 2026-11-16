@@ -33,7 +33,7 @@ Write-Host 'Copiando archivos de configuración...'
 Copy-Item docker-compose.yml, intranet.env.example $salida -Force
 Copy-Item deploy $salida -Recurse -Force
 New-Item -ItemType Directory -Force -Path "$salida\keycloak" | Out-Null
-Copy-Item keycloak\system-plus-realm.json "$salida\keycloak\" -Force
+Copy-Item keycloak\system-plus-realm.produccion.json "$salida\keycloak\" -Force
 
 Write-Host ''
 Write-Host "Listo. Copie la carpeta '$salida' completa a una USB y llévela al servidor."

@@ -7,6 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
-  <app-root></app-root>
+  <!-- Nginx cambia CSP_NONCE por un valor aleatorio en cada carga; Angular lo pone en sus estilos. -->
+  <app-root ngCspNonce="CSP_NONCE"></app-root>
 </body>
 </html>

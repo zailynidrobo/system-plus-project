@@ -109,6 +109,9 @@ Se hace una sola vez, y de nuevo cada vez que haya una versión nueva del sistem
    | DHCP | Activado, de `192.168.50.100` a `192.168.50.200` |
    | Nombre de la red Wi-Fi | `SystemPlus-Sala` |
    | Contraseña Wi-Fi | Una clave de al menos 12 caracteres |
+   | Seguridad Wi-Fi | WPA2-Personal o WPA3 (nunca red abierta) |
+   | Aislamiento de clientes (AP isolation) | **Desactivado**: si está activo, los celulares no ven al servidor |
+   | Contraseña de administración del router | Cambiar la que trae de fábrica |
 
 3. Conectar con cable el router a la entrada **RJ45 IN** de la OneScreen T7.
    El módulo OPS recibe la red a través de la pantalla.
@@ -133,6 +136,31 @@ Se hace una sola vez, y de nuevo cada vez que haya una versión nueva del sistem
 | OneScreen T7 (Android) | 192.168.50.20 | Fija o reservada en el router |
 | Computadores, celulares | 192.168.50.100 a .200 | Automática (DHCP) |
 
+### Celulares y computadores de la sala
+
+No se instala nada en ellos. Basta con estar en la red de la sala y abrir el navegador en
+`http://192.168.50.10`. **No hace falta internet**: el celular habla directo con el servidor por el Wi-Fi.
+
+1. Conectarse al Wi-Fi `SystemPlus-Sala` con su contraseña.
+2. **Android** muestra "Esta red no tiene acceso a internet". Elegir **Mantener conexión**
+   (o "Conectar de todas formas"); si no, el celular vuelve a los datos móviles y no encuentra el servidor.
+   Si aun así no abre, apagar los datos móviles mientras se usa el sistema.
+3. **iPhone**: funciona igual; si aparece el aviso de "sin conexión a internet", tocar *Usar sin internet*.
+4. Abrir Chrome, Safari o Edge, entrar a `http://192.168.50.10` y guardar la página como favorito
+   o en la pantalla de inicio (*Agregar a pantalla principal*).
+5. Computadores con cable: conectarlos a un puerto LAN del router; reciben la dirección solos.
+
+Desde fuera de la sala (otra red o datos móviles) el sistema **no** se ve: solo existe dentro de esta red.
+
+### Seguridad de la red
+
+- La clave del Wi-Fi (WPA2/WPA3) cifra todo lo que viaja por el aire, incluidas las contraseñas del
+  sistema. Por eso la red **nunca** debe quedar abierta y su clave solo se entrega a quien use el sistema.
+- El sistema usa `http://` (sin candado). Dentro de una red cerrada con clave es aceptable; si más adelante
+  la red de la sala se comparte con otros usuarios o se conecta a la red institucional, se debe activar
+  HTTPS en Nginx con un certificado de la institución.
+- No conectar el router a internet ni a la red institucional sin revisar primero este punto.
+
 ## 6. Preparar el servidor (sin internet)
 
 **Windows (módulo OPS o mini PC con Windows):**
@@ -144,8 +172,10 @@ Se hace una sola vez, y de nuevo cada vez que haya una versión nueva del sistem
 5. Evitar que el equipo se suspenda: *Configuración → Sistema → Energía → Suspender: Nunca*.
 6. Abrir el puerto 80 en el firewall (PowerShell como administrador):
    ```powershell
-   New-NetFirewallRule -DisplayName "System Plus" -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow
+   New-NetFirewallRule -DisplayName "System Plus" -Direction Inbound -Protocol TCP -LocalPort 80 -RemoteAddress LocalSubnet -Profile Any -Action Allow
    ```
+   `LocalSubnet` permite la entrada solo desde la red de la sala. `-Profile Any` es necesario porque
+   Windows suele clasificar como *Pública* una red sin internet.
 
 **Ubuntu Server (mini PC con Linux):** instalar Docker Engine con los paquetes `.deb` descargados
 previamente (docker-ce, docker-ce-cli, containerd.io y docker-compose-plugin) usando `sudo dpkg -i *.deb`,
@@ -158,30 +188,44 @@ y abrir el puerto con `sudo ufw allow 80/tcp`.
    ```powershell
    powershell -ExecutionPolicy Bypass -File deploy\scripts\instalar-servidor.ps1
    ```
-3. La primera vez se abre el archivo `.env` en el Bloc de notas: cambiar `DB_PASSWORD` y
-   `KEYCLOAK_ADMIN_PASSWORD`, guardar y ejecutar el mismo comando otra vez.
-4. El script carga las imágenes, inicia los cuatro servicios y muestra la dirección para entrar.
-   La primera vez tarda entre 1 y 3 minutos.
+3. La primera vez el script crea el archivo `.env` con **claves aleatorias** (base de datos, consola de
+   Keycloak, secreto de la API y clave temporal del administrador) y lo abre en el Bloc de notas.
+   Solo hay que llenar los datos del primer administrador, sin comillas:
+   ```
+   ADMIN_CORREO=coordinacion@institucion.edu.co
+   ADMIN_NOMBRE=Laura
+   ADMIN_APELLIDO=Gómez
+   ```
+   Guardar y ejecutar el mismo comando otra vez.
+4. El script carga las imágenes, inicia los cuatro servicios y al final muestra la dirección para entrar,
+   el correo del administrador y su **clave temporal**. La primera vez tarda entre 1 y 3 minutos.
+5. Guardar una copia del archivo `.env` en un lugar seguro (por ejemplo, una USB que guarde la coordinación).
+   Sin él no se pueden recuperar las claves de la base de datos ni de la consola de Keycloak.
+
+La instalación de la sala **no trae usuarios de prueba**: usa `keycloak/system-plus-realm.produccion.json`,
+que solo crea al administrador indicado en `.env`. Las tablas de la base de datos se crean con las
+migraciones de la API (no con la sincronización automática de desarrollo), y la documentación técnica
+de la API (`/docs`) queda apagada.
 
 Desde ese momento el sistema arranca solo cada vez que se enciende el servidor.
 
 ## 8. Después de instalar
 
-1. Entrar desde la pantalla a `http://192.168.50.10` con la cuenta de prueba `admin@example.com`.
-2. Crear los usuarios reales (administrador, coordinadores y docentes) con sus correos.
-3. **Desactivar las cuentas de prueba** (`@example.com`), que tienen contraseñas conocidas.
-4. En la pantalla OneScreen, abrir el navegador, entrar a `http://192.168.50.10` y guardarlo como favorito
+1. Entrar desde la pantalla a `http://192.168.50.10` con el correo del administrador y la clave temporal.
+   El sistema pide crear una contraseña propia (mínimo 8 caracteres, distinta del correo).
+2. Crear los usuarios reales (coordinadores y docentes) con sus correos. Cada uno recibe una clave
+   temporal y la cambia al entrar por primera vez.
+3. En la pantalla OneScreen, abrir el navegador, entrar a `http://192.168.50.10` y guardarlo como favorito
    o como acceso directo en el inicio.
-5. Recomendado: cambiar el secreto del client `system-plus-api` en la consola de Keycloak
-   (`http://localhost:8080` desde el servidor) y poner el mismo valor en `KEYCLOAK_API_SECRET` del `.env`.
-   Luego ejecutar `docker compose up -d`.
+4. La consola de Keycloak (`http://localhost:8080`) solo abre desde el propio servidor. Su usuario y clave
+   están en `.env` (`KEYCLOAK_ADMIN_USER` y `KEYCLOAK_ADMIN_PASSWORD`).
 
 ## 9. Pruebas de aceptación
 
 | # | Prueba | Resultado esperado |
 |---|---|---|
 | 1 | Abrir `http://192.168.50.10` desde la OneScreen T7 | Aparece la pantalla de inicio de sesión |
-| 2 | Abrirlo desde un computador por cable y desde un celular por Wi-Fi | Igual que en la prueba 1 |
+| 2 | Abrirlo desde un computador por cable y desde un celular por Wi-Fi (sin datos móviles) | Igual que en la prueba 1 |
 | 3 | Iniciar sesión con cada uno de los cuatro roles | Cada rol ve su menú |
 | 4 | Crear una guía en un equipo y consultarla en otro | La guía aparece en ambos |
 | 5 | Descargar una guía en PDF y en DOCX | Se descargan los archivos |
@@ -206,6 +250,8 @@ Desde ese momento el sistema arranca solo cada vez que se enciende el servidor.
 |---|---|---|
 | Desde la sala no abre `http://192.168.50.10` | Firewall o IP del servidor | Revisar la regla del puerto 80 y que el servidor tenga la IP fija (`ipconfig`) |
 | Abre en el servidor pero no en otros equipos | El equipo está en otra red | Conectarlo al Wi-Fi `SystemPlus-Sala` o al router por cable |
+| Abre en computadores pero no en celulares | Aislamiento de clientes del router, o el celular usa datos móviles | Desactivar *AP isolation* en el router; en el celular elegir *Mantener conexión* o apagar los datos |
+| El administrador no puede entrar con la clave temporal | El `.env` se cambió después de la primera instalación | Keycloak solo lee los datos del administrador la primera vez; cambiar la clave desde la consola de Keycloak |
 | "No pudimos conectar con el servicio de acceso" | Keycloak todavía arranca | Esperar 2 minutos; revisar `docker compose ps` |
 | Docker Desktop no inicia | Virtualización desactivada | Activarla en la BIOS |
 | La exportación a PDF falla | Error de LibreOffice en la API | `docker compose logs api` y reiniciar con `docker compose restart api` |
@@ -215,7 +261,9 @@ Desde ese momento el sistema arranca solo cada vez que se enciende el servidor.
 | Archivo | Para qué sirve |
 |---|---|
 | `docker-compose.yml` | Define los cuatro servicios y cómo se conectan |
-| `intranet.env.example` | Plantilla de contraseñas y parámetros (se copia como `.env`) |
+| `intranet.env.example` | Plantilla de parámetros; el instalador la copia como `.env` y genera las claves |
+| `keycloak/system-plus-realm.produccion.json` | Realm de la sala: roles y clientes, sin usuarios de prueba (se genera con `deploy/scripts/generar-realm-produccion.mjs`) |
+| `gestion-guias/src/database/migrations/` | Migraciones que crean y actualizan las tablas |
 | `gestion-guias/Dockerfile` | Imagen de la API, con LibreOffice para exportar PDF |
 | `frontend/Dockerfile` | Imagen de las pantallas, servidas con Nginx |
 | `deploy/nginx/default.conf` | Única entrada por el puerto 80; pasa `/api` a la API |

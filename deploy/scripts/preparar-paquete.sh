@@ -16,5 +16,5 @@ docker save -o "$SALIDA/imagenes-systemplus.tar" \
   "systemplus/api:$VERSION" "systemplus/web:$VERSION"
 cp docker-compose.yml intranet.env.example "$SALIDA/"
 cp -r deploy "$SALIDA/"
-cp keycloak/system-plus-realm.json "$SALIDA/keycloak/"
+cp keycloak/system-plus-realm.produccion.json "$SALIDA/keycloak/"
 echo "Listo. Copie la carpeta $SALIDA a una USB y llévela al servidor."

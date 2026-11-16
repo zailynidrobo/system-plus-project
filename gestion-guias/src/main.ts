@@ -1,14 +1,20 @@
+import type { INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module.js';
 import { ErrorLoggingFilter } from './common/error-logging.filter.js';
 import { crearValidationPipe } from './common/validation.js';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // No anunciar que la API usa Express (OWASP ZAP 10037): es información útil para un atacante.
+  app.disable('x-powered-by');
   app.useGlobalPipes(crearValidationPipe());
-  app.useGlobalFilters(new ErrorLoggingFilter(app.get(HttpAdapterHost).httpAdapter));
+  app.useGlobalFilters(
+    new ErrorLoggingFilter(app.get(HttpAdapterHost).httpAdapter),
+  );
 
   // El front corre en otro origen (Angular en :4200): sin CORS el navegador bloquea sus peticiones.
   const origins = app
@@ -19,6 +25,15 @@ async function bootstrap() {
   app.enableCors({ origin: origins });
 
   // DEF-07: documentación OpenAPI de todos los endpoints en /docs (JSON en /docs-json).
+  // En la instalación de la sala se apaga (API_DOCS=false) para no exponer el mapa de la API.
+  if (app.get(ConfigService).get<string>('API_DOCS', 'true') !== 'false') {
+    publicarDocumentacion(app);
+  }
+
+  await app.listen(3000);
+}
+
+function publicarDocumentacion(app: INestApplication) {
   const openApi = new DocumentBuilder()
     .setTitle('System Plus · API de gestión de guías')
     .setDescription(
@@ -31,8 +46,6 @@ async function bootstrap() {
   SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, openApi), {
     swaggerOptions: { persistAuthorization: true },
   });
-
-  await app.listen(3000);
 }
 void bootstrap().catch((error: unknown) => {
   console.error('No se pudo iniciar la API', error);

@@ -1,4 +1,10 @@
-import { ArgumentsHost, Catch, HttpException, Logger } from '@nestjs/common';
+import {
+  ArgumentsHost,
+  BadRequestException,
+  Catch,
+  HttpException,
+  Logger,
+} from '@nestjs/common';
 import { BaseExceptionFilter } from '@nestjs/core';
 import type { Request } from 'express';
 
@@ -21,6 +27,19 @@ export function moduloDeRuta(ruta: string): string {
 }
 
 /**
+ * PostgreSQL rechaza un valor con formato inválido (22P02), p. ej. un identificador que no es UUID
+ * escrito a mano en la dirección. Es un error de quien llama, no del servidor: se responde 400.
+ */
+function esValorInvalidoEnBd(exception: unknown): boolean {
+  if (typeof exception !== 'object' || exception === null) return false;
+  const { code, driverError } = exception as {
+    code?: unknown;
+    driverError?: { code?: unknown };
+  };
+  return code === '22P02' || driverError?.code === '22P02';
+}
+
+/**
  * Registra cada error del servidor (5xx o excepción no controlada) como una línea JSON con fecha,
  * severidad, módulo, método, ruta, mensaje y traza (DEF-18). La respuesta al cliente no cambia.
  */
@@ -29,11 +48,19 @@ export class ErrorLoggingFilter extends BaseExceptionFilter {
   private readonly logger = new Logger('ErroresServidor');
 
   catch(exception: unknown, host: ArgumentsHost): void {
-    const estado = exception instanceof HttpException ? exception.getStatus() : 500;
+    if (esValorInvalidoEnBd(exception)) {
+      exception = new BadRequestException({
+        code: 'IDENTIFICADOR_INVALIDO',
+        message: 'El identificador no es válido.',
+      });
+    }
+    const estado =
+      exception instanceof HttpException ? exception.getStatus() : 500;
     if (estado >= 500 && host.getType() === 'http') {
       const req = host.switchToHttp().getRequest<Request>();
       const ruta = req.originalUrl ?? req.url ?? '';
-      const error = exception instanceof Error ? exception : new Error(String(exception));
+      const error =
+        exception instanceof Error ? exception : new Error(String(exception));
       this.logger.error(
         JSON.stringify({
           fecha: new Date().toISOString(),

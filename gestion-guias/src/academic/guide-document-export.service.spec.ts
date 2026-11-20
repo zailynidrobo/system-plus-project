@@ -33,7 +33,7 @@ describe('GuideDocumentExportService', () => {
     etiqueta: 'Versión docente',
     titulo: 'Guía de aprendizaje · Bases de Datos',
     subtitulo: 'BD-01 · Diseña modelos de datos',
-    programa: 'Técnico en Sistemas · Sede Piendamó',
+    programa: 'Técnico en Sistemas',
     ficha: [
       { label: 'Docente', value: 'Ana Gómez' },
       { label: 'Grupo', value: 'Grupo B' },
@@ -119,11 +119,11 @@ describe('GuideDocumentExportService', () => {
     );
   });
 
-  it('pone el logo como PNG real, cuadrado, y el código en encabezado y pie', async () => {
+  it('pone el logo oficial como PNG real, con su proporción, y el código en encabezado y pie', async () => {
     const { archive, encabezado, pie } = await partes();
-    expect(encabezado).toContain('SYSTEM PLUS PIENDAMÓ');
+    expect(encabezado).toContain('Sede Piendamó');
     expect(encabezado).toContain('Basada en GB-BD-01 v1.1');
-    expect(encabezado).toContain('cx="640080" cy="640080"');
+    expect(encabezado).toContain('cx="1828800" cy="536067"');
     expect(pie).toContain('NUMPAGES');
     const logo = await archive.file('word/media/logo.png')?.async('nodebuffer');
     expect(logo?.subarray(0, 8)).toEqual(

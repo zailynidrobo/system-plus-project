@@ -44,8 +44,9 @@ const COLOR = {
 
 /** Ancho útil de una hoja carta con márgenes de 0,75": 12240 - 2 x 1080. */
 const ANCHO = 10080;
-/** Logo cuadrado de 0,7" por lado. */
-const LOGO_EMU = 640080;
+/** Logo horizontal oficial (1600 x 469 px) de 2" de ancho, con su proporción. */
+const LOGO_ANCHO_EMU = 1828800;
+const LOGO_ALTO_EMU = Math.round((LOGO_ANCHO_EMU * 469) / 1600);
 
 export async function construirGuiaDocx(
   guia: GuiaDocx,
@@ -267,19 +268,14 @@ function tabla(
 // ---------- Encabezado y pie ----------
 
 function encabezado(guia: GuiaDocx): string {
-  const anchos = [1150, 5630, 3300];
-  const logo = `<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${LOGO_EMU}" cy="${LOGO_EMU}"/><wp:docPr id="1" name="Logo System Plus"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="0" name="logo.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rIdLogo"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${LOGO_EMU}" cy="${LOGO_EMU}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>`;
+  const anchos = [3100, 3680, 3300];
+  const logo = `<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${LOGO_ANCHO_EMU}" cy="${LOGO_ALTO_EMU}"/><wp:docPr id="1" name="Logo System Plus"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="0" name="logo.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rIdLogo"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${LOGO_ANCHO_EMU}" cy="${LOGO_ALTO_EMU}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>`;
   const celda = (ancho: number, contenido: string) =>
     `<w:tc><w:tcPr><w:tcW w:w="${ancho}" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr>${contenido}</w:tc>`;
   const fila = `<w:tr>${celda(anchos[0], parrafo(logo, { despues: 0 }))}${celda(
     anchos[1],
     parrafo(
-      run('SYSTEM PLUS PIENDAMÓ', {
-        tam: 24,
-        negrita: true,
-        color: COLOR.azul,
-        espaciado: 6,
-      }),
+      run('Sede Piendamó', { tam: 20, negrita: true, color: COLOR.azul }),
       { despues: 20 },
     ) +
       parrafo(run(guia.programa, { tam: 17, color: COLOR.gris }), {

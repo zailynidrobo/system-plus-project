@@ -1833,7 +1833,7 @@ function isUuid(value: string): boolean {
 }
 
 /** Programa que aparece en el encabezado de las guías exportadas. */
-const PROGRAMA_DOCUMENTO = `${DEFAULT_PROGRAM.name} · ${DEFAULT_PROGRAM.campus}`;
+const PROGRAMA_DOCUMENTO = DEFAULT_PROGRAM.name;
 
 /** "16 nov 2026", con la hora de Colombia. */
 function fechaDocumento(fecha: Date): string {

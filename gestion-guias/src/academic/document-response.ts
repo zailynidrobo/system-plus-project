@@ -3,7 +3,9 @@ import type { Response } from 'express';
 import type { AcademicService } from './academic.service.js';
 import type { GuideDocumentExportService } from './guide-document-export.service.js';
 
-type DatosDocumento = Awaited<ReturnType<AcademicService['getGuideDocumentData']>>;
+type DatosDocumento = Awaited<
+  ReturnType<AcademicService['getGuideDocumentData']>
+>;
 
 /** Genera la guía en DOCX o PDF y la envía como descarga. Lo usan guías base, historial y espacio docente. */
 export async function enviarDocumento(
@@ -13,11 +15,17 @@ export async function enviarDocumento(
   nombreArchivo: string,
   response: Response,
 ): Promise<void> {
-  if (formato !== 'docx' && formato !== 'pdf') throw new BadRequestException('El formato debe ser docx o pdf');
-  const archivo = formato === 'docx' ? await exportador.toDocx(datos) : await exportador.toPdf(datos);
+  if (formato !== 'docx' && formato !== 'pdf')
+    throw new BadRequestException('El formato debe ser docx o pdf');
+  const archivo =
+    formato === 'docx'
+      ? await exportador.toDocx(datos)
+      : await exportador.toPdf(datos);
   response.setHeader(
     'Content-Type',
-    formato === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    formato === 'pdf'
+      ? 'application/pdf'
+      : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   );
   response.setHeader(
     'Content-Disposition',
@@ -30,14 +38,7 @@ function nombreArchivoDesdeDatos(
   datos: DatosDocumento,
   fallback: string,
 ): string {
-  const metadata = (label: string) =>
-    datos.metadata.find((item) => item.label.toLowerCase() === label.toLowerCase())?.value;
-  const partes = [
-    metadata('Nombre de la guía') ?? datos.title,
-    metadata('Versión'),
-  ].filter((value): value is string | number => typeof value === 'string' || typeof value === 'number');
-  const nombre = partes
-    .join(' - ')
+  const nombre = datos.nombreArchivo
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-zA-Z0-9._-]+/g, '_')

@@ -23,6 +23,7 @@ import {
 import {
   AcademicGuide,
   GuideContent,
+  GuideStatus,
   GuideActor,
   GuideField,
   GuideFieldConfig,
@@ -43,6 +44,7 @@ import {
   CurricularModuleStatus,
 } from '../academic-program/entities/curricular-module.entity.js';
 import { buildCompetencyPrefix } from '../academic-program/curricular-codes.js';
+import { DEFAULT_PROGRAM } from '../academic-program/services/programs.service.js';
 import { Competency } from '../academic-program/entities/competency.entity.js';
 import { badRequest, conflict } from '../academic-program/api-errors.js';
 import { conservaTextoBase } from './complemento-docente.js';
@@ -942,27 +944,13 @@ export class AcademicService implements OnModuleInit {
 
   async getGuideDocumentData(id: string): Promise<GuideDocumentData> {
     const guide = await this.getGuideOrFail(id);
-    return {
-      template: 'base',
-      title: 'GUÍA BASE DEL MÓDULO',
-      subtitle: `Plantilla A · ${guide.title}`,
-      metadata: [
-        { label: 'Nombre de la guía', value: guide.title },
-        { label: 'Módulo', value: guide.moduleName },
-        {
-          label: 'Competencia',
-          value: guide.competencyName ?? 'No especificada',
-        },
-        { label: 'Versión', value: guide.version },
-        { label: 'Estado', value: guide.status },
-        {
-          label: 'Fecha de publicación',
-          value: guide.publishedAt?.toISOString() ?? 'No publicada',
-        },
-      ],
+    return this.baseGuideDocument(guide, {
+      version: guide.version,
+      status: guide.status,
       fields: guide.fields,
       content: guide.content,
-    };
+      history: await this.documentHistory(guide),
+    });
   }
 
   async getGuideVersionDocumentData(
@@ -978,27 +966,16 @@ export class AcademicService implements OnModuleInit {
     if (!record && snapshot.version !== version) {
       throw new NotFoundException('Versión no encontrada');
     }
-    return {
-      template: 'base',
-      title: 'GUÍA BASE DEL MÓDULO',
-      subtitle: `Plantilla A · ${guide.title} · ${version}`,
-      metadata: [
-        { label: 'Nombre de la guía', value: guide.title },
-        { label: 'Módulo', value: guide.moduleName },
-        {
-          label: 'Competencia',
-          value: guide.competencyName ?? 'No especificada',
-        },
-        { label: 'Versión', value: version },
-        { label: 'Estado', value: snapshot.status },
-        {
-          label: 'Fecha de publicación',
-          value: snapshot.publishedAt?.toISOString() ?? 'No publicada',
-        },
-      ],
+    const history = (await this.documentHistory(guide)).filter(
+      (row) => compareVersions(row.version, version) <= 0,
+    );
+    return this.baseGuideDocument(guide, {
+      version,
+      status: snapshot.status === 'draft' ? 'draft' : 'published',
       fields: snapshot.fields,
       content: snapshot.content,
-    };
+      history,
+    });
   }
 
   async getPersonalizedVersionDocumentData(
@@ -1008,36 +985,86 @@ export class AcademicService implements OnModuleInit {
   ): Promise<GuideDocumentData> {
     const version = await this.findPersonalizedVersionForTeacher(id, teacherId);
     const guide = await this.getGuideOrFail(version.baseGuideId);
+    const docente = teacherName?.trim() || 'Docente';
+    const codigo = guide.code ?? 'Guía base';
     return {
-      template: 'teacher',
-      title: version.name,
-      subtitle: `Plantilla B · ${version.title}`,
-      metadata: [
-        { label: 'Nombre de la guía', value: version.name },
-        { label: 'Módulo', value: version.moduleName },
-        {
-          label: 'Código',
-          value: guide.code ?? 'No disponible',
-        },
-        {
-          label: 'Competencia',
-          value: guide.competencyName ?? 'No especificada',
-        },
-        { label: 'Versión', value: guide.version },
-        {
-          label: 'Docente autor',
-          value: teacherName?.trim() || teacherId,
-        },
-        { label: 'Última actualización', value: version.updatedAt },
+      nombreArchivo: `${version.name} - ${guide.code ?? guide.title}`,
+      codigo: version.name,
+      detalleCodigo: `Basada en ${codigo} v${guide.version}`,
+      etiqueta: 'Versión docente',
+      titulo: `Guía de aprendizaje · ${guide.moduleName}`,
+      subtitulo: guide.competencyName ?? guide.title,
+      programa: PROGRAMA_DOCUMENTO,
+      ficha: [
+        { label: 'Docente', value: docente },
+        { label: 'Grupo', value: version.name },
       ],
-      reference: {
-        title: version.title,
-        fields: version.baseFields,
-        content: version.baseContent,
-      },
       fields: this.teacherFields(version),
-      content: version.content,
+      content: { ...version.baseContent, ...version.content },
+      base: version.baseContent,
+      historial: [
+        ...(await this.documentHistory(guide)),
+        {
+          version: 'Docente',
+          fecha: fechaDocumento(new Date(version.updatedAt)),
+          responsable: docente,
+          cambio: 'Versión adaptada para el grupo',
+        },
+      ],
+      generado: fechaDocumento(new Date()),
     };
+  }
+
+  private baseGuideDocument(
+    guide: AcademicGuideRecord,
+    snapshot: {
+      version: string;
+      status: GuideStatus;
+      fields: GuideField[];
+      content: GuideContent;
+      history: GuideDocumentData['historial'];
+    },
+  ): GuideDocumentData {
+    const publicada = snapshot.status === 'published';
+    return {
+      nombreArchivo: `${guide.title} - ${snapshot.version}`,
+      codigo: guide.code ?? 'Guía base',
+      detalleCodigo: `Versión ${snapshot.version}`,
+      etiqueta: publicada ? 'Guía base publicada' : 'Borrador',
+      titulo: `Guía de aprendizaje · ${guide.moduleName}`,
+      subtitulo: guide.competencyName ?? guide.title,
+      programa: PROGRAMA_DOCUMENTO,
+      ficha: [
+        { label: 'Módulo', value: guide.moduleName },
+        {
+          label: 'Publicación',
+          value: guide.publishedAt ? fechaDocumento(guide.publishedAt) : 'Sin publicar',
+        },
+      ],
+      fields: snapshot.fields,
+      content: snapshot.content,
+      historial: snapshot.history,
+      generado: fechaDocumento(new Date()),
+    };
+  }
+
+  /** Publicaciones de la guía base, de la más antigua a la más reciente. */
+  private async documentHistory(
+    guide: AcademicGuideRecord,
+  ): Promise<GuideDocumentData['historial']> {
+    const records = await this.guideVersions().find({
+      where: { guideId: guide.id },
+      order: { createdAt: 'ASC' },
+    });
+    const versions = records.length ? records : [this.legacyGuideVersion(guide)];
+    return versions
+      .filter((record) => record.status !== 'draft')
+      .map((record) => ({
+        version: `Base ${record.version}`,
+        fecha: fechaDocumento(record.publishedAt ?? record.createdAt),
+        responsable: record.publishedByName ?? record.authorName ?? 'Coordinación',
+        cambio: record.description,
+      }));
   }
 
   async createPersonalizedVersion(
@@ -1803,4 +1830,31 @@ const UUID_PATTERN =
 
 function isUuid(value: string): boolean {
   return UUID_PATTERN.test(value);
+}
+
+/** Programa que aparece en el encabezado de las guías exportadas. */
+const PROGRAMA_DOCUMENTO = DEFAULT_PROGRAM.name;
+
+/** "16 nov 2026", con la hora de Colombia. */
+function fechaDocumento(fecha: Date): string {
+  return new Intl.DateTimeFormat('es-CO', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'America/Bogota',
+  })
+    .format(fecha)
+    .replace('.', '')
+    .replace(/ de /g, ' ');
+}
+
+/** Compara "1.10" con "1.2" como números de versión. */
+function compareVersions(a: string, b: string): number {
+  const numeros = (v: string) => v.replace(/[^0-9.]/g, '').split('.').map(Number);
+  const [x, y] = [numeros(a), numeros(b)];
+  for (let i = 0; i < Math.max(x.length, y.length); i++) {
+    const diferencia = (x[i] ?? 0) - (y[i] ?? 0);
+    if (diferencia !== 0) return diferencia;
+  }
+  return 0;
 }

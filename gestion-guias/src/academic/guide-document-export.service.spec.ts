@@ -1,4 +1,7 @@
-import { GuideDocumentExportService } from './guide-document-export.service.js';
+import {
+  GuideDocumentExportService,
+  type GuideDocumentData,
+} from './guide-document-export.service.js';
 import JSZip from 'jszip';
 import { join } from 'node:path';
 import { readFile, writeFile } from 'node:fs/promises';
@@ -23,97 +26,109 @@ vi.mock('node:child_process', async (importOriginal) => {
 
 describe('GuideDocumentExportService', () => {
   const service = new GuideDocumentExportService();
-  const data = {
-    template: 'teacher' as const,
-    title: 'GUÍA DOCENTE',
-    subtitle: 'Plantilla B · Módulo de prueba',
-    metadata: [
-      { label: 'Módulo', value: 'Ciencias' },
-      { label: 'Estado', value: 'Publicada' },
-      { label: 'Fecha de publicación', value: '2026-11-16' },
-      { label: 'Código interno', value: 'GUIA-001' },
-      { label: 'Código', value: 'GUIA-001' },
-      { label: 'Competencia', value: 'COMP-01 · Analizar datos' },
-      { label: 'Versión', value: 'v1.0' },
-      { label: 'Docente autor', value: 'Ana Gómez' },
+  const data: GuideDocumentData = {
+    nombreArchivo: 'Grupo B - GB-BD-01',
+    codigo: 'Grupo B',
+    detalleCodigo: 'Basada en GB-BD-01 v1.1',
+    etiqueta: 'Versión docente',
+    titulo: 'Guía de aprendizaje · Bases de Datos',
+    subtitulo: 'BD-01 · Diseña modelos de datos',
+    programa: 'Técnico en Sistemas',
+    ficha: [
+      { label: 'Docente', value: 'Ana Gómez' },
+      { label: 'Grupo', value: 'Grupo B' },
     ],
-    reference: {
-      title: 'Guía base del módulo',
-      fields: [
-        {
-          key: 'objective',
-          label: 'Objetivo institucional',
-          type: 'text' as const,
-          required: true,
-        },
-      ],
-      content: { objective: 'Comprender los ecosistemas' },
-    },
     fields: [
       {
-        key: 'lessonPlan',
-        label: 'Plan de clases',
-        type: 'textarea' as const,
+        key: 'evaluacion',
+        label: 'Tipo de evaluación',
+        type: 'select',
+        required: true,
+        options: ['Por proyecto', 'Mixta'],
+      },
+      {
+        key: 'objetivos',
+        label: 'Objetivos de aprendizaje',
+        type: 'textarea',
+        required: true,
+      },
+      {
+        key: 'metodologia',
+        label: 'Metodología',
+        type: 'textarea',
         required: false,
-        section: 'Planeación',
+      },
+      { key: 'recursos', label: 'Recursos', type: 'textarea', required: false },
+    ],
+    content: {
+      evaluacion: 'Mixta',
+      objetivos:
+        'Comprender los ecosistemas\n\nIncluye un caso local <empresa & cia>.',
+      metodologia: 'Clase 1: práctica guiada',
+      recursos: '',
+    },
+    base: {
+      evaluacion: 'Por proyecto',
+      objetivos: 'Comprender los ecosistemas',
+      metodologia: 'Clase magistral',
+    },
+    historial: [
+      {
+        version: 'Base 1.1',
+        fecha: '16 nov 2026',
+        responsable: 'Laura Gómez',
+        cambio: 'Sugerencia aprobada',
       },
     ],
-    content: { lessonPlan: 'Clase 1: práctica guiada' },
+    generado: '18 nov 2026',
   };
 
-  it('generates a DOCX using the dynamic sections and values', async () => {
-    const output = await service.toDocx(data);
+  async function partes() {
+    const archive = await JSZip.loadAsync(await service.toDocx(data));
+    const leer = (ruta: string) =>
+      archive.file(ruta)?.async('string') ?? Promise.resolve('');
+    return {
+      archive,
+      documento: await leer('word/document.xml'),
+      encabezado: await leer('word/header1.xml'),
+      pie: await leer('word/footer1.xml'),
+    };
+  }
 
-    expect(output.subarray(0, 2).toString()).toBe('PK');
-    const archive = await JSZip.loadAsync(output);
-    const documentXml = await archive
-      .file('word/document.xml')
-      ?.async('string');
-    const headerXml = await archive
-      .file('word/header1.xml')
-      ?.async('string');
-    expect(documentXml).toContain('GUÍA DOCENTE');
-    expect(documentXml).toContain('Comprender los ecosistemas');
-    expect(documentXml).toContain('Clase 1: práctica guiada');
-    expect(documentXml).toContain('Código interno');
-    expect(documentXml).toContain('GUIA-001');
-    expect(documentXml).toContain('COMP-01 · Analizar datos');
-    expect(documentXml).toContain('Ana Gómez');
-    expect(documentXml).toContain('Versión: v1.0');
-    expect(headerXml).toContain('Versión: v1.0');
-    expect(headerXml).not.toContain('Versión: ______');
-    expect(headerXml).toContain('rIdLogo');
-    expect((await archive.file('word/media/logo-system-plus.png')?.async('nodebuffer'))?.subarray(0, 8)).toEqual(
-      Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+  it('arma el Word con la ficha, una sección por campo de texto y el control del documento', async () => {
+    const { documento } = await partes();
+    expect(documento).toContain('Guía de aprendizaje · Bases de Datos');
+    expect(documento).toContain('Ana Gómez');
+    expect(documento).toContain('Mixta (adaptado)');
+    expect(documento).toContain('1  ');
+    expect(documento).toContain('Objetivos de aprendizaje');
+    expect(documento).toContain('Clase 1: práctica guiada');
+    expect(documento).toContain('Adaptado por el docente');
+    expect(documento).toContain('Control del documento');
+    expect(documento).toContain('Sugerencia aprobada');
+    // Sin textos de ayuda de plantilla ni secciones vacías.
+    expect(documento).not.toContain('Recursos');
+    expect(documento).not.toContain('Ej.:');
+  });
+
+  it('separa el texto base del complemento del docente autorizado y escapa el texto', async () => {
+    const { documento } = await partes();
+    expect(documento).toContain('COMPLEMENTO DEL DOCENTE');
+    expect(documento).toContain(
+      'Incluye un caso local &lt;empresa &amp; cia&gt;.',
     );
   });
 
-  it('fills the provided base-module Word template', async () => {
-    const output = await service.toDocx({
-      ...data,
-      template: 'base',
-      title: 'Guía de bases de datos',
-      metadata: [
-        { label: 'Módulo', value: 'Bases de datos' },
-        { label: 'Competencia', value: 'Administrar información' },
-        { label: 'Estado', value: 'Publicada' },
-        { label: 'Fecha de publicación', value: '2026-11-16' },
-      ],
-      fields: data.reference.fields,
-      content: data.reference.content,
-    });
-    const archive = await JSZip.loadAsync(output);
-    const documentXml = await archive
-      .file('word/document.xml')
-      ?.async('string');
-
-    expect(documentXml).toContain('Bases de datos');
-    expect(documentXml).toContain('Administrar información');
-    expect(documentXml).toContain('Guía de bases de datos');
-    expect(documentXml).toContain('Comprender los ecosistemas');
-    expect(documentXml).toContain('Publicada');
-    expect(documentXml).toContain('2026-11-16');
-    expect(documentXml).not.toContain('Nombre completo del módulo');
+  it('pone el logo oficial como PNG real, con su proporción, y el código en encabezado y pie', async () => {
+    const { archive, encabezado, pie } = await partes();
+    expect(encabezado).toContain('Sede Piendamó');
+    expect(encabezado).toContain('Basada en GB-BD-01 v1.1');
+    expect(encabezado).toContain('cx="1828800" cy="536067"');
+    expect(pie).toContain('NUMPAGES');
+    const logo = await archive.file('word/media/logo.png')?.async('nodebuffer');
+    expect(logo?.subarray(0, 8)).toEqual(
+      Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    );
   });
 
   it('generates a PDF using the institutional snapshot and editable fields', async () => {
@@ -126,7 +141,6 @@ describe('GuideDocumentExportService', () => {
           .file('word/document.xml')
           ?.async('string');
         expect(documentXml).toContain('Comprender los ecosistemas');
-        expect(documentXml).toContain('Clase 1: práctica guiada');
 
         const outputDirectory = args[args.indexOf('--outdir') + 1];
         await writeFile(join(outputDirectory, 'guia.pdf'), expectedPdf);

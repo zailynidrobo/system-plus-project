@@ -112,10 +112,10 @@ describe('HE-05 Sugerencias (e2e)', () => {
     await app.close();
   });
 
-  /** Módulo POO del plan por defecto, con una guía publicada en v1.0 y Julián y Paola asignados. */
+  /** Módulo Programación del plan por defecto, con una guía publicada en v1.0 y Julián y Paola asignados. */
   async function publishedGuide() {
     const coordinator = as(COORDINATOR);
-    // `synchronize(true)` vació las tablas: se vuelven a sembrar el programa y sus seis módulos.
+    // `synchronize(true)` vació las tablas: se vuelven a sembrar el programa y sus módulos.
     const programs = app.get(ProgramsService);
     await programs.onApplicationBootstrap();
     const programId = (await programs.ensureDefaultProgram()).id;
@@ -126,7 +126,7 @@ describe('HE-05 Sugerencias (e2e)', () => {
       name: string;
     }[];
     const moduleId = modules.find(
-      (module) => module.name === 'Programación Orientada a Objetos',
+      (module) => module.name === 'Programación',
     )!.id;
     const competencyId = (
       (await coordinator.get(`/modules/${moduleId}/competencies`).expect(200))
@@ -219,8 +219,8 @@ describe('HE-05 Sugerencias (e2e)', () => {
       dueSoonAt: '2026-11-10T04:59:59.999Z',
       dueAt: '2026-11-13T04:59:59.999Z',
       deadlineStatus: 'on_time',
-      guideCode: 'GB-POO-01',
-      competencyPrefix: 'POO',
+      guideCode: 'GB-PRG-01',
+      competencyPrefix: 'PRG',
       summary: 'Agrega «Evidencia de desempeño: sustentación oral.»',
     });
 
@@ -283,7 +283,7 @@ describe('HE-05 Sugerencias (e2e)', () => {
       .expect(200)
       .expect(({ body }) =>
         expect(body).toEqual([
-          expect.objectContaining({ id: guideId, code: 'GB-POO-01' }),
+          expect.objectContaining({ id: guideId, code: 'GB-PRG-01' }),
         ]),
       );
     await coordinator
@@ -293,10 +293,10 @@ describe('HE-05 Sugerencias (e2e)', () => {
         expect(body.unread).toBe(2);
         expect(body.items[0]).toMatchObject({
           type: 'SUGGESTION_PENDING',
-          title: 'SUG-001 · Julián Ospina · GB-POO-01',
+          title: 'SUG-001 · Julián Ospina · GB-PRG-01',
           message: 'nueva, recibida hoy',
           suggestionId,
-          guide: { id: guideId, code: 'GB-POO-01', version: 'v1.0' },
+          guide: { id: guideId, code: 'GB-PRG-01', version: 'v1.0' },
         });
       });
     await coordinator
@@ -386,7 +386,7 @@ describe('HE-05 Sugerencias (e2e)', () => {
         expect(body.items).toEqual([
           expect.objectContaining({
             type: 'GUIDE_NEW_VERSION',
-            title: 'Nueva versión v1.1 de GB-POO-01 disponible',
+            title: 'Nueva versión v1.1 de GB-PRG-01 disponible',
           }),
         ]),
       );

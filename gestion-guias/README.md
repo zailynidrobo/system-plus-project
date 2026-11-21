@@ -151,7 +151,7 @@ Implementado en [src/academic-program](src/academic-program) (componente "Progra
 
 1. Copia `.env.example` como `.env` y ajusta Keycloak y las credenciales de tu PostgreSQL local. Crea la base vacía (`gestion_guias`); con `DB_SYNCHRONIZE=true` las tablas se crean solas al arrancar.
 2. Para las pruebas e2e copia `.env.example` como `.env.test` con una base distinta cuyo nombre termine en `_test` (las pruebas la reinician).
-3. Al arrancar se crea el programa **Técnico en Sistemas · Sede Piendamó** (código `TS`) y se cargan, si faltan, los seis módulos iniciales y sus competencias del plan. La carga es idempotente: conserva los módulos y competencias existentes y no duplica los registros.
+3. Al arrancar se crea el programa **Técnico en Sistemas · Sede Piendamó** (código `TS`) y se cargan, si faltan, los siete módulos reales del programa (Aplicaciones móviles, Ensamble y mantenimiento, Excel avanzado, Informática básica, Programación, Redes Windows y Emprendimiento) con sus competencias, definidos en `src/academic-program/default-curriculum.ts`. La carga es idempotente: conserva los módulos y competencias existentes y no duplica los registros.
 
 ```powershell
 pnpm.cmd install

@@ -90,8 +90,13 @@ describe('ProgramsService default curriculum', () => {
     await service.onApplicationBootstrap();
 
     expect(modules).toHaveLength(DEFAULT_CURRICULUM.length);
-    expect(competencies).toHaveLength(22);
-    expect(revisions).toHaveLength(22);
+    const total = DEFAULT_CURRICULUM.reduce(
+      (suma, module) => suma + module.competencies.length,
+      0,
+    );
+    expect(total).toBe(36);
+    expect(competencies).toHaveLength(total);
+    expect(revisions).toHaveLength(total);
     expect(
       modules.every(
         (module) => module.status === CurricularModuleStatus.ACTIVE,
@@ -104,6 +109,7 @@ describe('ProgramsService default curriculum', () => {
       'TS-MOD-04',
       'TS-MOD-05',
       'TS-MOD-06',
+      'TS-MOD-07',
     ]);
   });
 });

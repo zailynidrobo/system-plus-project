@@ -42,104 +42,104 @@ const USUARIOS = [
   { nombre: 'Andrés Vargas', correo: 'andres.vargas@gmail.com', rol: 'admin' },
 ];
 
-// Guías base por módulo (prefijo) y número de competencia. publicar: false deja un borrador.
+// Guías base por módulo (prefijo de competencias) y número de competencia. publicar: false deja un borrador.
 const GUIAS = [
   {
-    modulo: 'FP', competencia: 1, publicar: true,
+    modulo: 'INF', competencia: 1, publicar: true,
     contenido: {
-      intensidad: '40 horas · 10 semanas', evaluacion: 'Por evidencias', metodologia: 'Taller práctico guiado',
-      objetivos: '1. Analizar problemas cotidianos y descomponerlos en pasos.\n2. Representar soluciones con algoritmos y diagramas de flujo.\n3. Verificar algoritmos con pruebas de escritorio.',
-      criterios: 'Evidencia de desempeño: resolución guiada de ejercicios en clase.\nEvidencia de producto: cuaderno de algoritmos con 10 problemas resueltos.\nEvidencia de conocimiento: prueba escrita sobre diagramas de flujo.',
-      recursos: 'PSeInt. Joyanes, L. Fundamentos de programación. Guías del instructor.',
+      intensidad: '20 horas · 5 semanas', evaluacion: 'Por evidencias', metodologia: 'Taller práctico guiado',
+      objetivos: '1. Reconocer el escritorio, las ventanas y el explorador de archivos de Windows.\n2. Organizar carpetas y archivos y personalizar la configuración básica del equipo.',
+      criterios: 'Evidencia de desempeño: organización de una estructura de carpetas en clase.\nEvidencia de conocimiento: cuestionario sobre el sistema operativo.',
+      recursos: 'Equipos de la sala con Windows. Guía del instructor.',
     },
   },
   {
-    modulo: 'FP', competencia: 2, publicar: true,
+    modulo: 'INF', competencia: 2, publicar: true,
     contenido: {
-      intensidad: '40 horas · 10 semanas', evaluacion: 'Mixta', metodologia: 'Aprendizaje basado en problemas',
-      objetivos: '1. Aplicar estructuras condicionales para tomar decisiones en un programa.\n2. Usar ciclos para procesar listas de datos.',
-      criterios: 'Evidencia de producto: programa de cálculo de notas con condicionales y ciclos.\nEvidencia de conocimiento: cuestionario sobre estructuras de control.',
-      recursos: 'PSeInt y Python 3. Ejercicios de la guía.',
+      intensidad: '20 horas · 5 semanas', evaluacion: 'Mixta', metodologia: 'Aprendizaje basado en problemas',
+      objetivos: '1. Crear documentos con formato de texto, párrafos, tablas e imágenes.\n2. Aplicar normas de presentación a un trabajo escrito.',
+      criterios: 'Evidencia de producto: hoja de vida y carta con formato.\nEvidencia de conocimiento: prueba práctica de Word.',
+      recursos: 'Microsoft Word. Plantillas de ejemplo.',
     },
   },
   {
-    modulo: 'FP', competencia: 3, publicar: false,
+    modulo: 'INF', competencia: 3, publicar: false,
     contenido: {
       intensidad: '20 horas · 5 semanas', evaluacion: 'Por evidencias', metodologia: 'Aula invertida',
-      objetivos: '1. Declarar variables con el tipo de dato adecuado.\n2. Construir expresiones con operadores aritméticos y lógicos.',
-      criterios: 'Evidencia de producto: calculadora básica en consola.',
+      objetivos: '1. Ingresar datos y aplicar fórmulas básicas en una hoja de cálculo.\n2. Representar información con gráficos.',
+      criterios: 'Evidencia de producto: presupuesto personal en Excel.',
     },
   },
   {
-    modulo: 'POO', competencia: 1, publicar: true,
-    contenido: {
-      intensidad: '60 horas · 15 semanas', evaluacion: 'Por proyecto', metodologia: 'Aprendizaje basado en proyectos (ABP)',
-      objetivos: '1. Identificar clases, atributos y métodos a partir de un caso real.\n2. Modelar relaciones entre clases con diagramas UML.',
-      criterios: 'Evidencia de producto: diagrama de clases del proyecto de aula.\nEvidencia de desempeño: sustentación del modelo ante el grupo.',
-      recursos: 'Java 21, IntelliJ IDEA Community, draw.io.',
-    },
-  },
-  {
-    modulo: 'POO', competencia: 2, publicar: true,
-    contenido: {
-      intensidad: '60 horas · 15 semanas', evaluacion: 'Mixta', metodologia: 'Estudio de caso',
-      objetivos: '1. Aplicar encapsulamiento con modificadores de acceso.\n2. Reutilizar código mediante herencia y polimorfismo.',
-      criterios: 'Evidencia de producto: aplicación de inventario con herencia.\nEvidencia de conocimiento: prueba sobre polimorfismo.',
-      recursos: 'Java 21. Deitel, P. Cómo programar en Java.',
-    },
-  },
-  {
-    modulo: 'BD', competencia: 1, publicar: true,
+    modulo: 'PRG', competencia: 2, publicar: true,
     contenido: {
       intensidad: '40 horas · 10 semanas', evaluacion: 'Por proyecto', metodologia: 'Aprendizaje basado en proyectos (ABP)',
-      objetivos: '1. Construir el modelo entidad-relación de un negocio local.\n2. Normalizar tablas hasta tercera forma normal.',
-      criterios: 'Evidencia de producto: modelo entidad-relación y script de creación.\nEvidencia de desempeño: revisión del modelo en parejas.',
-      recursos: 'PostgreSQL, DBeaver, guía de normalización.',
+      objetivos: '1. Estructurar páginas web con etiquetas HTML semánticas.\n2. Dar estilo y organizar el diseño con CSS.',
+      criterios: 'Evidencia de producto: sitio web de una página para un negocio local.\nEvidencia de desempeño: presentación del sitio al grupo.',
+      recursos: 'Visual Studio Code, navegador web, documentación de MDN.',
     },
   },
   {
-    modulo: 'BD', competencia: 2, publicar: true,
+    modulo: 'PRG', competencia: 3, publicar: true,
     contenido: {
-      intensidad: '40 horas · 10 semanas', evaluacion: 'Por evidencias', metodologia: 'Taller práctico guiado',
-      objetivos: '1. Consultar información con SELECT, filtros y uniones.\n2. Resumir datos con funciones de agregación.',
-      criterios: 'Evidencia de producto: banco de 20 consultas resueltas.\nEvidencia de conocimiento: prueba práctica de consultas.',
-      recursos: 'PostgreSQL y base de datos de práctica de la institución.',
+      intensidad: '20 horas · 5 semanas', evaluacion: 'Mixta', metodologia: 'Estudio de caso',
+      objetivos: '1. Construir páginas adaptables al celular con la rejilla de Bootstrap.\n2. Usar componentes como menús, tarjetas y formularios.',
+      criterios: 'Evidencia de producto: versión adaptable del sitio del negocio local.\nEvidencia de conocimiento: prueba sobre la rejilla de Bootstrap.',
+      recursos: 'Bootstrap 5, Visual Studio Code.',
     },
   },
   {
-    modulo: 'RC', competencia: 1, publicar: true,
+    modulo: 'RED', competencia: 1, publicar: true,
+    contenido: {
+      intensidad: '20 horas · 5 semanas', evaluacion: 'Por evidencias', metodologia: 'Taller práctico guiado',
+      objetivos: '1. Identificar los tipos de red, sus topologías y sus componentes.\n2. Reconocer el modelo OSI y el modelo TCP/IP.',
+      criterios: 'Evidencia de producto: mapa conceptual de tipos de red.\nEvidencia de conocimiento: cuestionario sobre los modelos OSI y TCP/IP.',
+      recursos: 'Guía del instructor, equipos de red de la sala.',
+    },
+  },
+  {
+    modulo: 'RED', competencia: 2, publicar: true,
     contenido: {
       intensidad: '40 horas · 10 semanas', evaluacion: 'Por evidencias', metodologia: 'Taller práctico guiado',
-      objetivos: '1. Identificar los componentes de una red de área local.\n2. Elaborar y certificar cableado estructurado.',
-      criterios: 'Evidencia de desempeño: ponchado y prueba de cables directos y cruzados.\nEvidencia de producto: plano de la red de la sala.',
-      recursos: 'Kit de ponchado, probador de cable, Cisco Packet Tracer.',
+      objetivos: '1. Asignar direcciones IP, máscaras y puertas de enlace a los equipos.\n2. Verificar la conectividad con ping e ipconfig.',
+      criterios: 'Evidencia de desempeño: configuración de la red de la sala.\nEvidencia de producto: tabla de direccionamiento de la sala.',
+      recursos: 'Equipos de la sala, router, cables de red.',
+    },
+  },
+  {
+    modulo: 'ENS', competencia: 1, publicar: true,
+    contenido: {
+      intensidad: '20 horas · 5 semanas', evaluacion: 'Por evidencias', metodologia: 'Taller práctico guiado',
+      objetivos: '1. Identificar los componentes internos y externos del computador.\n2. Explicar la función de cada componente.',
+      criterios: 'Evidencia de desempeño: reconocimiento de partes en un equipo abierto.\nEvidencia de conocimiento: cuestionario de componentes.',
+      recursos: 'Equipos de práctica, kit de herramientas, pulsera antiestática.',
     },
   },
 ];
 
-// Módulos que se asignan a cada docente.
+// Módulos (prefijo) que se asignan a cada docente.
 const ASIGNACIONES = {
-  'carlos.ruiz@gmail.com': ['POO', 'BD'],
-  'diana.torres@gmail.com': ['FP', 'RC'],
-  'julian.mendoza@gmail.com': ['BD'],
-  'natalia.rojas@gmail.com': ['FP', 'POO'],
-  'felipe.castro@gmail.com': ['BD', 'RC'],
+  'carlos.ruiz@gmail.com': ['PRG', 'EXC'],
+  'diana.torres@gmail.com': ['INF', 'RED'],
+  'julian.mendoza@gmail.com': ['APM'],
+  'natalia.rojas@gmail.com': ['INF', 'PRG'],
+  'felipe.castro@gmail.com': ['RED', 'ENS'],
 };
 
 // Versiones docentes: guía (módulo + competencia), nombre y campos adaptados.
 const VERSIONES = [
   {
-    docente: 'natalia.rojas@gmail.com', modulo: 'FP', competencia: 1, nombre: 'Grupo 10-1 · Jornada mañana',
+    docente: 'natalia.rojas@gmail.com', modulo: 'INF', competencia: 1, nombre: 'Grupo 1 · Jornada mañana',
     cambios: { evaluacion: 'Mixta', metodologia: 'Aprendizaje basado en problemas' },
   },
   {
-    docente: 'carlos.ruiz@gmail.com', modulo: 'POO', competencia: 1, nombre: 'Grupo 11-2 · Jornada tarde',
+    docente: 'carlos.ruiz@gmail.com', modulo: 'PRG', competencia: 2, nombre: 'Grupo 2 · Jornada sabatina',
     // Docente autorizado: el texto base se conserva y se agrega el complemento.
-    complementos: { objetivos: '3. Aplicar el modelo al proyecto de la tienda escolar.' },
+    complementos: { objetivos: '3. Publicar el sitio en la red de la sala para que lo vean los compañeros.' },
     cambios: { evaluacion: 'Mixta' },
   },
   {
-    docente: 'felipe.castro@gmail.com', modulo: 'BD', competencia: 1, nombre: 'Grupo 11-1 · Jornada mañana',
+    docente: 'felipe.castro@gmail.com', modulo: 'RED', competencia: 2, nombre: 'Grupo 1 · Jornada mañana',
     cambios: { metodologia: 'Estudio de caso' },
   },
 ];
@@ -147,17 +147,17 @@ const VERSIONES = [
 // Sugerencias de mejora a la guía base. aprobar: true la aprueba la coordinadora (crea la v1.1).
 const SUGERENCIAS = [
   {
-    docente: 'carlos.ruiz@gmail.com', modulo: 'POO', competencia: 2, campo: 'recursos', aprobar: true,
-    valor: 'Java 21. Deitel, P. Cómo programar en Java. Curso gratuito de Java del SENA.',
-    justificacion: 'El curso del SENA complementa la guía y los estudiantes pueden seguirlo en casa.',
+    docente: 'carlos.ruiz@gmail.com', modulo: 'PRG', competencia: 3, campo: 'recursos', aprobar: true,
+    valor: 'Bootstrap 5, Visual Studio Code. Plantillas gratuitas de Bootstrap para practicar en casa.',
+    justificacion: 'Las plantillas ayudan a los estudiantes a ver diseños completos antes de construir el suyo.',
   },
   {
-    docente: 'natalia.rojas@gmail.com', modulo: 'FP', competencia: 1, campo: 'evaluacion', valor: 'Mixta',
-    justificacion: 'Los grupos de la mañana avanzan mejor combinando evidencias y un miniproyecto final.',
+    docente: 'natalia.rojas@gmail.com', modulo: 'INF', competencia: 1, campo: 'evaluacion', valor: 'Mixta',
+    justificacion: 'Los grupos de la mañana avanzan mejor combinando evidencias y un ejercicio final.',
   },
   {
-    docente: 'felipe.castro@gmail.com', modulo: 'BD', competencia: 2, campo: 'metodologia', valor: 'Estudio de caso',
-    justificacion: 'Un caso real de la cooperativa del pueblo motiva más que los ejercicios sueltos.',
+    docente: 'felipe.castro@gmail.com', modulo: 'RED', competencia: 1, campo: 'metodologia', valor: 'Estudio de caso',
+    justificacion: 'Analizar la red real de la sala motiva más que los ejercicios sueltos.',
   },
 ];
 

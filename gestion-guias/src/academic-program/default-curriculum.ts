@@ -5,75 +5,101 @@ export interface DefaultCurriculumModule {
   competencies: string[];
 }
 
+/**
+ * Módulos y competencias reales del Técnico en Sistemas de System Plus Piendamó (noviembre de 2026).
+ * Al arrancar, la API crea los que falten; nunca borra ni cambia los que ya existen, así que una
+ * base de datos con información conserva sus módulos. El coordinador puede editarlos en la aplicación.
+ */
 export const DEFAULT_CURRICULUM: DefaultCurriculumModule[] = [
   {
-    name: 'Fundamentos de programación',
-    prefix: 'FP',
+    name: 'Aplicaciones móviles',
+    prefix: 'APM',
     description:
-      'Desarrolla la lógica de programación mediante algoritmos, estructuras de control y buenas prácticas de codificación.',
+      'Desarrolla aplicaciones con Python y Kivy que integran sensores y actuadores, hasta un producto mínimo viable.',
     competencies: [
-      'Analizar problemas y representarlos mediante algoritmos y diagramas de flujo.',
-      'Aplicar estructuras de control secuenciales, condicionales y repetitivas.',
-      'Utilizar variables, tipos de datos y operadores en programas básicos.',
-      'Depurar programas identificando y corrigiendo errores lógicos.',
+      'Fundamentos / Python',
+      'Kivy',
+      'Sensores y actuadores',
+      'Integración hardware y software',
+      'Proyecto',
+      'MVP / Lanzamiento',
     ],
   },
   {
-    name: 'Programación Orientada a Objetos',
-    prefix: 'POO',
+    name: 'Ensamble y mantenimiento',
+    prefix: 'ENS',
     description:
-      'Desarrolla soluciones de software mediante clases, objetos, herencia, polimorfismo y patrones básicos de diseño.',
+      'Identifica las partes del computador, lo ensambla, instala su software y diagnostica y repara fallas.',
     competencies: [
-      'Modelar soluciones de software mediante clases, objetos y relaciones.',
-      'Implementar encapsulamiento, herencia y polimorfismo en aplicaciones.',
-      'Aplicar colecciones, excepciones y persistencia básica de datos.',
-      'Construir pruebas unitarias para validar el comportamiento del software.',
+      'Partes',
+      'Ensamble estándar',
+      'Sistemas operativos',
+      'Redes y multimedia',
+      'Instalación de software',
+      'Diagnóstico y reparación',
     ],
   },
   {
-    name: 'Bases de Datos',
-    prefix: 'BD',
+    name: 'Excel avanzado',
+    prefix: 'EXC',
     description:
-      'Diseña, consulta y administra bases de datos relacionales aplicando integridad, normalización y seguridad de la información.',
+      'Usa funciones, manejo de datos y macros de Excel para automatizar tareas y construir modelos financieros.',
     competencies: [
-      'Modelar bases de datos relacionales a partir de requerimientos de información.',
-      'Aplicar normalización para garantizar la integridad de los datos.',
-      'Construir consultas SQL para insertar, actualizar y consultar información.',
-      'Implementar mecanismos de seguridad y respaldo de la información.',
+      'Fundamentos',
+      'Funciones',
+      'Manejo de datos',
+      'Grabadora de macros',
+      'Macros con VB',
+      'Modelos financieros',
     ],
   },
   {
-    name: 'Redes y conectividad',
-    prefix: 'RC',
+    name: 'Informática básica',
+    prefix: 'INF',
     description:
-      'Instala, configura y verifica redes de área local y sus servicios básicos.',
+      'Maneja el sistema operativo, las herramientas de ofimática e internet para el trabajo diario.',
     competencies: [
-      'Instalar y certificar cableado estructurado según la normativa vigente.',
-      'Configurar direccionamiento IP y servicios básicos de red.',
-      'Diagnosticar fallas de conectividad en redes de área local.',
+      'Windows',
+      'Word',
+      'Excel',
+      'PowerPoint',
+      'Access',
+      'Internet',
     ],
   },
   {
-    name: 'Mantenimiento de equipos',
-    prefix: 'ME',
+    name: 'Programación',
+    prefix: 'PRG',
     description:
-      'Realiza el diagnóstico y el mantenimiento preventivo y correctivo de equipos de cómputo.',
+      'Desarrolla aplicaciones web y móviles con Visual Basic, HTML, CSS, frameworks de diseño y JavaScript.',
     competencies: [
-      'Diagnosticar el estado de los componentes de hardware de un equipo de cómputo.',
-      'Ejecutar mantenimiento preventivo siguiendo protocolos de seguridad.',
-      'Realizar mantenimiento correctivo y reemplazo de componentes.',
-      'Instalar y configurar sistemas operativos y controladores.',
+      'Visual Basic como aplicativo de Excel',
+      'HTML-CSS',
+      'Bootstrap',
+      'Materialize',
+      'JavaScript',
+      'Apps móviles Android',
     ],
   },
   {
-    name: 'Seguridad informática y soporte',
-    prefix: 'SIS',
+    name: 'Redes Windows',
+    prefix: 'RED',
     description:
-      'Aplica prácticas de protección de la información, diagnóstico preventivo y soporte técnico en entornos informáticos.',
+      'Diseña, construye, configura y administra redes de área local con equipos Windows.',
     competencies: [
-      'Aplicar políticas de seguridad para proteger la información de la organización.',
-      'Configurar copias de respaldo y procedimientos de recuperación.',
-      'Atender solicitudes de soporte técnico mediante una mesa de ayuda.',
+      'Teoría general',
+      'Direcciones IP',
+      'Cisco Packet Tracer',
+      'Configuración',
+      'Construcción',
+      'Administración',
     ],
+  },
+  {
+    name: 'Emprendimiento',
+    prefix: 'EMP',
+    description:
+      'Formula y valida ideas de negocio relacionadas con la tecnología. Coordinación registra sus competencias.',
+    competencies: [],
   },
 ];

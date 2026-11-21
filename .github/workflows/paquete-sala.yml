@@ -1,0 +1,52 @@
+# Arma el paquete de instalación de la sala en los servidores de GitHub, para no necesitar
+# Docker ni internet rápido en un computador del equipo.
+#
+# Se ejecuta solo al publicar la rama "paquete-sala" (o al subirle cambios). El resultado queda
+# en la sección Releases del repositorio, como "Paquete de la sala":
+#   paquete-systemplus.zip         scripts, docker-compose.yml y realm (descomprimir en C:\SystemPlus)
+#   imagenes-systemplus.tar.gz     las cuatro imágenes de Docker (copiar dentro de esa carpeta)
+# Si las imágenes pasan de 1,9 GB se dividen en partes .part-aa, .part-ab...; ver la guía de
+# instalación para unirlas.
+name: Paquete de la sala
+
+on:
+  push:
+    branches: [paquete-sala]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  paquete:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Construir imágenes y armar el paquete
+        run: sh deploy/scripts/preparar-paquete.sh
+
+      - name: Comprimir
+        run: |
+          cd paquete-systemplus
+          gzip -6 imagenes-systemplus.tar
+          zip -qr ../paquete-systemplus.zip . -x 'imagenes-systemplus.tar.gz'
+          cd ..
+          mv paquete-systemplus/imagenes-systemplus.tar.gz .
+          if [ "$(stat -c %s imagenes-systemplus.tar.gz)" -gt 1900000000 ]; then
+            split -b 1900m imagenes-systemplus.tar.gz imagenes-systemplus.tar.gz.part-
+            rm imagenes-systemplus.tar.gz
+          fi
+          ls -lh paquete-systemplus.zip imagenes-systemplus.tar.gz*
+
+      - name: Publicar en Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ETIQUETA="paquete-sala-$(date -u +%Y%m%d-%H%M)"
+          gh release create "$ETIQUETA" paquete-systemplus.zip imagenes-systemplus.tar.gz* \
+            --target "$GITHUB_SHA" \
+            --title "Paquete de la sala $(date -u +%Y-%m-%d)" \
+            --notes "Paquete de instalación generado desde $GITHUB_REF_NAME ($GITHUB_SHA). Ver docs/intranet/guia-instalacion-sala.md." \
+            --prerelease

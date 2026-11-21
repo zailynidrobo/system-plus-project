@@ -56,11 +56,21 @@ if ((Get-Content .env -Raw) -match 'cambiar-esta-clave|se-genera-al-instalar|dev
   exit 1
 }
 
-Write-Host 'Cargando imágenes desde el archivo (sin internet)...'
-docker load -i imagenes-systemplus.tar
-
-Write-Host 'Iniciando System Plus...'
-docker compose up -d --no-build
+# Imágenes: del paquete (sin internet), en .tar o .tar.gz. Si no hay archivo y está el código
+# fuente, se construyen aquí mismo (necesita internet).
+$imagenes = @('imagenes-systemplus.tar', 'imagenes-systemplus.tar.gz') | Where-Object { Test-Path $_ } | Select-Object -First 1
+if ($imagenes) {
+  Write-Host "Cargando imágenes desde $imagenes (sin internet)..."
+  docker load -i $imagenes
+  Write-Host 'Iniciando System Plus...'
+  docker compose up -d --no-build
+} elseif ((Test-Path 'gestion-guias\Dockerfile') -and (Test-Path 'frontend\Dockerfile')) {
+  Write-Host 'No hay archivo de imágenes: se construyen desde el código (necesita internet, 10 a 20 minutos)...'
+  docker compose up -d --build
+} else {
+  Write-Host 'Falta imagenes-systemplus.tar.gz en esta carpeta. Cópielo del paquete y vuelva a ejecutar el script.'
+  exit 1
+}
 
 Write-Host 'Esperando a que todo arranque (puede tardar 1 a 3 minutos)...'
 $listo = $false

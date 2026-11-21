@@ -85,9 +85,27 @@ Se hace una sola vez, y de nuevo cada vez que haya una versión nueva del sistem
    powershell -ExecutionPolicy Bypass -File deploy\scripts\preparar-paquete.ps1
    ```
 4. Se crea la carpeta `paquete-systemplus` (unos 2 GB) con:
-   - `imagenes-systemplus.tar`: las cuatro imágenes de Docker.
+   - `imagenes-systemplus.tar`: las cuatro imágenes de Docker (también sirve comprimido, `.tar.gz`).
    - `docker-compose.yml`, `intranet.env.example`, `deploy/` y `keycloak/`.
 5. Copiar la carpeta `paquete-systemplus` y los dos instaladores a la USB.
+
+### Alternativa: armar el paquete en GitHub (sin Docker en ningún computador del equipo)
+
+GitHub construye las imágenes en sus servidores (flujo `.github/workflows/paquete-sala.yml`).
+
+1. En GitHub Desktop, estando en `develop` actualizado, crear la rama `paquete-sala`
+   (Branch → New branch) y darle **Publish branch**. Si ya existe, subirle los cambios con
+   **Push origin**.
+2. En GitHub, pestaña **Actions**, esperar a que "Paquete de la sala" termine en verde (10 a 20 minutos).
+3. En la página principal del repositorio, sección **Releases**, abrir "Paquete de la sala" y descargar
+   `paquete-systemplus.zip` e `imagenes-systemplus.tar.gz`.
+4. Descomprimir `paquete-systemplus.zip` en una carpeta `paquete-systemplus` y poner
+   `imagenes-systemplus.tar.gz` dentro de ella, sin descomprimirlo: el instalador lo carga así.
+5. Si las imágenes salieron divididas (`.part-aa`, `.part-ab`), unirlas en esa carpeta con:
+   ```
+   copy /b imagenes-systemplus.tar.gz.part-aa + imagenes-systemplus.tar.gz.part-ab imagenes-systemplus.tar.gz
+   ```
+6. Seguir con el paso 5 de la lista anterior (copiar a la USB con los dos instaladores).
 
 ## 5. Configurar la red de la sala
 

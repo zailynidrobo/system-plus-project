@@ -25,8 +25,16 @@ if grep -Eq 'cambiar-esta-clave|se-genera-al-instalar|dev-secret' .env; then
   exit 1
 fi
 
-docker load -i imagenes-systemplus.tar
-docker compose up -d --no-build
+if [ -f imagenes-systemplus.tar ]; then
+  docker load -i imagenes-systemplus.tar && docker compose up -d --no-build
+elif [ -f imagenes-systemplus.tar.gz ]; then
+  docker load -i imagenes-systemplus.tar.gz && docker compose up -d --no-build
+elif [ -f gestion-guias/Dockerfile ] && [ -f frontend/Dockerfile ]; then
+  echo 'No hay archivo de imágenes: se construyen desde el código (necesita internet).'
+  docker compose up -d --build
+else
+  echo 'Falta imagenes-systemplus.tar.gz en esta carpeta.'; exit 1
+fi
 
 echo "Esperando a que todo arranque (1 a 3 minutos)..."
 i=0

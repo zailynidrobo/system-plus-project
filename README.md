@@ -4,9 +4,19 @@ Plataforma web para crear, versionar y mejorar las **guías de aprendizaje** del
 
 - La **coordinación** define los módulos, las competencias y las guías base.
 - Los **docentes** adaptan las guías en versiones propias y proponen mejoras.
-- La **administración** gestiona las cuentas y los roles.
+- La **administración** gestiona las cuentas, los roles y la auditoría.
 
-Desarrollado por el equipo **AthenaDev**.
+Funciona **sin internet**: se instala en el servidor de la sala de System Plus y los usuarios entran desde computadores, celulares o la pantalla OneScreen.
+
+Desarrollado por el equipo **AthenaDev Developers** para System Plus del Cauca SAS, en el curso Proyecto I de la Universidad del Cauca.
+
+| En cifras | |
+|---|---|
+| Épicas implementadas | 9 (HE-01 a HE-09) |
+| Rutas de la API | 85, de ellas 80 protegidas por rol |
+| Tablas en PostgreSQL | 16 |
+| Pruebas automatizadas | 636 (276 unitarias y 18 de integración en el backend, 342 en el frontend) |
+| Servicios en producción | 4 contenedores de Docker: web, api, keycloak y db |
 
 ---
 
@@ -19,28 +29,31 @@ Desarrollado por el equipo **AthenaDev**.
 5. [Requisitos](#5-requisitos)
 6. [Puesta en marcha rápida (solo frontend)](#6-puesta-en-marcha-rápida-solo-frontend)
 7. [Puesta en marcha completa (frontend + backend + Keycloak)](#7-puesta-en-marcha-completa-frontend--backend--keycloak)
-8. [Usuarios de prueba](#8-usuarios-de-prueba)
-9. [Pruebas](#9-pruebas)
-10. [Flujo de trabajo con Git](#10-flujo-de-trabajo-con-git)
-11. [Documentación](#11-documentación)
-12. [Equipo](#12-equipo)
-13. [Licencia](#13-licencia)
+8. [Instalación en la sala (producción)](#8-instalación-en-la-sala-producción)
+9. [Usuarios de prueba](#9-usuarios-de-prueba)
+10. [Pruebas](#10-pruebas)
+11. [Flujo de trabajo con Git](#11-flujo-de-trabajo-con-git)
+12. [Documentación](#12-documentación)
+13. [Equipo](#13-equipo)
+14. [Licencia](#14-licencia)
 
 ---
 
 ## 1. Funcionalidades
 
-El proyecto se organiza en cinco épicas (HE). Cada una tiene sus historias de usuario (HU) en Jira.
+El proyecto se organiza en nueve épicas (HE). Cada una tiene sus historias de usuario (HU) en Jira, y todas están conectadas al backend.
 
-| Épica | Rol | Qué permite | Frontend | Backend |
-|---|---|---|---|---|
-| **HE-01** Usuarios, roles y permisos | Administrador | Registrar, editar y desactivar usuarios; asignar roles | Conectado al backend | Keycloak |
-| **HE-02** Programa académico | Coordinador Académico | Módulos curriculares y competencias, con historial de versiones | Conectado al backend | PostgreSQL |
-| **HE-03** Guías de aprendizaje | Coordinador Académico | Guías base, estructura de campos, publicación, material de apoyo y descarga en Word o PDF | Conectado al backend | PostgreSQL |
-| **HE-04** Espacio docente | Docente / Docente Autorizado | Consultar guías asignadas y crear versiones propias | Con datos simulados | PostgreSQL |
-| **HE-05** Sugerencias | Docente y Coordinador | Proponer cambios a una guía y aprobarlos o rechazarlos, con plazos y notificaciones ([detalle](docs/he05-sugerencias.md)) | Conectado al backend | PostgreSQL |
-
-«Con datos simulados» significa que la pantalla funciona completa, pero con datos de prueba en memoria que se pierden al recargar la página. El detalle de cada HU del frontend está en [`docs/verificacion-front-HE01-HE05.md`](docs/verificacion-front-HE01-HE05.md).
+| Épica | Rol | Qué permite | Módulo de la API |
+|---|---|---|---|
+| **HE-01** Usuarios, roles y permisos | Administrador | Registrar, editar, desactivar y reactivar usuarios; cambiar roles; restablecer contraseñas | `users` (Keycloak) |
+| **HE-02** Programa académico | Coordinador Académico | Programa Técnico en Sistemas, sus 7 módulos y sus competencias, con historial de versiones | `academic-program` |
+| **HE-03** Guías de aprendizaje | Coordinador Académico | Guías base, estructura de campos, publicación, material de apoyo, asignación de docentes y descarga en Word o PDF | `academic` |
+| **HE-04** Espacio docente | Docente / Docente Autorizado | Consultar guías asignadas, crear versiones propias por grupo y descargarlas | `teacher-space` |
+| **HE-05** Sugerencias | Docente y Coordinador | Proponer cambios a una guía y aprobarlos o rechazarlos, con plazos y notificaciones ([detalle](docs/he05-sugerencias.md)) | `suggestions` |
+| **HE-06** Búsqueda de guías | Todos | Buscar por texto y filtrar por módulo, competencia, estado y autor | `guide-search` |
+| **HE-07** Historial de versiones | Coordinador y Docente | Ver las versiones de una guía y compararlas | `guide-history` |
+| **HE-08** Auditoría y permisos | Administrador | Historial de acciones de los usuarios y matriz de permisos por rol ([auditoría](docs/he08-auditoria.md), [permisos](docs/he08-permisos-por-rol.md)) | `audit` |
+| **HE-09** Configuración del sistema | Coordinador | Tiempo límite de respuesta a sugerencias y periodos de bloqueo de edición | `suggestions`, `academic` |
 
 ### Backend de HE-03 y HE-04
 
@@ -51,44 +64,58 @@ Las guías, sus formularios y las versiones docentes **se guardan en PostgreSQL*
   - Pasa de borrador (`v0`) a publicada (`v1.0`). Una guía publicada ya no se edita.
   - Guarda una copia del módulo, la competencia y los campos del formulario. Así, cambios posteriores en HE-02 o en el formulario no alteran las guías existentes.
   - Registra quién la creó, la editó y la publicó, con su historial de eventos.
-  - Admite material de apoyo (un PDF o DOCX por carga, máximo 10 MB) y se descarga en **Word o PDF** con las plantillas institucionales.
+  - Admite material de apoyo (un PDF o DOCX por carga, máximo 10 MB) y se descarga en **Word o PDF** con el logo oficial de System Plus. El documento se arma desde el código, sin plantillas, y LibreOffice lo convierte a PDF.
 - **Formularios configurables (HE-03):** el coordinador define los campos de la guía base y los de la guía docente por módulo o por competencia: sección, ayuda, longitud máxima y si el docente puede editarlos. Si un módulo no tiene formulario propio, se usan los campos institucionales por defecto.
 - **Espacio docente (HE-04, rol `docente`):**
   - El coordinador asigna docentes a cada módulo.
   - El docente ve solo las guías publicadas de sus módulos.
   - Crea su propia copia y la edita por partes, sin modificar nunca la guía base.
+  - El **docente autorizado** puede además complementar su versión (por ejemplo, los tipos de archivo de cada competencia), pero el texto base se conserva: la API rechaza cualquier cambio que lo borre o lo altere.
   - También puede descargarla en Word o PDF.
 
 Las rutas completas están en [`gestion-guias/README.md`](gestion-guias/README.md), y hay una colección de Postman en [`gestion-guias/postman/`](gestion-guias/postman/).
 
 ## 2. Arquitectura
 
-El sistema tiene tres piezas propias y un proveedor de identidad externo:
+Una aplicación web (Angular) habla con una API organizada en módulos (NestJS). Keycloak guarda las cuentas y los roles, y PostgreSQL guarda todo lo demás. En producción, las cuatro piezas corren en el mismo servidor con Docker Compose.
 
 ```mermaid
 flowchart LR
-    usuarios(["Administrador · Coordinador · Docente"])
-    subgraph sistema["System Plus · Intranet de guías académicas"]
-        spa["<b>Aplicación web</b><br/>Angular · navegador"]
-        api["<b>API gestion-guias</b><br/>NestJS"]
-        db[("<b>Base de datos</b><br/>PostgreSQL")]
+    usuarios(["Administrador · Coordinador · Docente · Docente autorizado"])
+    subgraph servidor["Servidor de la sala · Docker Compose"]
+        web["<b>Web · Nginx</b><br/>Angular 21 · puerto 80"]
+        api["<b>API gestion-guias</b><br/>NestJS 12 · TypeORM"]
+        kc["<b>Keycloak 26.3</b><br/>cuentas y roles"]
+        db[("<b>PostgreSQL 16</b><br/>gestion_guias · keycloak")]
     end
-    kc["<b>Keycloak</b><br/>inicio de sesión y roles"]
 
-    usuarios -->|usa| spa
-    usuarios -->|inicia sesión en| kc
-    spa -->|"obtiene el token<br/>(OIDC + PKCE)"| kc
-    spa -->|"REST/JSON<br/>con el token"| api
-    api -->|"valida tokens y<br/>administra usuarios"| kc
+    usuarios -->|"http://IP-del-servidor"| web
+    web -->|"reenvía /api/"| api
+    api -->|"inicio de sesión, tokens<br/>y administración de usuarios"| kc
     api -->|lee y escribe| db
+    kc -->|guarda cuentas| db
 ```
 
 **Cómo funciona una petición:**
 
-1. El usuario abre la aplicación web. Si no tiene sesión, la app lo envía a la pantalla de inicio de sesión de **Keycloak**.
-2. Keycloak verifica sus credenciales y devuelve un **token** que incluye su rol: `admin`, `coordinador`, `docente` o `docente_autorizado`.
-3. La aplicación muestra solo las pantallas de ese rol y envía el token en cada petición a la **API**.
-4. La API valida el token con Keycloak, comprueba el rol y lee o escribe en **PostgreSQL**. Los usuarios no se guardan en PostgreSQL: la API los administra directamente en Keycloak.
+1. El usuario abre la aplicación y escribe su correo y contraseña en el **formulario propio** de System Plus.
+2. La API valida esas credenciales con **Keycloak** y devuelve un **token** que incluye su rol: `admin`, `coordinador`, `docente` o `docente_autorizado`.
+3. La aplicación muestra solo las pantallas de ese rol y envía el token en cada petición. **Nginx** la pasa a la API.
+4. La API valida la firma del token, comprueba el rol, registra la acción en la auditoría y lee o escribe en **PostgreSQL**. Los usuarios no se guardan en PostgreSQL: la API los administra directamente en Keycloak.
+
+### Diagramas
+
+Los diagramas C4 y de datos están en [`docs/arquitectura/`](docs/arquitectura/), con sus fuentes editables en PlantUML.
+
+| Diagrama | Qué muestra |
+|---|---|
+| [Contexto](docs/arquitectura/01-contexto.png) | Roles y sistema |
+| [Contenedores](docs/arquitectura/02-contenedores.png) | Web, API, Keycloak y base de datos |
+| [Componentes de la API](docs/arquitectura/03-componentes-api.png) | Un módulo por épica y sus dependencias |
+| [Componentes de la web](docs/arquitectura/04-componentes-web.png) | Rutas, guards, autenticación y adaptadores |
+| [Despliegue](docs/arquitectura/05-despliegue.png) | Red de la sala, servidor OPS y contenedores |
+| [Modelo de datos](docs/arquitectura/06-modelo-datos.png) | Las 16 tablas y sus relaciones |
+| [Clases por módulo](docs/arquitectura/07-clases-modulos.png) | Controladores y servicios de la API |
 
 ## 3. Tecnologías
 
@@ -96,30 +123,41 @@ flowchart LR
 |---|---|
 | Frontend | Angular 21, TypeScript, signals, carga diferida por ruta |
 | Backend | NestJS 12, TypeScript, TypeORM, validación con `class-validator` |
-| Base de datos | PostgreSQL |
-| Autenticación | Keycloak 26 (OpenID Connect, Authorization Code + PKCE, tokens JWT) |
-| Pruebas | Vitest (frontend y backend) |
+| Base de datos | PostgreSQL 16, con migraciones de TypeORM |
+| Autenticación | Keycloak 26.3 (OpenID Connect, tokens JWT), con formulario propio a través de la API |
+| Pruebas | Vitest y Supertest (frontend y backend) |
+| Servidor web | Nginx, con encabezados de seguridad |
+| Despliegue | Docker Compose; paquete sin internet generado con GitHub Actions |
 | Gestor de paquetes | pnpm (frontend y backend) |
 
 ## 4. Estructura del repositorio
 
 ```
 system-plus-project/
-├── frontend/          Aplicación web en Angular (la usan los tres roles)
-│   ├── src/app/core/      Autenticación, guards, interceptor, layout y datos simulados
+├── frontend/          Aplicación web en Angular (la usan los cuatro roles)
+│   ├── src/app/core/      Autenticación, guards, interceptor y layout
 │   ├── src/app/features/  Una carpeta por épica: users, academic-program, guides,
-│   │                      teacher-space, suggestions
+│   │                      teacher-space, suggestions, audit, settings, home, auth, legal
 │   ├── src/app/shared/    Modelos, utilidades y componentes reutilizables
 │   └── GUIA-EJECUCION.md  Guía detallada del frontend
 ├── gestion-guias/     API REST en NestJS
+│   ├── src/auth/              Inicio de sesión, validación de tokens y roles
 │   ├── src/users/             HE-01 · puente hacia la administración de Keycloak
-│   ├── src/academic-program/  HE-02 · programas, módulos y competencias
-│   ├── src/academic/          HE-03 y HE-04 · guías, formularios, versiones docentes y exportación
+│   ├── src/academic-program/  HE-02 · programa, módulos y competencias
+│   ├── src/academic/          HE-03 · guías, formularios, versiones y exportación
+│   ├── src/teacher-space/     HE-04 · espacio docente
+│   ├── src/suggestions/       HE-05 y HE-09 · sugerencias, notificaciones y plazos
+│   ├── src/guide-search/      HE-06 · búsqueda de guías
+│   ├── src/guide-history/     HE-07 · historial de versiones
+│   ├── src/audit/             HE-08 · auditoría y permisos por rol
+│   ├── src/database/          Conexión y migraciones
 │   ├── postman/               Colección de Postman para probar la API
-│   ├── src/auth/              Validación de tokens y roles de Keycloak
 │   └── .env.example           Plantilla de configuración
-├── keycloak/          Realm "system-plus" listo para importar en desarrollo
-└── docs/              Estrategia de ramas y verificación del frontend
+├── keycloak/          Realm "system-plus" de desarrollo y de producción
+├── deploy/            Nginx, scripts de instalación, respaldo y datos de demostración
+├── docs/              Documentación técnica, diagramas y guía de instalación de la sala
+├── .github/workflows/ Generación del paquete de instalación sin internet
+└── docker-compose.yml Los cuatro servicios de producción
 ```
 
 **Puertos en desarrollo**
@@ -158,12 +196,12 @@ Este modo no necesita backend ni Keycloak. Sirve para revisar pantallas o trabaj
 2. En `frontend/src/environments/environment.ts` cambia `auth`, `api` y `apiAcademico` a `'mock'`:
 
    ```ts
-   auth: 'mock' as 'keycloak' | 'mock',
+   auth: 'mock' as 'api' | 'keycloak' | 'mock',
    api: 'mock' as 'http' | 'mock',
    apiAcademico: 'mock' as 'http' | 'mock',
    ```
 
-   > **Importante:** este cambio es solo para tu computador. El archivo del repositorio debe seguir con `'keycloak'` y `'http'`, porque es la configuración que usa el resto del equipo. Si haces este cambio, no lo incluyas en tus commits: en GitHub Desktop, haz clic derecho sobre `environment.ts` y elige *Discard changes* antes de hacer commit.
+   > **Importante:** este cambio es solo para tu computador. El archivo del repositorio debe seguir con `'api'` y `'http'`, porque es la configuración que usa el resto del equipo. Si haces este cambio, no lo incluyas en tus commits: en GitHub Desktop, haz clic derecho sobre `environment.ts` y elige *Discard changes* antes de hacer commit.
 
 3. Arranca el servidor:
 
@@ -171,7 +209,7 @@ Este modo no necesita backend ni Keycloak. Sirve para revisar pantallas o trabaj
    pnpm start
    ```
 
-4. Abre http://localhost:4200 y entra con un usuario simulado (sección 8).
+4. Abre http://localhost:4200 y entra con un usuario simulado (sección 9).
 
 Para detener el servidor, pulsa `Ctrl + C` en la terminal.
 
@@ -203,7 +241,7 @@ Con Docker (en Git Bash):
 docker run --name pg-guias -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=gestion_guias -p 5432:5432 -d postgres:16
 ```
 
-Si ya tienes un PostgreSQL instalado, solo crea una base de datos vacía llamada `gestion_guias`. Las tablas se crean solas cuando arranca el backend (con `DB_SYNCHRONIZE=true`), y la primera vez se carga el programa **Técnico en Sistemas** con sus módulos y competencias de ejemplo.
+Si ya tienes un PostgreSQL instalado, solo crea una base de datos vacía llamada `gestion_guias`. Las tablas se crean solas cuando arranca el backend (con `DB_SYNCHRONIZE=true`), y la primera vez se carga el programa **Técnico en Sistemas** con sus 7 módulos reales y sus competencias. En producción no se usa `DB_SYNCHRONIZE`: el esquema se crea con migraciones.
 
 ```sql
 CREATE DATABASE gestion_guias;
@@ -235,7 +273,7 @@ La API queda en http://localhost:3000. Los endpoints están documentados en [`ge
 
 ### 7.4 Frontend
 
-Con `environment.ts` tal como está en el repositorio (`auth: 'keycloak'`, `api` y `apiAcademico` en `'http'`):
+Con `environment.ts` tal como está en el repositorio (`auth: 'api'`, `api` y `apiAcademico` en `'http'`):
 
 ```powershell
 cd frontend
@@ -243,9 +281,20 @@ pnpm install --frozen-lockfile
 pnpm start
 ```
 
-Abre http://localhost:4200. La aplicación te lleva a la pantalla de inicio de sesión de Keycloak. Entra con un usuario de Keycloak (sección 8).
+Abre http://localhost:4200 y entra en el formulario de inicio de sesión con un usuario de Keycloak (sección 9).
 
-## 8. Usuarios de prueba
+## 8. Instalación en la sala (producción)
+
+En producción todo corre con Docker Compose en el módulo OPS de la pantalla de la sala, sin necesitar internet.
+
+1. Al publicar en la rama `paquete-sala`, GitHub Actions construye las cuatro imágenes y las sube a *Releases* como un paquete comprimido.
+2. En la sala se copia el paquete con una memoria USB y se ejecuta `deploy/scripts/instalar-servidor.ps1`, que carga las imágenes y levanta los servicios.
+3. Los usuarios entran desde la red local a `http://IP-del-servidor`. Solo queda abierto el puerto 80.
+4. `deploy/scripts/respaldo-bd.ps1` hace la copia de seguridad diaria de las dos bases y conserva las últimas 14.
+
+El paso a paso, la configuración del router y la solución de problemas están en la [guía de instalación de la sala](docs/intranet/guia-instalacion-sala.md).
+
+## 9. Usuarios de prueba
 
 Hay un usuario de prueba por cada rol:
 
@@ -263,7 +312,7 @@ Las contraseñas dependen del modo:
 
 > Estos usuarios existen solo en desarrollo. Nunca subas al repositorio contraseñas, secretos ni el archivo `.env` de un entorno real.
 
-## 9. Pruebas
+## 10. Pruebas
 
 ```powershell
 # Frontend
@@ -279,7 +328,13 @@ pnpm lint            # revisión de estilo
 
 Antes de abrir un pull request, las pruebas y el lint deben pasar.
 
-## 10. Flujo de trabajo con Git
+| Suite | Cantidad |
+|---|---|
+| Backend, unitarias | 276 |
+| Backend, integración (e2e) | 18 |
+| Frontend | 342 |
+
+## 11. Flujo de trabajo con Git
 
 El equipo usa un **Git Flow simplificado**. El detalle está en [`docs/branching-strategy.md`](docs/branching-strategy.md).
 
@@ -304,28 +359,36 @@ El equipo usa un **Git Flow simplificado**. El detalle está en [`docs/branching
 
 Nunca se hace push directo a `main` ni a `develop`.
 
-## 11. Documentación
+## 12. Documentación
 
 | Documento | Contenido |
 |---|---|
 | [`docs/branching-strategy.md`](docs/branching-strategy.md) | Estrategia de ramas y convenciones |
+| [`docs/arquitectura/`](docs/arquitectura/) | Diagramas C4, despliegue, modelo de datos y clases, con fuentes en PlantUML |
+| [`docs/intranet/guia-instalacion-sala.md`](docs/intranet/guia-instalacion-sala.md) | Instalación en la sala sin internet, red y respaldos |
+| [`docs/he05-sugerencias.md`](docs/he05-sugerencias.md) | Flujo de sugerencias, plazos y notificaciones |
+| [`docs/he08-auditoria.md`](docs/he08-auditoria.md) | Auditoría de acciones |
+| [`docs/he08-permisos-por-rol.md`](docs/he08-permisos-por-rol.md) | Matriz de permisos por rol |
 | [`docs/verificacion-front-HE01-HE05.md`](docs/verificacion-front-HE01-HE05.md) | Estado de cada HU en el frontend y pendientes de integración |
 | [`frontend/GUIA-EJECUCION.md`](frontend/GUIA-EJECUCION.md) | Guía detallada del frontend: rutas, recorrido de prueba y problemas comunes |
 | [`gestion-guias/README.md`](gestion-guias/README.md) | Configuración y endpoints del backend |
-| [`keycloak/README.md`](keycloak/README.md) | Realm de desarrollo y cómo importarlo |
+| [`keycloak/README.md`](keycloak/README.md) | Realms de desarrollo y producción, y cómo importarlos |
 
-## 12. Equipo
+## 13. Equipo
 
-**AthenaDev**
+**AthenaDev Developers**
 
-| Integrante | GitHub |
-|---|---|
-| Zailyn Idrobo | [@zailynidrobo](https://github.com/zailynidrobo) |
-| Julia Díaz | [@juliaaa2](https://github.com/juliaaa2) |
-| Sofía Moreno | [@SofiaMorenoT](https://github.com/SofiaMorenoT) |
-| Cristhian Torres | [@CristhianTorresM](https://github.com/CristhianTorresM) |
-| Yasley Camilo | [@yasmcamilo](https://github.com/yasmcamilo) |
+| Integrante | Rol | GitHub |
+|---|---|---|
+| Yasley Mayerly Camilo Camilo | Product Owner y desarrollo | [@yasmcamilo](https://github.com/yasmcamilo) |
+| Zailyn Estefany Idrobo Rodríguez | Scrum Master, análisis y QA | [@zailynidrobo](https://github.com/zailynidrobo) |
+| Cristhian Daniel Torres Meneses | Backend y Docker | [@CristhianTorresM](https://github.com/CristhianTorresM) |
+| Juliana Andrea Díaz Cárdenas | Frontend | [@juliaaa2](https://github.com/juliaaa2) |
+| Sofía Moreno Trullo | Full stack | [@SofiaMorenoT](https://github.com/SofiaMorenoT) |
 
-## 13. Licencia
+**Cliente:** System Plus Piendamó (System Plus del Cauca SAS).
+**Gerente del proyecto:** PhD. Miguel Ángel Niño Zambrano · Proyecto I, Universidad del Cauca.
+
+## 14. Licencia
 
 Distribuido bajo la licencia MIT. Ver [`LICENSE`](LICENSE).

@@ -1,0 +1,18 @@
+@startuml
+!include <C4/C4_Context>
+!include estilo.iuml
+title Diagrama de contexto · System Plus · Intranet de guías académicas (versión instalada, nov. 2026)
+LAYOUT_TOP_DOWN()
+Person(admin, "Administrador", "Registra, edita, desactiva y reactiva usuarios; asigna roles; configura plazos y periodos de bloqueo; consulta la auditoría (HE-01, HE-08, HE-09).")
+Person(coord, "Coordinador académico", "Gestiona módulos y competencias, crea y publica las guías base, asigna docentes y aprueba o rechaza sugerencias (HE-02, HE-03, HE-05, HE-07).")
+Person(doc, "Docente", "Consulta las guías de sus módulos, crea versiones propias por grupo, las exporta y envía sugerencias (HE-04, HE-05, HE-06).")
+Person(aut, "Docente autorizado", "Lo mismo que el docente; además sube materiales de apoyo y, en su versión, conserva el texto base y agrega su complemento.")
+System(sp, "System Plus · Intranet de guías académicas", "Gestiona, versiona y adapta las guías de aprendizaje del Técnico en Sistemas. Exporta las guías a PDF y Word. Funciona en la red local de la sala, sin internet.")
+System_Ext(kc, "Keycloak (proveedor de identidad)", "Guarda las cuentas, contraseñas y roles (realm system-plus). Instalado en el mismo servidor, no expuesto a la red.")
+Rel(admin, sp, "Administra usuarios, roles, configuración y auditoría", "HTTP · red local")
+Rel(coord, sp, "Gestiona el programa, las guías base y las sugerencias", "HTTP · red local")
+Rel(doc, sp, "Consulta guías, crea versiones y sugiere cambios", "HTTP · red local")
+Rel(aut, sp, "Igual que el docente + materiales de apoyo y complemento", "HTTP · red local")
+Rel(sp, kc, "Valida credenciales, emite y verifica tokens JWT, administra cuentas", "OpenID Connect · Admin REST")
+SHOW_LEGEND()
+@enduml

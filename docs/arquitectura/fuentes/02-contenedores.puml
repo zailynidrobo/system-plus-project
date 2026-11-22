@@ -1,0 +1,21 @@
+@startuml
+!include <C4/C4_Container>
+!include estilo.iuml
+title Diagrama de contenedores · System Plus (Docker Compose en el servidor de la sala)
+Person(u, "Usuarios", "Administrador, coordinador, docentes y docentes autorizados, desde computadores, celulares o la pantalla de la sala.")
+System_Boundary(sp, "System Plus · servidor de la sala (módulo OPS)") {
+  Container(web, "Web · Nginx", "Nginx + Angular 21 (SPA)", "Puerto 80. Sirve la aplicación web, aplica los encabezados de seguridad y la CSP, y reenvía /api/ a la API.")
+  Container(spa, "Aplicación web", "Angular 21, TypeScript", "Se ejecuta en el navegador. Formulario propio de inicio de sesión, menú y pantallas según el rol.")
+  Container(api, "API gestion-guias", "NestJS 12 (Express), TypeORM", "Monolito modular. Lógica de negocio, permisos por rol, auditoría y exportación a PDF/Word (LibreOffice).")
+  ContainerDb(db, "Base de datos", "PostgreSQL 16", "Base gestion_guias: programa, módulos, competencias, guías, versiones, sugerencias, notificaciones y auditoría. Base keycloak: datos de Keycloak.")
+  Container(kc, "Keycloak", "Keycloak 26.3", "Realm system-plus: cuentas, contraseñas, roles y bloqueo por intentos fallidos. Solo accesible desde el servidor.")
+}
+Rel(u, web, "Abre http://IP-del-servidor", "HTTP :80")
+Rel(web, spa, "Entrega los archivos de la aplicación")
+Rel(spa, web, "Llama a la API", "JSON · /api/* · Bearer JWT")
+Rel(web, api, "Reenvía /api/*", "HTTP :3000 · red interna de Docker")
+Rel(api, kc, "Inicio de sesión (password grant), renovación de tokens, firmas JWKS y administración de usuarios", "OpenID Connect · Admin REST")
+Rel(api, db, "Lee y escribe", "SQL · TypeORM · migraciones")
+Rel(kc, db, "Guarda cuentas y sesiones", "JDBC")
+SHOW_LEGEND()
+@enduml

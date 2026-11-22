@@ -1,0 +1,11 @@
+skinparam defaultFontName Arial
+skinparam dpi 150
+skinparam wrapWidth 260
+skinparam maxMessageSize 220
+UpdateElementStyle("person", $bgColor="#23306B", $borderColor="#1B2560")
+UpdateElementStyle("system", $bgColor="#3E4FA0", $borderColor="#23306B")
+UpdateElementStyle("container", $bgColor="#5A6BC2", $borderColor="#3E4FA0")
+UpdateElementStyle("component", $bgColor="#8A97DA", $borderColor="#5A6BC2", $fontColor="#0F1438")
+UpdateElementStyle("external_system", $bgColor="#7A8091", $borderColor="#5B6275")
+UpdateElementStyle("external_container", $bgColor="#7A8091", $borderColor="#5B6275")
+UpdateRelStyle("#4A4F63", "#23306B")

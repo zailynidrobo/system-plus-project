@@ -1,0 +1,130 @@
+@startuml
+skinparam defaultFontName Arial
+skinparam dpi 150
+skinparam shadowing false
+skinparam roundCorner 6
+skinparam ArrowColor #23306B
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #3E4FA0
+  HeaderBackgroundColor #8A97DA
+  StereotypeFontColor #23306B
+}
+skinparam package {
+  BorderColor #5A6BC2
+  FontColor #23306B
+  BackgroundColor #F4F6FC
+}
+hide empty members
+hide circle
+left to right direction
+title Diagrama de clases por módulo · API gestion-guias (NestJS)
+legend bottom left
+  <<C>> controlador REST · <<S>> servicio · <<G>> guard / filtro / interceptor
+  Flecha: dependencia inyectada. Guards y auditoría se registran de forma global (APP_GUARD / APP_INTERCEPTOR).
+endlegend
+
+package "auth" {
+  class AuthController <<C>>
+  class AuthService <<S>>
+  class KeycloakStrategy
+  class KeycloakAuthGuard <<G>>
+  class KeycloakRolesGuard <<G>>
+}
+package "users (HE-01)" {
+  class UsersController <<C>>
+  class TeachersController <<C>>
+  class UsersService <<S>>
+  class KeycloakAdminService <<S>>
+  class SessionRevocationService <<S>>
+}
+package "academic-program (HE-02)" {
+  class ProgramsController <<C>>
+  class CurricularModulesController <<C>>
+  class CompetenciesController <<C>>
+  class ProgramsService <<S>>
+  class CurricularModulesService <<S>>
+  class CompetenciesService <<S>>
+}
+package "academic (HE-03)" {
+  class AcademicController <<C>>
+  class AcademicService <<S>>
+  class GuideDocumentExportService <<S>>
+  class TypeOrmGuideStatsProvider <<S>>
+}
+package "teacher-space (HE-04)" {
+  class TeacherSpaceController <<C>>
+}
+package "suggestions (HE-05)" {
+  class TeacherSuggestionsController <<C>>
+  class SuggestionInboxController <<C>>
+  class SuggestionApprovalController <<C>>
+  class SuggestionRejectionController <<C>>
+  class SuggestionSettingsController <<C>>
+  class NotificationsController <<C>>
+  class SuggestionSubmissionService <<S>>
+  class SuggestionInboxService <<S>>
+  class SuggestionApprovalService <<S>>
+  class SuggestionRejectionService <<S>>
+  class SuggestionSettingsService <<S>>
+  class SuggestionViewsService <<S>>
+  class NotificationsService <<S>>
+}
+package "guide-search (HE-06)" {
+  class GuideSearchController <<C>>
+}
+package "guide-history (HE-07)" {
+  class GuideHistoryController <<C>>
+}
+package "audit (HE-08)" {
+  class AuditActionsController <<C>>
+  class RolePermissionsController <<C>>
+  class AuditActionsService <<S>>
+  class RolePermissionsService <<S>>
+  class AuditLogService <<S>>
+  class SessionAuditService <<S>>
+  class AuditInterceptor <<G>>
+  class AuditForbiddenFilter <<G>>
+}
+package "common · database" {
+  class ErrorLoggingFilter <<G>>
+  class DatabaseModule
+}
+
+AuthController --> AuthService
+AuthController --> SessionAuditService
+AuthService --> KeycloakAdminService
+KeycloakAuthGuard --> KeycloakStrategy
+KeycloakStrategy --> SessionRevocationService
+UsersController --> UsersService
+TeachersController --> UsersService
+UsersService --> KeycloakAdminService
+UsersService --> SessionRevocationService
+ProgramsController --> ProgramsService
+CurricularModulesController --> CurricularModulesService
+CompetenciesController --> CompetenciesService
+ProgramsService --> TypeOrmGuideStatsProvider
+CurricularModulesService --> TypeOrmGuideStatsProvider
+AcademicController --> AcademicService
+AcademicController --> GuideDocumentExportService
+TeacherSpaceController --> AcademicService
+TeacherSpaceController --> GuideDocumentExportService
+GuideSearchController --> AcademicService
+GuideHistoryController --> AcademicService
+TeacherSuggestionsController --> SuggestionSubmissionService
+SuggestionInboxController --> SuggestionInboxService
+SuggestionApprovalController --> SuggestionApprovalService
+SuggestionRejectionController --> SuggestionRejectionService
+SuggestionSettingsController --> SuggestionSettingsService
+NotificationsController --> NotificationsService
+SuggestionSubmissionService --> SuggestionViewsService
+SuggestionInboxService --> SuggestionViewsService
+SuggestionApprovalService --> SuggestionViewsService
+SuggestionRejectionService --> SuggestionViewsService
+SuggestionApprovalService --> AcademicService : publica la nueva versión
+AuditActionsController --> AuditActionsService
+RolePermissionsController --> RolePermissionsService
+SessionAuditService --> AuditLogService
+AuditInterceptor --> AuditLogService
+AuditForbiddenFilter --> AuditLogService
+@enduml

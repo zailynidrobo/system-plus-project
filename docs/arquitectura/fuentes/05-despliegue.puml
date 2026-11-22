@@ -1,0 +1,32 @@
+@startuml
+!include <C4/C4_Deployment>
+!include estilo.iuml
+title Diagrama de despliegue · Intranet de la sala (sin internet)
+Deployment_Node(sala, "Sala de System Plus Piendamó", "Red local 192.168.50.0/24") {
+  Deployment_Node(router, "Router Wi-Fi", "LAN 192.168.50.1 · DHCP .100–.200 · WPA2/WPA3 · sin cable WAN") {
+  }
+  Deployment_Node(pantalla, "Pantalla OneScreen T7", "Android + módulo OPS") {
+    Deployment_Node(ops, "Módulo OPS · servidor", "Windows 11 · IP fija 192.168.50.10 · firewall: TCP 80 solo red local") {
+      Deployment_Node(docker, "Docker Desktop (WSL 2)", "Docker Compose · se inicia con Windows") {
+        Container(web, "web", "Nginx + Angular", "Publica el puerto 80")
+        Container(api, "api", "NestJS · LibreOffice", "Puerto 3000 interno")
+        Container(kc, "keycloak", "Keycloak 26.3", "Puerto 8080 solo en 127.0.0.1")
+        ContainerDb(db, "db", "PostgreSQL 16", "Volumen persistente datos-bd")
+      }
+    }
+  }
+  Deployment_Node(pcs, "Computadores de la sala", "Windows · navegador") {
+  }
+  Deployment_Node(cel, "Celulares y tabletas", "Wi-Fi SystemPlus-Sala · navegador") {
+  }
+}
+Rel(pcs, router, "Cable o Wi-Fi")
+Rel(cel, router, "Wi-Fi")
+Rel(router, ops, "Cable a RJ45 IN")
+Rel(pcs, web, "http://192.168.50.10", "HTTP :80")
+Rel(cel, web, "http://192.168.50.10", "HTTP :80")
+Rel(web, api, "/api/*", "red interna Docker")
+Rel(api, kc, "OIDC · Admin REST")
+Rel(api, db, "SQL")
+Rel(kc, db, "JDBC")
+@enduml

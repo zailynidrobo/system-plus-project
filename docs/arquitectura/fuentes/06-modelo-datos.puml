@@ -1,0 +1,174 @@
+@startuml
+skinparam defaultFontName Arial
+skinparam dpi 150
+skinparam shadowing false
+skinparam roundCorner 6
+skinparam ArrowColor #23306B
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #3E4FA0
+  HeaderBackgroundColor #5A6BC2
+  FontColor #FFFFFF
+  AttributeFontColor #1B2140
+}
+skinparam package {
+  BorderColor #8A97DA
+  FontColor #23306B
+  BackgroundColor #F4F6FC
+}
+hide circle
+hide methods
+title Modelo de datos · base gestion_guias (PostgreSQL 16, 16 tablas)
+legend bottom left
+  Línea continua: llave foránea real en la base.
+  Línea punteada: referencia lógica por id (la valida la API).
+  Los usuarios (teacherId, actorId, recipientId, decidedById) viven en Keycloak.
+endlegend
+
+package "Programa académico" {
+  entity programs {
+    * id : uuid <<PK>>
+    --
+    code, name
+    campus, cohort, isActive
+    createdAt, updatedAt
+  }
+  entity curricular_modules {
+    * id : uuid <<PK>>
+    --
+    * programId <<FK>>
+    code, sequence, name
+    description, status
+    competencyPrefix
+    inactivatedAt, inactivationReason
+  }
+  entity competencies {
+    * id : uuid <<PK>>
+    --
+    * moduleId <<FK>>
+    code, sequence, text
+    version, deletedAt
+  }
+  entity competency_revisions {
+    * id : uuid <<PK>>
+    --
+    * competencyId <<FK>>
+    version, text
+    editedByName, createdAt
+  }
+}
+
+package "Guías base" {
+  entity academic_guides {
+    * id : uuid <<PK>>
+    --
+    moduleId, competencyId
+    code, title, version, status
+    content, fields (jsonb)
+    structureVersion, publishedAt
+  }
+  entity academic_guide_versions {
+    * id : uuid <<PK>>
+    --
+    guideId, version, status
+    content, fields (jsonb)
+    isPublication, publishedAt
+  }
+  entity academic_guide_events {
+    * id : uuid <<PK>>
+    --
+    guideId, title
+    authorName, createdAt
+  }
+  entity academic_guide_field_configs {
+    * id : uuid <<PK>>
+    --
+    moduleId, competencyId
+    formType, fields (jsonb)
+    version, updatedAt
+  }
+  entity guide_support_materials {
+    * id : uuid <<PK>>
+    --
+    guideId, fileName
+    contentType, size, data
+    uploadedByName, createdAt
+  }
+  entity guide_edit_locks {
+    * id : uuid <<PK>>
+    --
+    name, startsAt, endsAt
+    reason, createdByName
+  }
+}
+
+package "Espacio docente" {
+  entity academic_module_teacher_assignments {
+    * id : uuid <<PK>>
+    --
+    moduleId, teacherId
+  }
+  entity academic_personalized_guide_versions {
+    * id : uuid <<PK>>
+    --
+    baseGuideId, moduleId, teacherId
+    title, name
+    baseContent, content (jsonb)
+    createdAt, updatedAt
+  }
+}
+
+package "Sugerencias y avisos" {
+  entity academic_guide_suggestions {
+    * id : uuid <<PK>>
+    --
+    guideId, moduleId, teacherId
+    code, fieldKey, proposedValue
+    justification, status, dueAt
+    decidedById, rejectReason
+    resultingVersion
+  }
+  entity user_notifications {
+    * id : uuid <<PK>>
+    --
+    recipientId, type
+    title, message
+    guideId, suggestionId, readAt
+  }
+  entity suggestion_settings {
+    * id : uuid <<PK>>
+    --
+    dueBusinessDays
+    dueSoonBusinessDays
+    updatedByName, updatedAt
+  }
+}
+
+package "Auditoría" {
+  entity audit_events {
+    * id : uuid <<PK>>
+    --
+    occurredAt, actorId, actorRole
+    method, route, area, action
+    result, statusCode, ip
+    entityType, entityId, moduleId
+  }
+}
+
+programs ||--o{ curricular_modules
+curricular_modules ||--o{ competencies
+competencies ||--o{ competency_revisions
+
+curricular_modules ||..o{ academic_guides
+competencies ||..o{ academic_guides
+academic_guides ||..o{ academic_guide_versions
+academic_guides ||..o{ academic_guide_events
+academic_guides ||..o{ guide_support_materials
+competencies ||..o| academic_guide_field_configs
+
+curricular_modules ||..o{ academic_module_teacher_assignments
+academic_guides ||..o{ academic_personalized_guide_versions
+
+academic_guides ||..o{ academic_guide_suggestions
+academic_guide_suggestions ||..o{ user_notifications
+@enduml

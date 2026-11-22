@@ -1,0 +1,31 @@
+@startuml
+!include <C4/C4_Component>
+!include estilo.iuml
+title Diagrama de componentes · Aplicación web (Angular 21)
+Person(u, "Usuario", "Cualquier rol")
+Container_Boundary(spa, "Aplicación web (SPA)") {
+  Component(router, "Enrutador", "Angular Router · app.routes.ts", "Rutas por épica con carga diferida.")
+  Component(guards, "Guards de acceso", "authGuard · roleGuard · guestGuard", "Exigen sesión y el rol correcto en cada ruta.")
+  Component(shell, "Shell (layout)", "Componentes Angular · core/layout", "Menú lateral según el rol, migas de pan, campana de notificaciones y menú de usuario.")
+  Component(login, "Inicio de sesión", "features/auth", "Formulario propio, cambio de contraseña temporal y aviso de privacidad (features/legal).")
+  Component(authf, "Auth (fachada)", "Servicio con signals · core/auth", "Usuario actual, rol, token y cierre de sesión.")
+  Component(prov, "HttpAuthProvider", "core/auth/providers", "Envía correo y contraseña a /api/auth/login y renueva el token. (KeycloakAuthProvider queda como alternativa por redirección.)")
+  Component(http, "Cliente HTTP e interceptor", "HttpClient + interceptor", "Agrega el token Bearer y maneja sesión vencida.")
+  Component(feat, "Pantallas por épica", "features/*", "home · users (HE-01) · academic-program (HE-02) · guides (HE-03, HE-06, HE-07) · teacher-space (HE-04) · suggestions (HE-05) · audit (HE-08) · settings (HE-09)")
+  Component(adapt, "Adaptadores de datos", "Http*Api", "Convierten los datos de la API a los modelos de las pantallas.")
+}
+Container(nginx, "Web · Nginx", "Nginx", "Sirve la SPA y reenvía /api/")
+Container(api, "API gestion-guias", "NestJS", "")
+Rel(u, router, "Navega")
+Rel(router, guards, "Protege cada ruta con")
+Rel(router, shell, "Muestra las pantallas dentro de")
+Rel(router, login, "Carga")
+Rel(guards, authf, "Consulta la sesión y el rol")
+Rel(login, authf, "Inicia sesión con")
+Rel(authf, prov, "Delega en")
+Rel(feat, adapt, "Pide y guarda datos con")
+Rel(adapt, http, "Llama a la API con")
+Rel(prov, http, "Usa")
+Rel(http, nginx, "JSON · /api/* · Bearer JWT", "HTTP")
+Rel(nginx, api, "Reenvía")
+@enduml

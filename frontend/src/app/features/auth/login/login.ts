@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Auth } from '../../../core/auth/auth';
 import { homeForRole } from '../../../core/auth/role-home';
@@ -11,6 +11,12 @@ import { Icon } from '../../../shared/ui/icon/icon';
 /** Mínimo y máximo de la contraseña nueva (los mismos que valida la API). */
 export const CONTRASENA_MIN = 8;
 export const CONTRASENA_MAX = 128;
+
+// Política de contraseñas acordada con el cliente: mayúscula, minúscula y número.
+const contieneMinuscula = (c: AbstractControl): ValidationErrors | null =>
+  /[a-záéíóúñ]/.test(String(c.value ?? '')) ? null : { sinMinuscula: true };
+const contieneNumero = (c: AbstractControl): ValidationErrors | null =>
+  /\d/.test(String(c.value ?? '')) ? null : { sinNumero: true };
 
 /** Avisos de la tarjeta de inicio de sesión. */
 export type AvisoLogin =
@@ -59,6 +65,9 @@ export class Login {
         Validators.required,
         Validators.minLength(CONTRASENA_MIN),
         Validators.maxLength(CONTRASENA_MAX),
+        Validators.pattern(/[A-ZÁÉÍÓÚÑ]/),
+        contieneMinuscula,
+        contieneNumero,
       ],
     ],
     confirmar: ['', [Validators.required]],
@@ -133,6 +142,9 @@ export class Login {
     if (c.hasError('required')) return 'Escribe tu nueva contraseña.';
     if (c.hasError('minlength')) return `Usa al menos ${CONTRASENA_MIN} caracteres.`;
     if (c.hasError('maxlength')) return `Usa como máximo ${CONTRASENA_MAX} caracteres.`;
+    if (c.hasError('pattern')) return 'Incluye al menos una letra mayúscula.';
+    if (c.hasError('sinMinuscula')) return 'Incluye al menos una letra minúscula.';
+    if (c.hasError('sinNumero')) return 'Incluye al menos un número.';
     return null;
   }
 

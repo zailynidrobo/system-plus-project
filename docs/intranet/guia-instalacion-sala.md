@@ -230,7 +230,8 @@ Desde ese momento el sistema arranca solo cada vez que se enciende el servidor.
 ## 8. Después de instalar
 
 1. Entrar desde la pantalla a `http://192.168.50.10` con el correo del administrador y la clave temporal.
-   El sistema pide crear una contraseña propia (mínimo 8 caracteres, distinta del correo).
+   El sistema pide crear una contraseña propia: mínimo 8 caracteres, con al menos una mayúscula,
+   una minúscula y un número, y distinta del correo.
 2. Crear los usuarios reales (coordinadores y docentes) con sus correos. Cada uno recibe una clave
    temporal y la cambia al entrar por primera vez.
 3. En la pantalla OneScreen, abrir el navegador, entrar a `http://192.168.50.10` y guardarlo como favorito
@@ -260,6 +261,10 @@ Desde ese momento el sistema arranca solo cada vez que se enciende el servidor.
   `respaldos` a una USB cada semana.
 - **Instalar una versión nueva:** preparar el paquete otra vez (paso 4), copiar `imagenes-systemplus.tar`
   al servidor y ejecutar `instalar-servidor.ps1`. Los datos se conservan.
+  Si la versión nueva cambia la política de contraseñas, ejecutar una vez
+  `powershell -ExecutionPolicy Bypass -File deploy\scripts\actualizar-seguridad.ps1`: Keycloak solo
+  importa la configuración al instalar por primera vez.
+- **Sesión:** quien no marca "Mantener sesión iniciada" sale del sistema tras 30 minutos sin uso.
 - **Apagar el sistema:** `docker compose down`. **No** usar `docker compose down -v`: borra la base de datos.
 
 ## 11. Problemas frecuentes

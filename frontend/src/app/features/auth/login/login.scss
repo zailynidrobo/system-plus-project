@@ -193,10 +193,15 @@
   }
 }
 
-.field-error {
+.field-error,
+.field-hint {
   margin: -2px 0 12px;
   color: var(--color-danger);
   font-size: 12px;
+}
+
+.field-hint {
+  color: var(--color-muted, #5b6275);
 }
 
 .options {

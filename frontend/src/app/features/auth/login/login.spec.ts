@@ -146,6 +146,19 @@ describe('Login', () => {
       expect(auth.cambio).toBeNull();
     });
 
+    it('exige mayúscula, minúscula y número', () => {
+      component.formNueva.setValue({ nueva: 'definitiva123', confirmar: 'definitiva123' });
+      component.enviarNueva();
+      expect(component.mensajeNueva()).toBe('Incluye al menos una letra mayúscula.');
+
+      component.formNueva.setValue({ nueva: 'DEFINITIVA123', confirmar: 'DEFINITIVA123' });
+      expect(component.mensajeNueva()).toBe('Incluye al menos una letra minúscula.');
+
+      component.formNueva.setValue({ nueva: 'Definitivaaa', confirmar: 'Definitivaaa' });
+      expect(component.mensajeNueva()).toBe('Incluye al menos un número.');
+      expect(auth.cambio).toBeNull();
+    });
+
     it('envía la temporal y la nueva, y entra', () => {
       const navegar = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
       component.formNueva.setValue({ nueva: 'Definitiva123', confirmar: 'Definitiva123' });

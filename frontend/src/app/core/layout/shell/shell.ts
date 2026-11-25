@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import {
   ActivatedRouteSnapshot,
@@ -11,6 +11,7 @@ import {
 } from '@angular/router';
 import { filter, map, of, startWith, switchMap } from 'rxjs';
 import { Auth } from '../../auth/auth';
+import { Inactividad } from '../../auth/inactividad';
 import { MockDb } from '../../mock/mock-db';
 import { Miga } from '../miga';
 import { ROLES_DOCENTES, ROLE_LABELS } from '../../../shared/models/user';
@@ -98,6 +99,9 @@ export class Shell {
   subtitulo = computed(() => this.miga.detalle() ?? this.datosRuta().subtitulo);
 
   constructor() {
+    const inactividad = inject(Inactividad);
+    inactividad.iniciar();
+    inject(DestroyRef).onDestroy(() => inactividad.detener());
     this.router.events
       .pipe(filter((e) => e instanceof NavigationStart), takeUntilDestroyed())
       .subscribe(() => this.miga.detalle.set(null));

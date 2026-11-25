@@ -8,9 +8,9 @@ import { fechaCorta } from '../../../shared/utils/fechas';
 import { CompetencyApi } from '../../academic-program/competency-api';
 import { ModuleApi } from '../../academic-program/module-api';
 import { FiltroGuias, GuideApi, ResumenGuias } from '../guide-api';
+import { BusquedaEnVivo } from '../../../shared/utils/busqueda-en-vivo';
 
 export const MAX_BUSQUEDA = 150; // mismo tope que valida el backend (ListGuidesQuery.search)
-const ESPERA_BUSQUEDA_MS = 300;
 
 interface FiltroActivo {
   clave: string;
@@ -28,8 +28,7 @@ export class GuideSearch {
   private api = inject(GuideApi);
   private moduleApi = inject(ModuleApi);
   private competencyApi = inject(CompetencyApi);
-  private peticion = 0; // descarta respuestas viejas si el usuario filtra rápido
-  private espera: ReturnType<typeof setTimeout> | null = null;
+  private vivo = new BusquedaEnVivo();
 
   readonly maxBusqueda = MAX_BUSQUEDA;
   readonly opcionesPagina = [10, 20, 50];
@@ -116,8 +115,7 @@ export class GuideSearch {
   escribir(valor: string): void {
     const texto = valor.slice(0, MAX_BUSQUEDA);
     this.texto.set(texto);
-    if (this.espera) clearTimeout(this.espera);
-    this.espera = setTimeout(() => this.cambiar({ busqueda: texto }), ESPERA_BUSQUEDA_MS);
+    this.vivo.alEscribir(() => this.cambiar({ busqueda: texto }));
   }
 
   cambiar(cambios: Partial<FiltroGuias>): void {
@@ -165,7 +163,6 @@ export class GuideSearch {
   }
 
   limpiar(): void {
-    if (this.espera) clearTimeout(this.espera);
     this.texto.set('');
     this.estadosMarcados.set([]);
     this.competencias.set([]);
@@ -183,18 +180,15 @@ export class GuideSearch {
   }
 
   cargar(): void {
-    const id = ++this.peticion;
     this.cargando.set(true);
     this.error.set(null);
-    this.api.listar(this.filtro()).subscribe({
+    this.vivo.consultar(this.api.listar(this.filtro()), {
       next: (p) => {
-        if (id !== this.peticion) return;
         this.guias.set(p.items);
         this.total.set(p.total);
         this.cargando.set(false);
       },
       error: () => {
-        if (id !== this.peticion) return;
         this.cargando.set(false);
         this.error.set('No pudimos cargar las guías. Verifica que la API esté disponible e inténtalo de nuevo.');
       },

@@ -24,7 +24,7 @@
       placeholder="Buscar en mis guías..."
       aria-label="Buscar en mis guías"
       [value]="filtro().busqueda"
-      (input)="cambiar({ busqueda: $any($event.target).value })"
+      (input)="escribir($any($event.target).value)"
     />
   </label>
   <label class="ui-select">

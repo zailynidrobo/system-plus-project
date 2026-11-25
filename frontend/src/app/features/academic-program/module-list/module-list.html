@@ -39,7 +39,7 @@
         placeholder="Buscar por nombre o código"
         aria-label="Buscar por nombre o código"
         [value]="filtro().busqueda"
-        (input)="cambiar({ busqueda: $any($event.target).value })"
+        (input)="escribir($any($event.target).value)"
       />
       <span class="ui-kbd">⌘ K</span>
     </label>

@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { ROLE_LABELS, Role, User } from '../../../shared/models/user';
 import { Icon } from '../../../shared/ui/icon/icon';
 import { UserApi } from '../user-api';
+import { BusquedaEnVivo } from '../../../shared/utils/busqueda-en-vivo';
 
 const POR_PAGINA = 8;
 
@@ -23,6 +24,7 @@ const ICONO_ROL: Record<Role, string> = {
 })
 export class RoleList {
   private api = inject(UserApi);
+  private vivo = new BusquedaEnVivo();
 
   labels = ROLE_LABELS;
   roles = (Object.keys(ROLE_LABELS) as Role[]).map((r) => ({ value: r, label: ROLE_LABELS[r], icono: ICONO_ROL[r] }));
@@ -47,9 +49,14 @@ export class RoleList {
 
   cargar(): void {
     this.cargando.set(true);
-    this.api
-      .listar({ busqueda: this.busqueda(), rol: this.rol(), estado: 'TODOS', pagina: this.pagina(), porPagina: POR_PAGINA })
-      .subscribe((res) => {
+    const consulta = this.api.listar({
+      busqueda: this.busqueda(),
+      rol: this.rol(),
+      estado: 'TODOS',
+      pagina: this.pagina(),
+      porPagina: POR_PAGINA,
+    });
+    this.vivo.consultar(consulta, (res) => {
         this.usuarios.set(res.items);
         this.total.set(res.total);
         this.cargando.set(false);
@@ -59,7 +66,7 @@ export class RoleList {
   buscar(valor: string): void {
     this.busqueda.set(valor);
     this.pagina.set(1);
-    this.cargar();
+    this.vivo.alEscribir(() => this.cargar());
   }
 
   filtrarRol(valor: string): void {

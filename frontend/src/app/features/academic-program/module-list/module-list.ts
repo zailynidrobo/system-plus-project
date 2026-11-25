@@ -5,6 +5,7 @@ import { ConfirmModal } from '../../../shared/ui/confirm-modal/confirm-modal';
 import { Icon } from '../../../shared/ui/icon/icon';
 import { pillEstadoModulo } from '../../../shared/utils/modulos';
 import { FiltroModulos, ModuleApi, ResumenModulos } from '../module-api';
+import { BusquedaEnVivo } from '../../../shared/utils/busqueda-en-vivo';
 
 // Figma HE-02 · PanelCoordinador (204:4077)
 @Component({
@@ -15,6 +16,7 @@ import { FiltroModulos, ModuleApi, ResumenModulos } from '../module-api';
 })
 export class ModuleList {
   private api = inject(ModuleApi);
+  private vivo = new BusquedaEnVivo();
   private busquedaInput = viewChild<ElementRef<HTMLInputElement>>('busquedaInput');
 
   labels = MODULE_STATUS_LABELS;
@@ -38,7 +40,7 @@ export class ModuleList {
   cargar(): void {
     this.cargando.set(true);
     this.error.set(false);
-    this.api.listar(this.filtro()).subscribe({
+    this.vivo.consultar(this.api.listar(this.filtro()), {
       next: (m) => {
         this.modulos.set(m);
         this.cargando.set(false);
@@ -50,6 +52,11 @@ export class ModuleList {
       },
     });
     this.api.resumen().subscribe({ next: (r) => this.resumen.set(r), error: () => this.resumen.set(null) });
+  }
+
+  escribir(busqueda: string): void {
+    this.filtro.update((f) => ({ ...f, busqueda }));
+    this.vivo.alEscribir(() => this.cargar());
   }
 
   cambiar(cambios: Partial<FiltroModulos>): void {

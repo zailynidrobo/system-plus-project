@@ -53,7 +53,7 @@
         placeholder="Buscar guía, código o módulo..."
         aria-label="Buscar guía, código o módulo"
         [value]="filtro().busqueda"
-        (input)="cambiar({ busqueda: $any($event.target).value })"
+        (input)="escribir($any($event.target).value)"
       />
     </label>
     <div class="ui-filters">

@@ -21,9 +21,9 @@ import {
   tonoAccion,
 } from '../../../shared/utils/auditoria';
 import { AuditApi } from '../audit-api';
+import { BusquedaEnVivo } from '../../../shared/utils/busqueda-en-vivo';
 
 export const MAX_BUSQUEDA = 100;
-const ESPERA_BUSQUEDA_MS = 300;
 const POR_PAGINA = 10;
 const POR_PAGINA_EXPORTAR = 100; // lo maximo que deja el back
 const MAX_EXPORTAR = 5000;
@@ -45,8 +45,7 @@ interface FiltroActivo {
 })
 export class AuditLog {
   private api = inject(AuditApi);
-  private peticion = 0; // descarta respuestas viejas si el usuario filtra rapido
-  private espera: ReturnType<typeof setTimeout> | null = null;
+  private vivo = new BusquedaEnVivo();
 
   readonly maxBusqueda = MAX_BUSQUEDA;
   readonly rangos: { valor: Rango; texto: string }[] = [
@@ -155,8 +154,7 @@ export class AuditLog {
   escribir(valor: string): void {
     const texto = valor.slice(0, MAX_BUSQUEDA);
     this.texto.set(texto);
-    if (this.espera) clearTimeout(this.espera);
-    this.espera = setTimeout(() => this.cambiar({ busqueda: texto }), ESPERA_BUSQUEDA_MS);
+    this.vivo.alEscribir(() => this.cambiar({ busqueda: texto }));
   }
 
   cambiar(cambios: Partial<FiltroAuditoria>): void {
@@ -196,18 +194,15 @@ export class AuditLog {
   }
 
   cargar(): void {
-    const id = ++this.peticion;
     this.cargando.set(true);
     this.error.set(null);
-    this.api.listar(this.filtro()).subscribe({
+    this.vivo.consultar(this.api.listar(this.filtro()), {
       next: (p) => {
-        if (id !== this.peticion) return;
         this.eventos.set(p.items);
         this.total.set(p.total);
         this.cargando.set(false);
       },
       error: () => {
-        if (id !== this.peticion) return;
         this.cargando.set(false);
         this.error.set('No pudimos cargar el registro. Verifica que la API esté disponible e inténtalo de nuevo.');
       },

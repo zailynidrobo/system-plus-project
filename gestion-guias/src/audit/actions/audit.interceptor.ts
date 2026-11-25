@@ -14,7 +14,11 @@ import { routeKey } from '../permissions/route-permissions.js';
 import { AuditContextResolver } from './audit-context.resolver.js';
 import { summarizeChange } from './audit-details.js';
 import { AuditLogService, describeRoute } from './audit-log.service.js';
-import { AUDITED_METHODS, EXCLUDED_ROUTES } from './audit-rules.js';
+import {
+  AUDITED_DOWNLOADS,
+  AUDITED_METHODS,
+  EXCLUDED_ROUTES,
+} from './audit-rules.js';
 import {
   AuditRequest,
   actorFromPayload,
@@ -22,8 +26,8 @@ import {
 } from './request-info.js';
 
 /**
- * Registra toda acción que cambia algo (POST, PUT, PATCH, DELETE) de un usuario con sesión
- * cuando responde 2xx. Escribe después de la respuesta exitosa, así no hay que tocar cada
+ * Registra toda acción que cambia algo (POST, PUT, PATCH, DELETE) y las descargas de guías,
+ * versiones y materiales de un usuario con sesión cuando responde 2xx. Escribe después de la respuesta exitosa, así no hay que tocar cada
  * controlador. Los accesos denegados los registra AuditForbiddenFilter y la sesión, AuthController.
  */
 @Injectable()
@@ -52,7 +56,10 @@ export class AuditInterceptor implements NestInterceptor {
 
   private shouldRecord(context: ExecutionContext, request: AuditRequest) {
     const method = request.method.toUpperCase();
-    if (!AUDITED_METHODS.includes(method) || !request.user?.sub) return false;
+    if (!request.user?.sub) return false;
+    if (!AUDITED_METHODS.includes(method) && !this.isDownload(request)) {
+      return false;
+    }
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
@@ -88,7 +95,9 @@ export class AuditInterceptor implements NestInterceptor {
         route,
         result: 'success',
         statusCode: this.statusCode(context, method),
-        details: summarizeChange(request.body, response),
+        details: this.isDownload(request)
+          ? { formato: request.query?.format ?? null }
+          : summarizeChange(request.body, response),
       });
     } catch (error) {
       this.logger.error(
@@ -96,6 +105,15 @@ export class AuditInterceptor implements NestInterceptor {
           (error instanceof Error ? error.message : String(error)),
       );
     }
+  }
+
+  private isDownload(request: AuditRequest): boolean {
+    return (
+      request.method.toUpperCase() === 'GET' &&
+      AUDITED_DOWNLOADS.has(
+        routeKey({ method: 'GET', path: routePattern(request) }),
+      )
+    );
   }
 
   /** Nest fija el código después de los interceptores: se toma de @HttpCode o del método. */

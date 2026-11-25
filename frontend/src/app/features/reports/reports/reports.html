@@ -1,0 +1,281 @@
+<header class="ui-page-head">
+  <div>
+    <h1>Reportes</h1>
+    <p>Consulta el estado de las guías y de las sugerencias, y descárgalo en Excel o PDF.</p>
+  </div>
+  <div class="ui-page-head__actions">
+    <button
+      type="button"
+      class="ui-btn ui-btn--outline"
+      (click)="descargar('xlsx')"
+      [disabled]="!!descargando() || cargando()"
+    >
+      <app-icon name="download" [size]="16" />
+      {{ descargando() === 'xlsx' ? 'Generando Excel...' : 'Descargar Excel' }}
+    </button>
+    <button
+      type="button"
+      class="ui-btn ui-btn--primary"
+      (click)="descargar('pdf')"
+      [disabled]="!!descargando() || cargando()"
+    >
+      <app-icon name="file-text" [size]="16" />
+      {{ descargando() === 'pdf' ? 'Generando PDF...' : 'Descargar PDF' }}
+    </button>
+  </div>
+</header>
+
+@if (errorDescarga(); as e) {
+  <p class="ui-help ui-help--error" role="alert">{{ e }}</p>
+}
+
+<div class="pestanas" role="tablist" aria-label="Tipo de reporte">
+  <button
+    type="button"
+    role="tab"
+    class="pestana"
+    [class.is-active]="vista() === 'guides'"
+    [attr.aria-selected]="vista() === 'guides'"
+    (click)="ver('guides')"
+  >
+    <app-icon name="notebook-tabs" [size]="16" /> Guías por módulo
+  </button>
+  <button
+    type="button"
+    role="tab"
+    class="pestana"
+    [class.is-active]="vista() === 'suggestions'"
+    [attr.aria-selected]="vista() === 'suggestions'"
+    (click)="ver('suggestions')"
+  >
+    <app-icon name="message-square" [size]="16" /> Sugerencias y tiempos de respuesta
+  </button>
+</div>
+
+@if (error(); as e) {
+  <p class="ui-state" role="alert">
+    {{ e }}
+    <button type="button" class="ui-btn ui-btn--outline ui-btn--sm" (click)="cargar()">
+      Reintentar
+    </button>
+  </p>
+} @else if (vista() === 'guides') {
+  @if (guias(); as r) {
+    <section class="ui-stats" aria-label="Resumen de guías">
+      <article class="ui-stat">
+        <div>
+          <small>Módulos</small><strong>{{ r.totals.modules }}</strong
+          ><em>del programa</em>
+        </div>
+      </article>
+      <article class="ui-stat">
+        <div>
+          <small>Guías</small><strong>{{ r.totals.guides }}</strong
+          ><em>en total</em>
+        </div>
+      </article>
+      <article class="ui-stat">
+        <div>
+          <small>Publicadas</small><strong>{{ r.totals.published }}</strong
+          ><em>visibles para docentes</em>
+        </div>
+      </article>
+      <article class="ui-stat">
+        <div>
+          <small>Borradores</small><strong>{{ r.totals.drafts }}</strong
+          ><em>en edición</em>
+        </div>
+      </article>
+    </section>
+
+    <section class="ui-panel">
+      <div class="ui-table-wrap" [class.is-loading]="cargando()">
+        <table class="ui-table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Módulo</th>
+              <th>Estado</th>
+              <th class="num">Guías</th>
+              <th class="num">Publicadas</th>
+              <th class="num">Borradores</th>
+              <th>Última actualización</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (m of r.rows; track m.moduleCode) {
+              <tr>
+                <td class="nowrap">{{ m.moduleCode }}</td>
+                <td>
+                  <strong>{{ m.moduleName }}</strong>
+                </td>
+                <td>
+                  <span class="ui-pill" [class.ui-pill--ok]="m.moduleStatus === 'Activo'">{{
+                    m.moduleStatus
+                  }}</span>
+                </td>
+                <td class="num">{{ m.total }}</td>
+                <td class="num">{{ m.published }}</td>
+                <td class="num">{{ m.drafts }}</td>
+                <td class="nowrap">{{ m.lastUpdate ? fecha(m.lastUpdate) : '—' }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="ui-muted">Aún no hay módulos registrados.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="ui-muted pie">Generado el {{ fechaHora(r.generatedAt) }}</p>
+    </section>
+  } @else {
+    <p class="ui-state">Cargando reporte...</p>
+  }
+} @else {
+  <section class="ui-panel periodo">
+    <label class="ui-select">
+      <span>Período</span>
+      <select
+        [value]="rango()"
+        (change)="cambiarRango($any($event.target).value)"
+        aria-label="Período del reporte"
+      >
+        @for (r of rangos; track r.valor) {
+          <option [value]="r.valor">{{ r.texto }}</option>
+        }
+      </select>
+    </label>
+    @if (rango() === 'personalizado') {
+      <label class="fecha"
+        >Desde
+        <input
+          type="date"
+          [value]="desde()"
+          (change)="cambiarFecha('desde', $any($event.target).value)"
+      /></label>
+      <label class="fecha"
+        >Hasta
+        <input
+          type="date"
+          [value]="hasta()"
+          (change)="cambiarFecha('hasta', $any($event.target).value)"
+      /></label>
+    }
+  </section>
+
+  @if (sugerencias(); as r) {
+    <section class="ui-stats" aria-label="Resumen de sugerencias">
+      <article class="ui-stat">
+        <div>
+          <small>Recibidas</small><strong>{{ r.totals.received }}</strong
+          ><em>{{ r.totals.approved }} aprobadas · {{ r.totals.rejected }} rechazadas</em>
+        </div>
+      </article>
+      <article class="ui-stat">
+        <div>
+          <small>Pendientes</small><strong>{{ r.totals.pending }}</strong
+          ><em>{{ r.totals.overdue }} vencidas</em>
+        </div>
+      </article>
+      <article class="ui-stat">
+        <div>
+          <small>Respuesta promedio</small><strong>{{ dias(r.totals.averageResponseDays) }}</strong
+          ><em>días hábiles</em>
+        </div>
+      </article>
+      <article class="ui-stat">
+        <div>
+          <small>Dentro del plazo</small
+          ><strong>{{ r.totals.onTimeRate === null ? '—' : r.totals.onTimeRate + ' %' }}</strong
+          ><em>de las respondidas</em>
+        </div>
+      </article>
+    </section>
+
+    <section class="ui-panel">
+      <h2 class="ui-section-title ui-section-title--sm">Por módulo</h2>
+      <div class="ui-table-wrap" [class.is-loading]="cargando()">
+        <table class="ui-table">
+          <thead>
+            <tr>
+              <th>Módulo</th>
+              <th class="num">Recibidas</th>
+              <th class="num">Pendientes</th>
+              <th class="num">Aprobadas</th>
+              <th class="num">Rechazadas</th>
+              <th class="num">Respuesta promedio (días hábiles)</th>
+              <th class="num">Fuera de plazo</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (m of r.byModule; track m.moduleCode) {
+              <tr>
+                <td>
+                  <strong>{{ m.moduleName }}</strong
+                  ><br /><small class="ui-muted">{{ m.moduleCode }}</small>
+                </td>
+                <td class="num">{{ m.received }}</td>
+                <td class="num">{{ m.pending }}</td>
+                <td class="num">{{ m.approved }}</td>
+                <td class="num">{{ m.rejected }}</td>
+                <td class="num">{{ dias(m.averageResponseDays) }}</td>
+                <td class="num">{{ m.lateDecisions }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="ui-muted">No hay sugerencias en este período.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="ui-panel">
+      <h2 class="ui-section-title ui-section-title--sm">Pendientes por responder</h2>
+      <div class="ui-table-wrap" [class.is-loading]="cargando()">
+        <table class="ui-table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Guía y campo</th>
+              <th>Docente</th>
+              <th>Enviada</th>
+              <th>Vence</th>
+              <th class="num">Días hábiles esperando</th>
+              <th>Plazo</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (s of r.pending; track s.code) {
+              <tr>
+                <td class="nowrap">{{ s.code }}</td>
+                <td>
+                  <strong>{{ s.guideTitle }}</strong
+                  ><br /><small class="ui-muted">{{ s.moduleName }} · {{ s.field }}</small>
+                </td>
+                <td>{{ s.teacher }}</td>
+                <td class="nowrap">{{ fecha(s.sentAt) }}</td>
+                <td class="nowrap">{{ fecha(s.dueAt) }}</td>
+                <td class="num">{{ s.businessDaysWaiting }}</td>
+                <td>
+                  <span class="ui-pill" [class]="'ui-pill--' + tonoPlazo(s.deadline)">{{
+                    s.deadline
+                  }}</span>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="ui-muted">No hay sugerencias pendientes en este período.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="ui-muted pie">Generado el {{ fechaHora(r.generatedAt) }}</p>
+    </section>
+  } @else {
+    <p class="ui-state">Cargando reporte...</p>
+  }
+}

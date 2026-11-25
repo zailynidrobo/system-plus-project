@@ -33,17 +33,21 @@ export class GuideDocumentExportService {
   }
 
   async toPdf(data: GuideDocumentData) {
-    const docx = await this.toDocx(data);
+    return this.convertirAPdf(await this.toDocx(data), 'docx');
+  }
+
+  /** Convierte un Word o un Excel a PDF con LibreOffice (lo usan las guías y los reportes). */
+  async convertirAPdf(archivo: Buffer, extension: 'docx' | 'xlsx') {
     const tempDirectory = await mkdtemp(join(tmpdir(), 'gestion-guias-'));
-    const inputPath = join(tempDirectory, 'guia.docx');
-    const outputPath = join(tempDirectory, 'guia.pdf');
+    const inputPath = join(tempDirectory, `documento.${extension}`);
+    const outputPath = join(tempDirectory, 'documento.pdf');
     const profilePath = pathToFileURL(join(tempDirectory, 'profile')).href;
     const libreOfficePath =
       process.env.LIBREOFFICE_PATH ??
       (process.platform === 'win32' ? 'soffice.com' : 'soffice');
 
     try {
-      await writeFile(inputPath, docx);
+      await writeFile(inputPath, archivo);
       try {
         const conversion = await execFile(
           libreOfficePath,

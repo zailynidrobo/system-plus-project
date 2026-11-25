@@ -7,6 +7,18 @@
 export const AUDITED_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
 
 /**
+ * Descargas que sí se registran aunque sean GET: el cliente pidió saber quién descargó
+ * cada guía, versión o material. Las demás consultas siguen sin registrarse.
+ */
+export const AUDITED_DOWNLOADS = new Set<string>([
+  'GET /academic/guides/:id/export',
+  'GET /academic/guides/:id/versions/:version/export',
+  'GET /academic/personalized-versions/:id/export',
+  'GET /academic/guides/:id/support-materials/:materialId/download',
+  'GET /reports/:report/export',
+]);
+
+/**
  * Rutas que usan POST, PUT, PATCH o DELETE pero no cambian nada. Se escriben como en el
  * catálogo de permisos (`MÉTODO /ruta/:param`).
  */

@@ -8,6 +8,7 @@ import { cuando } from '../../../shared/utils/modulos';
 import { CompetencyApi } from '../../academic-program/competency-api';
 import { ModuleApi } from '../../academic-program/module-api';
 import { FiltroGuias, GuideApi, ResumenGuias } from '../guide-api';
+import { BusquedaEnVivo } from '../../../shared/utils/busqueda-en-vivo';
 
 const POR_PAGINA = 6;
 
@@ -19,6 +20,7 @@ const POR_PAGINA = 6;
 })
 export class GuideList {
   private api = inject(GuideApi);
+  private vivo = new BusquedaEnVivo();
   private moduleApi = inject(ModuleApi);
   private competencyApi = inject(CompetencyApi);
 
@@ -71,6 +73,11 @@ export class GuideList {
       );
   }
 
+  escribir(busqueda: string): void {
+    this.filtro.update((f) => ({ ...f, pagina: 1, busqueda }));
+    this.vivo.alEscribir(() => this.cargar());
+  }
+
   cambiar(cambios: Partial<FiltroGuias>): void {
     this.filtro.update((f) => ({ ...f, pagina: 1, ...cambios }));
     this.cargar();
@@ -92,7 +99,7 @@ export class GuideList {
   private cargar(): void {
     this.cargando.set(true);
     this.error.set(null);
-    this.api.listar(this.filtro()).subscribe({
+    this.vivo.consultar(this.api.listar(this.filtro()), {
       next: (p) => {
         this.guias.set(p.items);
         this.total.set(p.total);

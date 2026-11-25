@@ -10,9 +10,10 @@ COPY src ./src
 RUN pnpm run build && pnpm prune --prod
 
 FROM node:22-bookworm-slim
-# LibreOffice convierte las guías a PDF (exportar en PDF). Solo Writer, sin interfaz gráfica.
+# LibreOffice convierte a PDF, sin interfaz gráfica: Writer para las guías (Word)
+# y Calc para los reportes (Excel).
 RUN apt-get update \
- && apt-get install -y --no-install-recommends libreoffice-writer-nogui fonts-dejavu-core \
+ && apt-get install -y --no-install-recommends libreoffice-writer-nogui libreoffice-calc-nogui fonts-dejavu-core \
  && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 ENV NODE_ENV=production

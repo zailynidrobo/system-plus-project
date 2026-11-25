@@ -1,0 +1,78 @@
+.pestanas {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 16px;
+  border-bottom: 1px solid var(--color-border, #d9dce5);
+}
+
+.pestana {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  color: var(--color-muted, #5b6275);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+
+  &.is-active {
+    color: var(--color-primary, #23306b);
+    border-bottom-color: var(--color-primary, #23306b);
+  }
+}
+
+.periodo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.fecha {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+
+  input {
+    padding: 8px 10px;
+    border: 1px solid var(--color-border, #d9dce5);
+    border-radius: 8px;
+    font: inherit;
+  }
+}
+
+.num {
+  text-align: right;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.pie {
+  margin: 12px 0 0;
+  font-size: 12px;
+}
+
+.ui-panel + .ui-panel,
+.ui-stats + .ui-panel,
+.periodo + .ui-stats {
+  margin-top: 16px;
+}
+
+.ui-panel > .ui-section-title {
+  margin: 0;
+  padding: 16px 16px 8px;
+}
+
+.periodo {
+  padding: 12px 16px;
+}
+
+.pie {
+  padding: 0 16px 14px;
+}

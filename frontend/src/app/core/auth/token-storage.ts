@@ -60,6 +60,11 @@ export class TokenStorage {
     }
   }
 
+  /** true si el usuario marcó "Mantener sesión iniciada" (la sesión vive en localStorage). */
+  esPersistente(): boolean {
+    return localStorage.getItem(TOKEN_KEY) !== null;
+  }
+
   clear(): void {
     for (const store of [localStorage, sessionStorage]) {
       for (const key of [TOKEN_KEY, USER_KEY, REFRESH_KEY, EXPIRES_KEY]) store.removeItem(key);

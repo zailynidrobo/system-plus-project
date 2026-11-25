@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
+import { contieneSinTildes } from '../../common/busqueda.js';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   And,
   FindOptionsWhere,
-  ILike,
   LessThanOrEqual,
   MoreThanOrEqual,
   Repository,
@@ -63,7 +63,7 @@ export interface AuditFilterOptions {
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** `%` y `_` del texto buscado se toman literalmente. */
-const contains = (q: string) => ILike(`%${q.replace(/[\\%_]/g, '\\$&')}%`);
+const contains = (q: string) => contieneSinTildes(q);
 
 /** HE-08-HU-01: consulta del registro de auditoría. Solo lectura; los eventos no se editan. */
 @Injectable()

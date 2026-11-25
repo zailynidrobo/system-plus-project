@@ -160,7 +160,7 @@
           }
 
           <div class="options">
-            <label class="remember">
+            <label class="remember" title="Si no la marcas, la sesión se cierra tras 30 minutos sin uso.">
               <input type="checkbox" formControlName="recordar" /> Mantener sesión iniciada
             </label>
             <button
@@ -224,7 +224,7 @@
               id="nueva"
               [type]="verNueva() ? 'text' : 'password'"
               formControlName="nueva"
-              placeholder="Al menos {{ contrasenaMin }} caracteres"
+              placeholder="Mínimo {{ contrasenaMin }}, con mayúscula, minúscula y número"
               autocomplete="new-password"
             />
             <button
@@ -238,6 +238,8 @@
           </div>
           @if (mensajeNueva(); as msg) {
             <small class="field-error">{{ msg }}</small>
+          } @else {
+            <small class="field-hint">Mínimo {{ contrasenaMin }} caracteres, con al menos una mayúscula, una minúscula y un número.</small>
           }
 
           <label for="confirmar">Confirmar contraseña *</label>

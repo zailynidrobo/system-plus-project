@@ -12,6 +12,7 @@ export interface AuditRequest {
   socket?: { remoteAddress?: string };
   route?: { path?: unknown };
   params?: Record<string, string>;
+  query?: Record<string, unknown>;
   body?: unknown;
   user?: KeycloakJwtPayload;
 }

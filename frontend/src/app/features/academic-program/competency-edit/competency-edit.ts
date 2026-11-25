@@ -5,9 +5,9 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { startWith } from 'rxjs';
 import { ApiError } from '../../../shared/models/api-error';
 import { ModuleView } from '../../../shared/models/academic-module';
-import { CompetencyView } from '../../../shared/models/competency';
+import { CompetencyRevision, CompetencyView } from '../../../shared/models/competency';
 import { Icon } from '../../../shared/ui/icon/icon';
-import { hora } from '../../../shared/utils/fechas';
+import { fechaHora, hora } from '../../../shared/utils/fechas';
 import { CompetencyApi } from '../competency-api';
 import { COMPETENCIA_MAX, COMPETENCIA_MIN, longitudCompetencia } from '../competency-text';
 import { ModuleApi } from '../module-api';
@@ -17,6 +17,33 @@ import { ModuleApi } from '../module-api';
   selector: 'app-competency-edit',
   imports: [ReactiveFormsModule, RouterLink, Icon],
   templateUrl: './competency-edit.html',
+  styles: `
+    .versiones {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 12px;
+      max-height: 360px;
+      overflow-y: auto;
+    }
+    .versiones__item {
+      border-left: 3px solid var(--border, #d9dce5);
+      padding-left: 10px;
+    }
+    .versiones__item p {
+      margin: 4px 0 0;
+      font-size: 0.8125rem;
+    }
+    .versiones__item small {
+      font-size: 0.75rem;
+    }
+    .versiones__head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+  `,
 })
 export class CompetencyEdit {
   private fb = inject(FormBuilder);
@@ -29,6 +56,8 @@ export class CompetencyEdit {
   modulo = signal<ModuleView | null>(null);
   competencia = signal<CompetencyView | null>(null);
   otras = signal<CompetencyView[]>([]);
+  // HE-02-HU-08: versiones anteriores del texto, de la más reciente a la más antigua.
+  versiones = signal<CompetencyRevision[]>([]);
   textoAnterior = signal('');
   guardando = signal(false);
   guardada = signal(false);
@@ -40,6 +69,7 @@ export class CompetencyEdit {
   maximo = COMPETENCIA_MAX;
 
   hora = hora;
+  fechaHora = fechaHora;
 
   form = this.fb.nonNullable.group({ text: ['', [Validators.required, Validators.pattern(/\S/), longitudCompetencia]] });
   private valores = toSignal(this.form.valueChanges.pipe(startWith(null)));
@@ -65,6 +95,7 @@ export class CompetencyEdit {
       next: (c) => this.mostrar(c, c.text),
       error: () => this.errorCarga.set(true),
     });
+    this.cargarVersiones();
     this.api.listar(this.moduleId).subscribe({
       next: (l) => this.otras.set(l.filter((c) => c.id !== this.competencyId)),
       error: () => this.otras.set([]),
@@ -87,6 +118,7 @@ export class CompetencyEdit {
         this.guardando.set(false);
         this.guardada.set(true);
         this.mostrar(r.competencia, r.textoAnterior);
+        this.cargarVersiones();
       },
       error: (err: ApiError<{ code: string }>) => {
         this.guardando.set(false);
@@ -97,6 +129,13 @@ export class CompetencyEdit {
           this.error.set(true);
         }
       },
+    });
+  }
+
+  private cargarVersiones(): void {
+    this.api.historial(this.competencyId).subscribe({
+      next: (v) => this.versiones.set(v),
+      error: () => this.versiones.set([]),
     });
   }
 

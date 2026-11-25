@@ -147,6 +147,29 @@ describe('AuditInterceptor (HE-08-HU-01)', () => {
     expect(insert).not.toHaveBeenCalled();
   });
 
+  it('registra las descargas de guías con su formato', async () => {
+    const { interceptor, insert } = setup();
+    await lastValueFrom(
+      interceptor.intercept(
+        http({
+          method: 'GET',
+          route: { path: '/academic/guides/:id/export' },
+          originalUrl: `/academic/guides/${GUIDE}/export?format=pdf`,
+          query: { format: 'pdf' },
+        }),
+        responds(undefined),
+      ),
+    );
+    expect(insert.mock.calls[0]).toEqual([
+      expect.objectContaining({
+        method: 'GET',
+        action: 'Descargar guías (PDF o DOCX)',
+        statusCode: 200,
+        details: { formato: 'pdf' },
+      }),
+    ]);
+  });
+
   it('no registra las rutas excluidas que no cambian nada', async () => {
     const { interceptor, insert } = setup();
     await lastValueFrom(

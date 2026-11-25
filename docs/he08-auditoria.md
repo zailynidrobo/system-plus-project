@@ -22,7 +22,7 @@ endpoints para hacerlo.
 
 **Qué no se registra**
 
-- Las consultas (`GET`): llenarían la tabla sin aportar a los criterios (ver pendientes).
+- Las consultas (`GET`): llenarían la tabla sin aportar a los criterios. La excepción son las descargas de guías, versiones y materiales de apoyo, que sí se registran con su formato (`AUDITED_DOWNLOADS`), a pedido del cliente (noviembre de 2026).
 - La renovación de la sesión (`POST /auth/refresh`).
 - Las rutas que usan `POST` pero no cambian nada, como `POST /academic/modules/:moduleId/guide-fields/impact`.
   Están en `EXCLUDED_ROUTES` de `src/audit/actions/audit-rules.ts`.
@@ -207,7 +207,7 @@ Se aplicó el valor por defecto; cada uno se cambia en un solo lugar.
 
 | Pregunta | Valor por defecto | Dónde se cambia |
 |---|---|---|
-| ¿Las consultas (`GET`) también deben quedar en la auditoría? | No | `AUDITED_METHODS` en `audit-rules.ts` |
+| ¿Las consultas (`GET`) también deben quedar en la auditoría? | No, salvo las descargas (confirmado por el cliente) | `AUDITED_METHODS` y `AUDITED_DOWNLOADS` en `audit-rules.ts` |
 | ¿Los accesos denegados a consultas (`GET` con 403) se registran? | Sí | `AUDIT_DENIED_READS` en `audit-rules.ts` |
 | ¿Cuánto tiempo se guardan los registros? | No se borran | No hay tarea de limpieza |
 | ¿Se necesita exportar el registro a Excel o PDF? | No está en esta historia | — |

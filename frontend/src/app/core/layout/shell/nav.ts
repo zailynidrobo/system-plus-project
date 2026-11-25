@@ -39,6 +39,7 @@ const COORDINADOR: NavConfig = {
     { label: 'Programa académico', icon: 'book-open', route: '/modulos' },
     { label: 'Guías de aprendizaje', icon: 'notebook-tabs', route: '/guias' },
     { label: 'Sugerencias', icon: 'message-square', route: '/sugerencias', badge: 'sugerencias' },
+    { label: 'Reportes', icon: 'chart-no-axes-column', route: '/reportes' },
   ],
 };
 

@@ -15,6 +15,7 @@ const misVersiones = { roles: ROLES_DOCENTES, titulo: 'Mis versiones' };
 const misSugerencias = { roles: ROLES_DOCENTES, titulo: 'Mis sugerencias' };
 const auditoria = { roles: ['ADMINISTRADOR'] as Role[], titulo: 'Auditoría' };
 const sugerencias = { roles: ['COORDINADOR'] as Role[], titulo: 'Sugerencias' };
+const reportes = { roles: ['COORDINADOR'] as Role[], titulo: 'Reportes' };
 
 export const routes: Routes = [
   { path: 'login', component: Login, canActivate: [guestGuard] },
@@ -77,6 +78,8 @@ export const routes: Routes = [
       { path: 'mis-modulos/guias/:id/sugerir', loadComponent: () => import('./features/suggestions/suggest-change/suggest-change').then((m) => m.SuggestChange), canActivate: [roleGuard], data: { ...guiasBase, subtitulo: 'Sugerir cambio' } },
       { path: 'mis-sugerencias', loadComponent: () => import('./features/suggestions/my-suggestions/my-suggestions').then((m) => m.MySuggestions), canActivate: [roleGuard], data: misSugerencias },
       { path: 'mis-sugerencias/:id', loadComponent: () => import('./features/suggestions/my-suggestion/my-suggestion').then((m) => m.MySuggestion), canActivate: [roleGuard], data: misSugerencias },
+      // HE-11-HU-02 · Reportes de coordinación
+      { path: 'reportes', loadComponent: () => import('./features/reports/reports/reports').then((m) => m.Reports), canActivate: [roleGuard], data: reportes },
       { path: 'sugerencias', loadComponent: () => import('./features/suggestions/suggestion-inbox/suggestion-inbox').then((m) => m.SuggestionInbox), canActivate: [roleGuard], data: sugerencias },
       { path: 'sugerencias/:id', loadComponent: () => import('./features/suggestions/suggestion-review/suggestion-review').then((m) => m.SuggestionReview), canActivate: [roleGuard], data: sugerencias },
 

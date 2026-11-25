@@ -5,6 +5,7 @@ import { Icon } from '../../../shared/ui/icon/icon';
 import { fechaCorta } from '../../../shared/utils/fechas';
 import { iconoModulo } from '../../../shared/utils/modulos';
 import { FiltroGuiasDocente, GuiasAsignadas, TeacherApi } from '../teacher-api';
+import { BusquedaEnVivo } from '../../../shared/utils/busqueda-en-vivo';
 
 // Figma HE-04-HU-01-CA-01 · Guías asignadas (4002:26)
 @Component({
@@ -14,6 +15,7 @@ import { FiltroGuiasDocente, GuiasAsignadas, TeacherApi } from '../teacher-api';
 })
 export class AssignedGuides {
   private api = inject(TeacherApi);
+  private vivo = new BusquedaEnVivo();
 
   modulos = toSignal(this.api.misModulos(), { initialValue: [] });
   filtro = signal<FiltroGuiasDocente>({ busqueda: '', moduleId: null });
@@ -33,6 +35,11 @@ export class AssignedGuides {
     this.cargar();
   }
 
+  escribir(busqueda: string): void {
+    this.filtro.update((f) => ({ ...f, busqueda }));
+    this.vivo.alEscribir(() => this.cargar());
+  }
+
   cambiar(cambios: Partial<FiltroGuiasDocente>): void {
     this.filtro.update((f) => ({ ...f, ...cambios }));
     this.cargar();
@@ -40,7 +47,7 @@ export class AssignedGuides {
 
   private cargar(): void {
     this.cargando.set(true);
-    this.api.guiasAsignadas(this.filtro()).subscribe((d) => {
+    this.vivo.consultar(this.api.guiasAsignadas(this.filtro()), (d) => {
       this.datos.set(d);
       this.cargando.set(false);
     });

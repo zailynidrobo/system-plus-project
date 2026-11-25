@@ -13,7 +13,8 @@ const DESTINO = 'keycloak/system-plus-realm.produccion.json';
 
 const realm = JSON.parse(readFileSync(ORIGEN, 'utf8'));
 
-realm.passwordPolicy = 'length(8) and notUsername and notEmail';
+// Acordada con el cliente: mínimo 8, con mayúscula, minúscula y número.
+realm.passwordPolicy = 'length(8) and upperCase(1) and lowerCase(1) and digits(1) and notUsername and notEmail';
 
 for (const client of realm.clients) {
   if (client.clientId === 'system-plus-api') client.secret = '${KEYCLOAK_API_SECRET}';

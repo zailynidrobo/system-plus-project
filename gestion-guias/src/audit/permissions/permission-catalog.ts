@@ -20,6 +20,7 @@ const SUGERENCIAS = 'Sugerencias';
 const NOTIFICACIONES = 'Notificaciones';
 const AUDITORIA = 'Auditoría';
 const CIERRES = 'Cierres de edición';
+const REPORTES = 'Reportes';
 
 export const PERMISSION_CATALOG: Record<string, PermissionDescription> = {
   'POST /users': { area: USUARIOS, action: 'Registrar usuarios' },
@@ -113,4 +114,8 @@ export const PERMISSION_CATALOG: Record<string, PermissionDescription> = {
   'GET /audit/actions': { area: AUDITORIA, action: 'Consultar el historial de acciones de los usuarios' },
   'GET /audit/actions/filters': { area: AUDITORIA, action: 'Consultar las opciones de filtro del historial de acciones' },
   'GET /audit/actions/:id': { area: AUDITORIA, action: 'Ver el detalle de una acción registrada' },
+
+  'GET /reports/guides': { area: REPORTES, action: 'Consultar el reporte de guías por módulo y estado' },
+  'GET /reports/suggestions': { area: REPORTES, action: 'Consultar el reporte de sugerencias y tiempos de respuesta' },
+  'GET /reports/:report/export': { area: REPORTES, action: 'Descargar reportes (Excel o PDF)' },
 };

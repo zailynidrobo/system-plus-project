@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
+import { normalizarBusqueda } from '../common/busqueda.js';
 import JSZip from 'jszip';
 import { randomUUID } from 'node:crypto';
 import { DataSource, FindOptionsWhere, Repository } from 'typeorm';
@@ -54,6 +55,18 @@ function memoryRepository<T extends { id: string }>() {
         return String(databaseValue ?? '')
           .toLocaleLowerCase()
           .includes(pattern.toLocaleLowerCase());
+      }
+      if (operator?._type === 'raw') {
+        // contieneSinTildes: el patrón ya viene sin tildes y en minúsculas.
+        const params =
+          (operator as { _objectLiteralParameters?: Record<string, string> })
+            ._objectLiteralParameters ?? {};
+        const pattern = (Object.values(params)[0] ?? '')
+          .replace(/^%|%$/g, '')
+          .replace(/\\/g, '');
+        return normalizarBusqueda(String(databaseValue ?? '')).includes(
+          pattern,
+        );
       }
       return databaseValue === condition;
     });

@@ -12,10 +12,10 @@ Desarrollado por el equipo **AthenaDev Developers** para System Plus del Cauca S
 
 | En cifras | |
 |---|---|
-| Épicas implementadas | 9 (HE-01 a HE-09) |
-| Rutas de la API | 85, de ellas 80 protegidas por rol |
+| Épicas implementadas | 11 (HE-01 a HE-11) |
+| Rutas de la API | 88, de ellas 83 protegidas por rol |
 | Tablas en PostgreSQL | 16 |
-| Pruebas automatizadas | 636 (276 unitarias y 18 de integración en el backend, 342 en el frontend) |
+| Pruebas automatizadas | 658 (285 unitarias y 18 de integración en el backend, 355 en el frontend) |
 | Servicios en producción | 4 contenedores de Docker: web, api, keycloak y db |
 
 ---
@@ -41,7 +41,7 @@ Desarrollado por el equipo **AthenaDev Developers** para System Plus del Cauca S
 
 ## 1. Funcionalidades
 
-El proyecto se organiza en nueve épicas (HE). Cada una tiene sus historias de usuario (HU) en Jira, y todas están conectadas al backend.
+El proyecto se organiza en once épicas (HE). Cada una tiene sus historias de usuario (HU) en el backlog del proyecto, y todas están conectadas al backend.
 
 | Épica | Rol | Qué permite | Módulo de la API |
 |---|---|---|---|
@@ -54,6 +54,8 @@ El proyecto se organiza en nueve épicas (HE). Cada una tiene sus historias de u
 | **HE-07** Historial de versiones | Coordinador y Docente | Ver las versiones de una guía y compararlas | `guide-history` |
 | **HE-08** Auditoría y permisos | Administrador | Historial de acciones de los usuarios y matriz de permisos por rol ([auditoría](docs/he08-auditoria.md), [permisos](docs/he08-permisos-por-rol.md)) | `audit` |
 | **HE-09** Configuración del sistema | Coordinador | Tiempo límite de respuesta a sugerencias y periodos de bloqueo de edición | `suggestions`, `academic` |
+| **HE-10** Acceso e inicio de sesión | Todos | Contraseña temporal, política de contraseñas, bloqueo por intentos, "mantener sesión" y cierre por inactividad | `auth` (Keycloak) |
+| **HE-11** Inicio, navegación y reportes | Todos / Coordinador | Inicio y menú por rol, aviso de privacidad y **Reportes** de guías y sugerencias en pantalla, Excel o PDF | `reports` |
 
 ### Backend de HE-03 y HE-04
 
@@ -330,9 +332,9 @@ Antes de abrir un pull request, las pruebas y el lint deben pasar.
 
 | Suite | Cantidad |
 |---|---|
-| Backend, unitarias | 276 |
+| Backend, unitarias | 285 |
 | Backend, integración (e2e) | 18 |
-| Frontend | 342 |
+| Frontend | 355 |
 
 ## 11. Flujo de trabajo con Git
 

@@ -1,4 +1,4 @@
-# Aplica la política de contraseñas acordada con el cliente en una instalación que ya existe.
+﻿# Aplica la política de contraseñas acordada con el cliente en una instalación que ya existe.
 # Keycloak solo importa el realm la primera vez; este script actualiza el realm ya creado.
 # Ejecutar una vez después de instalar una versión nueva:
 #   powershell -ExecutionPolicy Bypass -File deploy\scripts\actualizar-seguridad.ps1

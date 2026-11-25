@@ -81,6 +81,26 @@
         </section>
       }
 
+      <section class="ui-side-card" aria-label="Historial de versiones">
+        <h3 class="ui-side-title">Historial de versiones</h3>
+        <ol class="versiones">
+          @for (v of versiones(); track v.version) {
+            <li class="versiones__item">
+              <div class="versiones__head">
+                <strong>Versión {{ v.version }}</strong>
+                @if (v.version === c.version) {
+                  <span class="ui-pill ui-pill--ok">Vigente</span>
+                }
+              </div>
+              <small class="ui-muted">{{ fechaHora(v.editedAt) }}{{ v.editedBy ? ' · ' + v.editedBy.name : '' }}</small>
+              <p>{{ v.text }}</p>
+            </li>
+          } @empty {
+            <li class="ui-muted">Esta competencia aún no tiene versiones anteriores.</li>
+          }
+        </ol>
+      </section>
+
       <section class="ui-side-card">
         <h3 class="ui-side-title">Competencias no afectadas</h3>
         <ul class="ui-checks">

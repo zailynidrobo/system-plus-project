@@ -143,7 +143,7 @@ describe('GuideDocumentExportService', () => {
         expect(documentXml).toContain('Comprender los ecosistemas');
 
         const outputDirectory = args[args.indexOf('--outdir') + 1];
-        await writeFile(join(outputDirectory, 'guia.pdf'), expectedPdf);
+        await writeFile(join(outputDirectory, 'documento.pdf'), expectedPdf);
       })().then(
         () => callback(null),
         (error: unknown) =>

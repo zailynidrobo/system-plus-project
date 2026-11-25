@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ReportsModule } from './reports/reports.module.js';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
@@ -42,6 +43,7 @@ const appDirectory = resolve(dirname(fileURLToPath(import.meta.url)), '..');
     SuggestionsModule,
     RolePermissionsModule,
     AuditActionsModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

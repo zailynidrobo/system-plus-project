@@ -15,6 +15,7 @@ export const AUDITED_DOWNLOADS = new Set<string>([
   'GET /academic/guides/:id/versions/:version/export',
   'GET /academic/personalized-versions/:id/export',
   'GET /academic/guides/:id/support-materials/:materialId/download',
+  'GET /reports/:report/export',
 ]);
 
 /**

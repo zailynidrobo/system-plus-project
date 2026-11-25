@@ -1,4 +1,5 @@
 import { ConflictException, Injectable } from '@nestjs/common';
+import { patronContiene, sqlSinTildes } from '../../common/busqueda.js';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, DataSource, Repository } from 'typeorm';
 import { AuthenticatedUser } from '../../auth/current-user.decorator.js';
@@ -138,11 +139,11 @@ export class CurricularModulesService {
         .andWhere(
           new Brackets((where) =>
             where
-              .where('module.name ILIKE :search')
-              .orWhere('module.code ILIKE :search'),
+              .where(`${sqlSinTildes('module.name')} LIKE :search`)
+              .orWhere(`${sqlSinTildes('module.code')} LIKE :search`),
           ),
         )
-        .setParameter('search', `%${search.replace(/[\\%_]/g, '\\$&')}%`);
+        .setParameter('search', patronContiene(search));
     }
 
     builder.orderBy(

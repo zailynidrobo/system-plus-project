@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { normalizarBusqueda } from '../../common/busqueda.js';
 import { HttpException } from '@nestjs/common';
 import { FindManyOptions, FindOperator, Repository } from 'typeorm';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -42,6 +43,14 @@ function matches(value: unknown, condition: unknown): boolean {
       return (
         typeof value === 'string' && likeToRegex(operand as string).test(value)
       );
+    case 'raw': {
+      // contieneSinTildes: compara sin tildes ni mayúsculas, como translate() en PostgreSQL.
+      const pattern = Object.values(condition.objectLiteralParameters ?? {})[0];
+      return (
+        typeof value === 'string' &&
+        likeToRegex(String(pattern)).test(normalizarBusqueda(value))
+      );
+    }
     default:
       throw new Error(`Condición no soportada en la prueba: ${condition.type}`);
   }
@@ -265,6 +274,8 @@ describe('Consulta del registro de auditoría (HE-08-HU-01)', () => {
     expect(byAction.total).toBe(1);
     const byEntity = await service.findAll({ q: 'GB-POO-01' });
     expect(byEntity.total).toBe(1);
+    // Sin tildes también encuentra: "julian" -> "Julián Ospina".
+    expect((await service.findAll({ q: 'julian' })).total).toBe(1);
     // `%` se busca literal, no como comodín.
     expect((await service.findAll({ q: '%' })).total).toBe(0);
   });

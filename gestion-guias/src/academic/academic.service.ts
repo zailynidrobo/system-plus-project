@@ -15,7 +15,6 @@ import {
   DataSource,
   EntityManager,
   FindOptionsWhere,
-  ILike,
   In,
   IsNull,
   Repository,
@@ -35,6 +34,7 @@ import { AcademicGuideRecord } from './entities/academic-guide-record.entity.js'
 import { AcademicGuideVersionRecord } from './entities/academic-guide-version-record.entity.js';
 import { GuideEventRecord } from './entities/guide-event-record.entity.js';
 import { GuideFieldConfigRecord } from './entities/guide-field-config-record.entity.js';
+import { contieneSinTildes } from '../common/busqueda.js';
 import { ModuleTeacherAssignmentRecord } from './entities/module-teacher-assignment-record.entity.js';
 import { PersonalizedGuideVersionRecord } from './entities/personalized-guide-version-record.entity.js';
 import { GuideSupportMaterialRecord } from './entities/guide-support-material-record.entity.js';
@@ -779,9 +779,7 @@ export class AcademicService implements OnModuleInit {
       ...(query.competencyId ? { competencyId: query.competencyId } : {}),
       ...(query.author
         ? {
-            createdByName: ILike(
-              `%${query.author.trim().replace(/[\\%_]/g, '\\$&')}%`,
-            ),
+            createdByName: contieneSinTildes(query.author),
           }
         : {}),
       ...(query.status ? { status: query.status } : {}),
@@ -792,7 +790,7 @@ export class AcademicService implements OnModuleInit {
       ? (['title', 'code', 'moduleName', 'competencyName'] as const).map(
           (field) => ({
             ...filters,
-            [field]: ILike(`%${search.replace(/[\\%_]/g, '\\$&')}%`),
+            [field]: contieneSinTildes(search),
           }),
         )
       : filters;
@@ -1038,7 +1036,9 @@ export class AcademicService implements OnModuleInit {
         { label: 'Módulo', value: guide.moduleName },
         {
           label: 'Publicación',
-          value: guide.publishedAt ? fechaDocumento(guide.publishedAt) : 'Sin publicar',
+          value: guide.publishedAt
+            ? fechaDocumento(guide.publishedAt)
+            : 'Sin publicar',
         },
       ],
       fields: snapshot.fields,
@@ -1056,13 +1056,16 @@ export class AcademicService implements OnModuleInit {
       where: { guideId: guide.id },
       order: { createdAt: 'ASC' },
     });
-    const versions = records.length ? records : [this.legacyGuideVersion(guide)];
+    const versions = records.length
+      ? records
+      : [this.legacyGuideVersion(guide)];
     return versions
       .filter((record) => record.status !== 'draft')
       .map((record) => ({
         version: `Base ${record.version}`,
         fecha: fechaDocumento(record.publishedAt ?? record.createdAt),
-        responsable: record.publishedByName ?? record.authorName ?? 'Coordinación',
+        responsable:
+          record.publishedByName ?? record.authorName ?? 'Coordinación',
         cambio: record.description,
       }));
   }
@@ -1850,7 +1853,11 @@ function fechaDocumento(fecha: Date): string {
 
 /** Compara "1.10" con "1.2" como números de versión. */
 function compareVersions(a: string, b: string): number {
-  const numeros = (v: string) => v.replace(/[^0-9.]/g, '').split('.').map(Number);
+  const numeros = (v: string) =>
+    v
+      .replace(/[^0-9.]/g, '')
+      .split('.')
+      .map(Number);
   const [x, y] = [numeros(a), numeros(b)];
   for (let i = 0; i < Math.max(x.length, y.length); i++) {
     const diferencia = (x[i] ?? 0) - (y[i] ?? 0);

@@ -13,6 +13,8 @@ import { HttpModuleApi } from './features/academic-program/http-module-api';
 import { ModuleApi } from './features/academic-program/module-api';
 import { UserApi } from './features/users/user-api';
 import { AuditApi } from './features/audit/audit-api';
+import { ReportApi } from './features/reports/report-api';
+import { HttpReportApi } from './features/reports/http-report-api';
 import { HttpAuditApi } from './features/audit/http-audit-api';
 import { FieldConfigApi } from './features/guides/field-config-api';
 import { HttpFieldConfigApi } from './features/guides/http-field-config-api';
@@ -44,6 +46,7 @@ export const appConfig: ApplicationConfig = {
     ...(environment.api === 'http' ? [{ provide: UserApi, useClass: HttpUserApi }] : []),
     // HE-08: auditoria del administrador, mismo switch que usuarios
     ...(environment.api === 'http' ? [{ provide: AuditApi, useClass: HttpAuditApi }] : []),
+    ...(environment.api === 'http' ? [{ provide: ReportApi, useClass: HttpReportApi }] : []),
     // HE-02: con apiAcademico = 'http' módulos y competencias usan el backend; si no, el mock.
     ...(environment.apiAcademico === 'http'
       ? [

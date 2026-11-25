@@ -33,7 +33,10 @@ import { ModuleApi } from '../module-api';
     }
     .versiones__item p {
       margin: 4px 0 0;
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
+    }
+    .versiones__item small {
+      font-size: 0.75rem;
     }
     .versiones__head {
       display: flex;

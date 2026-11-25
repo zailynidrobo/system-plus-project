@@ -13,7 +13,7 @@ describe('Menú lateral por rol', () => {
   it('Coordinador: Gestión académica con Programa académico y Sugerencias (con contador)', () => {
     const nav = navPara('COORDINADOR');
     expect(nav.seccion).toBe('Gestión académica');
-    expect(etiquetas('COORDINADOR')).toEqual(['Inicio', 'Programa académico', 'Guías de aprendizaje', 'Sugerencias']);
+    expect(etiquetas('COORDINADOR')).toEqual(['Inicio', 'Programa académico', 'Guías de aprendizaje', 'Sugerencias', 'Reportes']);
     expect(nav.items.find((i) => i.label === 'Sugerencias')?.badge).toBe('sugerencias');
     expect(nav.recuadro).toBe('programa');
   });
